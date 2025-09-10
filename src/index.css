@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ① Print-only utilities */
+@layer utilities {
+  @media print {
+    /* Hide the entire page… */
+    body * {
+      visibility: hidden !important;
+    }
+    /* …except the card and its contents */
+    .print-container,
+    .print-container * {
+      visibility: visible !important;
+    }
+    /* Pin the card to the top-left and fill the sheet */
+    .print-container {
+      position: absolute !important;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+    /* Force any background colors/gradients to print */
+    .print-bg,
+    .print-container {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+}
+
+/* ② Animations – move these out of @media print */
+@keyframes swing3d {
+  0%   { transform: rotateY(0deg); }
+  25%  { transform: rotateY(90deg); }
+  50%  { transform: rotateY(180deg); }
+  75%  { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes rimSpin {
+  0%   { transform: rotateZ(-30deg); }
+  25%  { transform: rotateZ(60deg); }
+  50%  { transform: rotateZ(360deg); }
+}
+.rim-spin:hover {
+  animation: rimSpin 12s linear infinite;
+  transform-style: preserve-3d;
+}
+.swing-3d:hover {
+  animation: swing3d 4s linear infinite;
+  transform-style: preserve-3d;
+}
