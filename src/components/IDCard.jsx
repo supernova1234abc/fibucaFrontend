@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
-import { api }               from '../lib/api'      // ← add this
+import { baseURL }  from '../lib/api'        // ← add this
 
 const IDCard = forwardRef(({ card }, ref) => {
   const formattedDate = card?.issuedAt
@@ -69,7 +69,7 @@ const IDCard = forwardRef(({ card }, ref) => {
             <div className="w-24 h-24 mr-16 rounded-full  overflow-hidden flex items-center justify-center">
               {card?.photoUrl ? (
                 <img
-                  src={`http://localhost:4000/${card.photoUrl}`.replace(
+                  src={`baseURL/${card.photoUrl}`.replace(
                     /\\/g,
                     '/'
                   )}
