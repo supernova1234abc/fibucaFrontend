@@ -10,5 +10,5 @@ export default defineConfig({
   },
 
     plugins: [react()],
-    base: '/fibuca-frontend',
+    //base: '/fibuca-frontend/',
 })
