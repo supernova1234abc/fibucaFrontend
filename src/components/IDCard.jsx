@@ -1,7 +1,8 @@
 // src/components/IDCard.jsx
 import React, { forwardRef } from 'react'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
-import { baseURL }  from '../lib/api'        // ← add this
+const baseURL = import.meta.env.VITE_BACKEND_URL;
+
 
 const IDCard = forwardRef(({ card }, ref) => {
   const formattedDate = card?.issuedAt
