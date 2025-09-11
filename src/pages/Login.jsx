@@ -26,7 +26,7 @@ export default function Login() {
         password: form.password,
       })
 
-      const { user, token } = res.data
+      const { user} = res.data
       const fibucaUser = {
         id: user.id,
         username: user.employeeNumber,
@@ -36,7 +36,6 @@ export default function Login() {
         pdfPath: user.pdfPath || null,
       }
 
-     // localStorage.setItem('fibuca_user', JSON.stringify(fibucaUser))
       localStorage.setItem('fibuca_user', JSON.stringify(fibucaUser));
     setUser(fibucaUser);
 
