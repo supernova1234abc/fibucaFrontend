@@ -1,3 +1,4 @@
+// src/components/IDCard.jsx
 import React, { forwardRef } from 'react'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
 import { baseURL }  from '../lib/api'        // ← add this
