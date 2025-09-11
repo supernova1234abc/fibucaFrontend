@@ -69,7 +69,7 @@ const IDCard = forwardRef(({ card }, ref) => {
             <div className="w-24 h-24 mr-16 rounded-full  overflow-hidden flex items-center justify-center">
               {card?.photoUrl ? (
                 <img
-                  src={`baseURL/${card.photoUrl}`.replace(
+                  src={`${baseURL}/${card.photoUrl}`.replace(
                     /\\/g,
                     '/'
                   )}

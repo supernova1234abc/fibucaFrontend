@@ -11,7 +11,6 @@ import {
   FaBook,
   FaLock
 } from 'react-icons/fa';
-import DashboardLayout from '../components/DashboardLayout';
 import Webcam from 'react-webcam';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -88,7 +87,6 @@ const fetchIdCards = useCallback(async () => {
   try {
 const { data } = await api.get(
   `/api/idcards/${user.id}`,
-  { headers: { 'ngrok-skip-browser-warning': '1' } }
 )
 
     const safeCards = Array.isArray(data) ? data : [];

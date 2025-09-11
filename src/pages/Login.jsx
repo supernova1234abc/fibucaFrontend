@@ -20,7 +20,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-     // const res = await api.post('https://f820bdc49db0.ngrok-free.app/api/login', {
+    
      const res = await api.post('/api/login', {
         employeeNumber: form.username,
         password: form.password,
@@ -32,7 +32,6 @@ export default function Login() {
         username: user.employeeNumber,
         role: user.role,
         name: user.name,
-        token,
         passwordChanged: !user.firstLogin,
         pdfPath: user.pdfPath || null,
       }
