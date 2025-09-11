@@ -30,14 +30,11 @@ export default function ClientDashboard() {
   // inside your function component:
   const componentRef = useRef();
   // --- User Auth ---
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    const raw = localStorage.getItem('fibuca_user');
-    if (!raw) return navigate('/login');
-    const me = JSON.parse(raw);
-    if (me.role !== 'CLIENT') return navigate('/login');
-    setUser(me);
-  }, [navigate]);
+const { user } = useAuth();
+useEffect(() => {
+  if (!user) return navigate('/login');
+  if (user.role !== 'CLIENT') return navigate('/login');
+}, [user, navigate]);
 
   // --- Submission (to get company) ---
   const [submission, setSubmission] = useState(null);

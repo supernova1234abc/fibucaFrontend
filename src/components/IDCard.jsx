@@ -71,14 +71,12 @@ const IDCard = forwardRef(({ card }, ref) => {
             <div className="w-24 h-24 mr-16 rounded-full  overflow-hidden flex items-center justify-center">
               {card?.photoUrl ? (
                 <img
-                  src={`${baseURL}/${card.photoUrl}`.replace(/\\/g, "/")}
+                  src={`${baseURL}/${card.photoUrl}`}
                   alt="ID Photo"
                   className="object-cover w-full h-full rounded-md shadow"
-                  onError={(e) => {
-                    // fallback if image fails to load
-                    e.currentTarget.src = "/fallback-avatar.png";
-                  }}
+                  onError={(e) => { e.currentTarget.src = "/fallback-avatar.png"; }}
                 />
+
               ) : (
                 <span className="text-gray-400 text-xs">No Photo</span>
               )}
