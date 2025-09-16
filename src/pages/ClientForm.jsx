@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import jsPDF from 'jspdf';
 import axios from 'axios';
+import { api }               from '../lib/api'      // ← add this
+
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { FaSpinner } from 'react-icons/fa';
@@ -137,12 +139,12 @@ export default function ClientForm() {
     formData.append('data', JSON.stringify(form));
 
     try {
-      const res = await axios.post('/submit-form', formData);
+      const res = awapi.post('/submit-form', formData);
       const creds = res.data.loginCredentials;
 
       // Auto-login after registration
       try {
-        await axios.post(
+        await api.post(
           '/api/login',
           {
             employeeNumber: creds.username,
