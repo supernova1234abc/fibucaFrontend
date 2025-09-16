@@ -140,18 +140,43 @@ export default function ClientForm() {
       const res = await axios.post('/submit-form', formData);
       const creds = res.data.loginCredentials;
 
-      Swal.fire({
-        title: 'Registered Successfully',
-        html: `
-          <p><strong>Username:</strong> ${creds.username}</p>
-          <p><strong>Password:</strong> ${creds.password}</p>
-          <h3>Please copy these credentials and use them to login</h3>
-        `,
-        icon: 'success',
-        confirmButtonText: 'Proceed to login'
-      }).then(() => {
-        navigate('/login');
-      });
+      // Auto-login after registration
+      try {
+        await axios.post(
+          '/api/login',
+          {
+            employeeNumber: creds.username,
+            password: creds.password
+          },
+          { withCredentials: true }
+        );
+        Swal.fire({
+          title: 'Registered & Logged In!',
+          html: `
+            <p><strong>Username:</strong> ${creds.username}</p>
+            <p><strong>Password:</strong> ${creds.password}</p>
+            <h3>You are now logged in. Please save your credentials.</h3>
+          `,
+          icon: 'success',
+          confirmButtonText: 'Go to Dashboard'
+        }).then(() => {
+          navigate('/client');
+        });
+      } catch (loginErr) {
+        // fallback: show credentials and go to login page
+        Swal.fire({
+          title: 'Registered! Please Login',
+          html: `
+            <p><strong>Username:</strong> ${creds.username}</p>
+            <p><strong>Password:</strong> ${creds.password}</p>
+            <h3>Please copy these credentials and use them to login</h3>
+          `,
+          icon: 'success',
+          confirmButtonText: 'Proceed to login'
+        }).then(() => {
+          navigate('/login');
+        });
+      }
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('Submission failed.');
