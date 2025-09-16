@@ -139,7 +139,7 @@ export default function ClientForm() {
     formData.append('data', JSON.stringify(form));
 
     try {
-      const res = awapi.post('/submit-form', formData);
+      const res = api.post('/submit-form', formData);
       const creds = res.data.loginCredentials;
 
       // Auto-login after registration
