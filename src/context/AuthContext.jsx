@@ -9,12 +9,31 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Try cookie-based /api/me first. If 401, try token fallback.
     api.get('/api/me')
       .then(res => {
         const u = res.data.user;
         setUser({ ...u, passwordChanged: !u.firstLogin });
       })
-      .catch(() => setUser(null))
+      .catch(async (err) => {
+        // If unauthorized and we have a token, try again with token set in Authorization header
+        if (err.response && err.response.status === 401) {
+          const token = localStorage.getItem('fibuca_token')
+          if (token) {
+            try {
+              const res2 = await api.get('/api/me', {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+              const u = res2.data.user
+              setUser({ ...u, passwordChanged: !u.firstLogin })
+              return
+            } catch (e) {
+              // fallthrough to clearing user
+            }
+          }
+        }
+        setUser(null)
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -23,6 +42,14 @@ export function AuthProvider({ children }) {
       .catch(() => { })
       .finally(() => setUser(null));
   }
+
+  // Ensure token and user are removed on logout
+  useEffect(() => {
+    if (!user) {
+      localStorage.removeItem('fibuca_token')
+      localStorage.removeItem('fibuca_user')
+    }
+  }, [user])
 
   async function refreshUser() {
     try {

@@ -20,13 +20,18 @@ export default function Login() {
     setLoading(true)
 
     try {
-    
-     const res = await api.post('/api/login', {
+      const res = await api.post('/api/login', {
         employeeNumber: form.username,
         password: form.password,
       })
 
-      const { user} = res.data
+      const { token, user } = res.data
+
+      // save token for Authorization header fallback (in case cookies are blocked)
+      if (token) localStorage.setItem('fibuca_token', token)
+
+      if (!user) throw new Error('No user returned')
+
       const fibucaUser = {
         id: user.id,
         username: user.employeeNumber,
@@ -36,8 +41,8 @@ export default function Login() {
         pdfPath: user.pdfPath || null,
       }
 
-      localStorage.setItem('fibuca_user', JSON.stringify(fibucaUser));
-    setUser(fibucaUser);
+      localStorage.setItem('fibuca_user', JSON.stringify(fibucaUser))
+      setUser(fibucaUser)
 
       if (!fibucaUser.passwordChanged) {
         navigate('/change-password')

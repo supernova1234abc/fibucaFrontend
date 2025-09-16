@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import jsPDF from 'jspdf';
-import { api }               from '../lib/api'      // ← add this
+import { api } from '../lib/api'      // ← add this
 
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -138,7 +138,7 @@ export default function ClientForm() {
     formData.append('data', JSON.stringify(form));
 
     try {
-      const res = api.post('/submit-form', formData);
+      const res = await api.post('/submit-form', formData);
       const creds = res.data.loginCredentials;
 
       // Auto-login after registration
@@ -179,8 +179,22 @@ export default function ClientForm() {
         });
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('Submission failed.');
+      if (error.response && error.response.status === 409) {
+        Swal.fire({
+          title: 'Submission Failed',
+          text: error.response.data?.error || 'A user with this employee number already exists.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      } else {
+        console.error('Error submitting form:', error);
+        Swal.fire({
+          title: 'Submission Failed',
+          text: 'An unexpected error occurred. Please try again.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
     } finally {
       setLoading(false);
     }

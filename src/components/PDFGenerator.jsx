@@ -1,11 +1,11 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import axios from 'axios';
+import { api } from '../lib/api';
 
 export default function PDFGenerator() {
   const generateReport = async () => {
     try {
-      const response = await axios.get('https://5307b834865a.ngrok-free.app/submissions');
+      const response = await api.get('/submissions');
       const data = response.data;
 
       const doc = new jsPDF();
