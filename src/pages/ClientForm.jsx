@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import jsPDF from 'jspdf';
-import axios from 'axios';
 import { api }               from '../lib/api'      // ← add this
 
 import { useNavigate, Link } from 'react-router-dom';
