@@ -4,7 +4,7 @@ import { api } from "../lib/api";
 
 const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+export function PrivateRoute({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
