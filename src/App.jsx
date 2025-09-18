@@ -11,10 +11,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
-
 import AdminUpload from './pages/AdminUpload';
 import AdminReports from './pages/AdminReports';
-
 import ClientDashboard from './pages/ClientDashboard';
 
 import PrivateRoute from './components/PrivateRoute';
@@ -58,19 +56,28 @@ function App() {
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
-
       <Router>
         <Routes>
-          {/* Public routes */}
+          {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/client-form" element={<ClientForm />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/change-password" element={<ChangePassword />} />
 
-          {/* Superadmin routes */}
+          {/* Superadmin Routes */}
           <Route
-            path="/superadmin/*"
+            path="/superadmin"
+            element={
+              <PrivateRoute role="SUPERADMIN">
+                <DashboardLayout user={currentUser} menus={superMenus}>
+                  <ManagerDashboard />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/superadmin/reports"
             element={
               <PrivateRoute role="SUPERADMIN">
                 <DashboardLayout user={currentUser} menus={superMenus}>
@@ -80,26 +87,91 @@ function App() {
             }
           />
 
-          {/* Admin routes */}
+          {/* Admin Routes */}
           <Route
-            path="/admin/*"
+            path="/admin"
             element={
               <PrivateRoute role="ADMIN">
                 <DashboardLayout user={currentUser} menus={adminMenus}>
-                  <Routes>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="upload" element={<AdminUpload />} />
-                    <Route path="reports" element={<AdminReports />} />
-                    <Route path="users" element={<UserManagement />} />
-                  </Routes>
+                  <AdminDashboard />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/upload"
+            element={
+              <PrivateRoute role="ADMIN">
+                <DashboardLayout user={currentUser} menus={adminMenus}>
+                  <AdminUpload />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <PrivateRoute role="ADMIN">
+                <DashboardLayout user={currentUser} menus={adminMenus}>
+                  <AdminReports />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute role="ADMIN">
+                <DashboardLayout user={currentUser} menus={adminMenus}>
+                  <UserManagement />
                 </DashboardLayout>
               </PrivateRoute>
             }
           />
 
-          {/* Client routes */}
+          {/* Client Routes */}
           <Route
-            path="/client/*"
+            path="/client"
+            element={
+              <PrivateRoute role="CLIENT">
+                <DashboardLayout user={currentUser} menus={clientMenus}>
+                  <ClientDashboard />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/client/pdf"
+            element={
+              <PrivateRoute role="CLIENT">
+                <DashboardLayout user={currentUser} menus={clientMenus}>
+                  <ClientDashboard />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/client/generate"
+            element={
+              <PrivateRoute role="CLIENT">
+                <DashboardLayout user={currentUser} menus={clientMenus}>
+                  <ClientDashboard />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/client/idcards"
+            element={
+              <PrivateRoute role="CLIENT">
+                <DashboardLayout user={currentUser} menus={clientMenus}>
+                  <ClientDashboard />
+                </DashboardLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/client/publications"
             element={
               <PrivateRoute role="CLIENT">
                 <DashboardLayout user={currentUser} menus={clientMenus}>
@@ -109,7 +181,7 @@ function App() {
             }
           />
 
-          {/* Catch-all → Landing */}
+          {/* Catch-all → Landing Page */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
