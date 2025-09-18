@@ -10,10 +10,10 @@ import ForgotPassword from './pages/ForgotPassword';
 
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import UserManagement from './pages/UserManagement'
+import UserManagement from './pages/UserManagement';
 
-import AdminUpload from './pages/AdminUpload'
-import AdminReports from './pages/AdminReports'
+import AdminUpload from './pages/AdminUpload';
+import AdminReports from './pages/AdminReports';
 
 import ClientDashboard from './pages/ClientDashboard';
 
@@ -22,16 +22,13 @@ import DashboardLayout from './components/DashboardLayout';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
-// ① Read your user once from storage
-//const currentUser = JSON.parse(localStorage.getItem('fibuca_user') || 'null');
 
-// ② Define per-role menus
+// Menus
 const clientMenus = [
   { href: '/client', label: 'Overview', icon: FaUsers },
   { href: '/client/pdf', label: 'PDF Form', icon: FaFilePdf },
   { href: '/client/generate', label: 'Generate ID', icon: FaPlusCircle },
   { href: '/client/idcards', label: 'Your ID Cards', icon: FaIdCard },
-
   { href: '/client/publications', label: 'Publications', icon: FaBook },
 ];
 
@@ -46,6 +43,7 @@ const superMenus = [
   { href: '/superadmin', label: 'Users', icon: FaUsers },
   { href: '/superadmin/reports', label: 'All Reports', icon: FaChartLine },
 ];
+
 function App() {
   const { user: currentUser, loading } = useAuth();
 
@@ -70,7 +68,7 @@ function App() {
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Superadmin */}
+          {/* Superadmin routes */}
           <Route
             path="/superadmin/*"
             element={
@@ -82,7 +80,7 @@ function App() {
             }
           />
 
-          {/* Admin */}
+          {/* Admin routes */}
           <Route
             path="/admin/*"
             element={
@@ -99,7 +97,7 @@ function App() {
             }
           />
 
-          {/* Client */}
+          {/* Client routes */}
           <Route
             path="/client/*"
             element={
@@ -111,11 +109,12 @@ function App() {
             }
           />
 
-          {/* Catch-all → Login */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* Catch-all → Landing */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </>
   );
 }
+
 export default App;
