@@ -1,6 +1,7 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { FaFilePdf, FaIdCard, FaPlusCircle, FaBook, FaUsers, FaChartLine } from 'react-icons/fa';
+import { Toaster } from 'react-hot-toast';
 
 import Landing from './pages/Landing';
 import ClientForm from './pages/ClientForm';
@@ -17,11 +18,10 @@ import ClientDashboard from './pages/ClientDashboard';
 
 import PrivateRoute from './components/PrivateRoute';
 import DashboardLayout from './components/DashboardLayout';
-import './index.css';
-import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
+import './index.css';
 
-// Menus
+// --- Menus ---
 const clientMenus = [
   { href: '/client', label: 'Overview', icon: FaUsers },
   { href: '/client/pdf', label: 'PDF Form', icon: FaFilePdf },
@@ -42,13 +42,14 @@ const superMenus = [
   { href: '/superadmin/reports', label: 'All Reports', icon: FaChartLine },
 ];
 
-function App() {
-  const { user: currentUser, loading } = useAuth();
+export default function App() {
+  const { user, loading } = useAuth();
 
+  // --- Global loading spinner ---
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking session…
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -65,17 +66,23 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
-          {/* Superadmin Routes */}
+          {/* Protected Routes */}
+
+          {/* Super Admin */}
           <Route element={<PrivateRoute role="SUPERADMIN" />}>
-            <Route element={<DashboardLayout user={currentUser} menus={superMenus} />}>
+            <Route
+              element={<DashboardLayout user={user} menus={superMenus} />}
+            >
               <Route path="/superadmin" element={<ManagerDashboard />} />
               <Route path="/superadmin/reports" element={<ManagerDashboard />} />
             </Route>
           </Route>
 
-          {/* Admin Routes */}
+          {/* Admin */}
           <Route element={<PrivateRoute role="ADMIN" />}>
-            <Route element={<DashboardLayout user={currentUser} menus={adminMenus} />}>
+            <Route
+              element={<DashboardLayout user={user} menus={adminMenus} />}
+            >
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/upload" element={<AdminUpload />} />
               <Route path="/admin/reports" element={<AdminReports />} />
@@ -83,9 +90,11 @@ function App() {
             </Route>
           </Route>
 
-          {/* Client Routes */}
+          {/* Client */}
           <Route element={<PrivateRoute role="CLIENT" />}>
-            <Route element={<DashboardLayout user={currentUser} menus={clientMenus} />}>
+            <Route
+              element={<DashboardLayout user={user} menus={clientMenus} />}
+            >
               <Route path="/client" element={<ClientDashboard />} />
               <Route path="/client/pdf" element={<ClientDashboard />} />
               <Route path="/client/generate" element={<ClientDashboard />} />
@@ -94,12 +103,10 @@ function App() {
             </Route>
           </Route>
 
-          {/* Catch-all → Landing Page */}
+          {/* Catch-all → Landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </>
   );
 }
-
-export default App;

@@ -1,4 +1,3 @@
-// src/components/PrivateRoute.jsx
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,22 +8,20 @@ export default function PrivateRoute({ children, role }) {
   // Wait for auth to load
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking session…
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  // Public paths do not require login
   const publicPaths = ['/login', '/forgot-password', '/change-password', '/'];
-  if (!user && publicPaths.includes(location.pathname)) {
-    return children;
-  }
+  const isPublic = publicPaths.includes(location.pathname);
+
+  // Allow access to public paths
+  if (isPublic) return children;
 
   // Redirect if not logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
   // Redirect if role mismatch
   if (role && user.role !== role) {
