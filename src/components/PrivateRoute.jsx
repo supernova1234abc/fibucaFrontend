@@ -1,37 +1,76 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+// src/context/AuthContext.jsx
+import { createContext, useContext, useState, useEffect } from "react";
+import { api } from "../lib/api";
 
-export default function PrivateRoute({ children, role }) {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+const AuthContext = createContext();
 
-  // Wait for auth to load
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const publicPaths = ['/login', '/forgot-password', '/change-password', '/'];
-  const isPublic = publicPaths.includes(location.pathname);
+  // Load user once on mount
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const res = await api.get("/api/me");
+        const u = res.data.user;
+        setUser({ ...u, passwordChanged: !u.firstLogin });
+      } catch (err) {
+        // token fallback
+        const token = localStorage.getItem("fibuca_token");
+        if (err.response?.status === 401 && token) {
+          try {
+            const res2 = await api.get("/api/me", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const u = res2.data.user;
+            setUser({ ...u, passwordChanged: !u.firstLogin });
+            return;
+          } catch {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Allow access to public paths
-  if (isPublic) return children;
+    loadUser();
+  }, []);
 
-  // Redirect if not logged in
-  if (!user) return <Navigate to="/login" replace />;
+  const logout = async () => {
+    try {
+      await api.post("/api/logout");
+    } catch {
+      /* ignore */
+    } finally {
+      setUser(null);
+      localStorage.removeItem("fibuca_token");
+      localStorage.removeItem("fibuca_user");
+    }
+  };
 
-  // Redirect if role mismatch
-  if (role && user.role !== role) {
-    return <Navigate to={`/${user.role.toLowerCase()}`} replace />;
-  }
+  const refreshUser = async () => {
+    try {
+      const res = await api.get("/api/me");
+      const u = res.data.user;
+      setUser({ ...u, passwordChanged: !u.firstLogin });
+    } catch {
+      setUser(null);
+    }
+  };
 
-  // Force password change
-  if (!user.passwordChanged && location.pathname !== '/change-password') {
-    return <Navigate to="/change-password" replace />;
-  }
+  return (
+    <AuthContext.Provider
+      value={{ user, setUser, loading, logout, refreshUser }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
-  return children;
+export function useAuth() {
+  return useContext(AuthContext);
 }

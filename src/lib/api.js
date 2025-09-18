@@ -1,34 +1,37 @@
-//fibuca-frontend/src/lib/api.js
+// fibuca-frontend/src/lib/api.js
 import axios from 'axios';
-import { navigate } from 'react-router-dom';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
 });
 
-// Attach token from localStorage if present
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('fibuca_token')
-  if (token) {
-    config.headers = config.headers || {}
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// This lets AuthContext set or update the token dynamically
+let currentToken = null;
 
-// Global response handler: on 401 clear auth and redirect to login
+export const setAuthToken = (token) => {
+  currentToken = token;
+};
+
+// Attach token from AuthContext if present
+api.interceptors.request.use((config) => {
+  if (currentToken) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${currentToken}`;
+  }
+  return config;
+});
+
+// Global response handler: on 401 clear token and redirect to login
 api.interceptors.response.use(
-  (r) => r,
+  (res) => res,
   (err) => {
     if (err.response && err.response.status === 401) {
-      localStorage.removeItem('fibuca_user')
-      localStorage.removeItem('fibuca_token')
+      currentToken = null; // clear token in memory
       try {
-        // best-effort redirect
-        window.location.href = '/login'
+        window.location.href = '/login';
       } catch (e) {}
     }
-    return Promise.reject(err)
+    return Promise.reject(err);
   }
-)
+);
