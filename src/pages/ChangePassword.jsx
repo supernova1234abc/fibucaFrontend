@@ -1,18 +1,28 @@
 // src/pages/ChangePassword.jsx
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { api }               from '../lib/api'      // ← add this
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
-import { useNavigate } from 'react-router-dom'
-import { FaEye, FaEyeSlash } from 'react-icons/fa'
-
-// 1) Move this out so it's not re‐declared each render
+// Reusable Password Form Component
 function PasswordForm({
-  oldPassword, newPassword, confirmPassword,
-  showOld, showNew, showConfirm,
-  setOldPassword, setNewPassword, setConfirmPassword,
-  toggleShowOld, toggleShowNew, toggleShowConfirm,
-  onSave, onCancel, loading, inModal
+  oldPassword,
+  newPassword,
+  confirmPassword,
+  showOld,
+  showNew,
+  showConfirm,
+  setOldPassword,
+  setNewPassword,
+  setConfirmPassword,
+  toggleShowOld,
+  toggleShowNew,
+  toggleShowConfirm,
+  onSave,
+  onCancel,
+  loading,
+  inModal,
 }) {
   return (
     <div
@@ -104,92 +114,98 @@ function PasswordForm({
         </button>
       </div>
     </div>
-  )
+  );
 }
 
-export default function ChangePassword({
-  inModal = false,
-  onSuccess,
-  onCancel,
-}) {
-  const navigate = useNavigate()
-  const [user, setUser]               = useState(null)
-  const [oldPassword, setOldPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading]         = useState(false)
+// Main ChangePassword Page/Modal
+export default function ChangePassword({ inModal = false, onSuccess, onCancel }) {
+  const navigate = useNavigate();
+  const { user, refreshUser } = useAuth();
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [showOld, setShowOld]         = useState(false)
-  const [showNew, setShowNew]         = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
+  // Redirect if not logged in
   useEffect(() => {
-    const raw = localStorage.getItem('fibuca_user')
-    if (!raw) {
-      inModal ? onCancel?.() : navigate('/login')
-    } else {
-      setUser(JSON.parse(raw))
+    if (!user) {
+      inModal ? onCancel?.() : navigate('/login');
     }
-  }, [inModal, navigate, onCancel])
+  }, [user, inModal, navigate, onCancel]);
 
-  const handleChange = async () => {
+  const handleChangePassword = async () => {
     if (!oldPassword.trim() || !newPassword.trim()) {
-      return alert('All fields are required.')
+      return alert('All fields are required.');
     }
     if (newPassword !== confirmPassword) {
-      return alert('New password and confirmation do not match.')
+      return alert('New password and confirmation do not match.');
     }
 
     try {
-      setLoading(true)
-      await api.put(
-        '/api/change-password',
-        {
-          employeeNumber: user.username,
-          oldPassword,
-          newPassword,
-        }
-      )
+      setLoading(true);
+      await api.put('/api/change-password', {
+        employeeNumber: user.username,
+        oldPassword,
+        newPassword,
+      });
 
-      localStorage.setItem(
-        'fibuca_user',
-        JSON.stringify({ ...user, passwordChanged: true })
-      )
+      // Refresh user state to mark password as changed
+      await refreshUser();
 
-      inModal ? onSuccess?.() : navigate(`/${user.role.toLowerCase()}`)
+      inModal ? onSuccess?.() : navigate(`/${user.role.toLowerCase()}`);
     } catch (err) {
-      console.error(err)
-      alert(
-        err.response?.data?.message ||
-          'Failed to change password. Please try again.'
-      )
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to change password. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  if (!user) return null
+  if (!user) return null;
 
-  // 2) Pass all needed props to our stable Form component
-  const formProps = {
-    oldPassword, newPassword, confirmPassword,
-    showOld, showNew, showConfirm,
-    setOldPassword, setNewPassword, setConfirmPassword,
-    toggleShowOld: () => setShowOld((v) => !v),
-    toggleShowNew: () => setShowNew((v) => !v),
-    toggleShowConfirm: () => setShowConfirm((v) => !v),
-    onSave: handleChange,
-    onCancel,
-    loading,
-    inModal
-  }
-
-  // 3) Render either as a modal (inDashboard) or full‐page
   return inModal ? (
-    <PasswordForm {...formProps} />
+    <PasswordForm
+      oldPassword={oldPassword}
+      newPassword={newPassword}
+      confirmPassword={confirmPassword}
+      showOld={showOld}
+      showNew={showNew}
+      showConfirm={showConfirm}
+      setOldPassword={setOldPassword}
+      setNewPassword={setNewPassword}
+      setConfirmPassword={setConfirmPassword}
+      toggleShowOld={() => setShowOld((v) => !v)}
+      toggleShowNew={() => setShowNew((v) => !v)}
+      toggleShowConfirm={() => setShowConfirm((v) => !v)}
+      onSave={handleChangePassword}
+      onCancel={onCancel}
+      loading={loading}
+      inModal={inModal}
+    />
   ) : (
     <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
-      <PasswordForm {...formProps} />
+      <PasswordForm
+        oldPassword={oldPassword}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
+        showOld={showOld}
+        showNew={showNew}
+        showConfirm={showConfirm}
+        setOldPassword={setOldPassword}
+        setNewPassword={setNewPassword}
+        setConfirmPassword={setConfirmPassword}
+        toggleShowOld={() => setShowOld((v) => !v)}
+        toggleShowNew={() => setShowNew((v) => !v)}
+        toggleShowConfirm={() => setShowConfirm((v) => !v)}
+        onSave={handleChangePassword}
+        onCancel={onCancel}
+        loading={loading}
+        inModal={inModal}
+      />
     </div>
-  )
+  );
 }

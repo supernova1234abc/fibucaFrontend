@@ -66,120 +66,33 @@ function App() {
           <Route path="/change-password" element={<ChangePassword />} />
 
           {/* Superadmin Routes */}
-          <Route
-            path="/superadmin"
-            element={
-              <PrivateRoute role="SUPERADMIN">
-                <DashboardLayout user={currentUser} menus={superMenus}>
-                  <ManagerDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/superadmin/reports"
-            element={
-              <PrivateRoute role="SUPERADMIN">
-                <DashboardLayout user={currentUser} menus={superMenus}>
-                  <ManagerDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
+          <Route element={<PrivateRoute role="SUPERADMIN" />}>
+            <Route element={<DashboardLayout user={currentUser} menus={superMenus} />}>
+              <Route path="/superadmin" element={<ManagerDashboard />} />
+              <Route path="/superadmin/reports" element={<ManagerDashboard />} />
+            </Route>
+          </Route>
 
           {/* Admin Routes */}
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute role="ADMIN">
-                <DashboardLayout user={currentUser} menus={adminMenus}>
-                  <AdminDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/upload"
-            element={
-              <PrivateRoute role="ADMIN">
-                <DashboardLayout user={currentUser} menus={adminMenus}>
-                  <AdminUpload />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/reports"
-            element={
-              <PrivateRoute role="ADMIN">
-                <DashboardLayout user={currentUser} menus={adminMenus}>
-                  <AdminReports />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <PrivateRoute role="ADMIN">
-                <DashboardLayout user={currentUser} menus={adminMenus}>
-                  <UserManagement />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
+          <Route element={<PrivateRoute role="ADMIN" />}>
+            <Route element={<DashboardLayout user={currentUser} menus={adminMenus} />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/upload" element={<AdminUpload />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/users" element={<UserManagement />} />
+            </Route>
+          </Route>
 
           {/* Client Routes */}
-          <Route
-            path="/client"
-            element={
-              <PrivateRoute role="CLIENT">
-                <DashboardLayout user={currentUser} menus={clientMenus}>
-                  <ClientDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/client/pdf"
-            element={
-              <PrivateRoute role="CLIENT">
-                <DashboardLayout user={currentUser} menus={clientMenus}>
-                  <ClientDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/client/generate"
-            element={
-              <PrivateRoute role="CLIENT">
-                <DashboardLayout user={currentUser} menus={clientMenus}>
-                  <ClientDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/client/idcards"
-            element={
-              <PrivateRoute role="CLIENT">
-                <DashboardLayout user={currentUser} menus={clientMenus}>
-                  <ClientDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/client/publications"
-            element={
-              <PrivateRoute role="CLIENT">
-                <DashboardLayout user={currentUser} menus={clientMenus}>
-                  <ClientDashboard />
-                </DashboardLayout>
-              </PrivateRoute>
-            }
-          />
+          <Route element={<PrivateRoute role="CLIENT" />}>
+            <Route element={<DashboardLayout user={currentUser} menus={clientMenus} />}>
+              <Route path="/client" element={<ClientDashboard />} />
+              <Route path="/client/pdf" element={<ClientDashboard />} />
+              <Route path="/client/generate" element={<ClientDashboard />} />
+              <Route path="/client/idcards" element={<ClientDashboard />} />
+              <Route path="/client/publications" element={<ClientDashboard />} />
+            </Route>
+          </Route>
 
           {/* Catch-all → Landing Page */}
           <Route path="*" element={<Navigate to="/" replace />} />
