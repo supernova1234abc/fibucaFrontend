@@ -1,16 +1,9 @@
 //fibuca-frontend/vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import vercel from 'vite-plugin-vercel'
 
 export default defineConfig({
- 
-  plugins: [react()],
-  base:'/',
-  server: {
-    host: true,
-    allowedHosts: 'all'
-  },
-  build:{
-    outDir:"dist"
-  }
-});
+  plugins: [react(), vercel()],
+  base: '/',
+})
