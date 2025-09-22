@@ -20,10 +20,11 @@ export default function ClientDashboard() {
   const { user } = useAuth();
 
   // Role-based access
-  useEffect(() => {
-    if (!user) return navigate('/login');
-    if (user.role !== 'CLIENT') return navigate('/login');
-  }, [user, navigate]);
+useEffect(() => {
+  if (!user) return; // wait until user is loaded
+  if (user.role !== 'CLIENT') navigate('/login');
+}, [user, navigate]);
+
 
   // Submissions
   const [submission, setSubmission] = useState(null);
@@ -84,7 +85,7 @@ export default function ClientDashboard() {
     }).catch(console.error);
   };
 
-setUploadingPhoto(true);
+
 
   const handlePhotoSubmit = async (e) => {
     e.preventDefault();
@@ -122,7 +123,7 @@ setUploadingPhoto(true);
     }
   };
 
-  setUploadingPhoto(false);
+
 
   if (!user) return null;
 
