@@ -1,76 +1,21 @@
 // src/context/AuthContext.jsx
-import { createContext, useContext, useState, useEffect } from "react";
-import { api } from "../lib/api";
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const AuthContext = createContext();
+export default function PrivateRoute({ role }) {
+  const { user, loading } = useAuth();
 
-export default function PrivateRoute({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  // Load user once on mount
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const res = await api.get("/api/me");
-        const u = res.data.user;
-        setUser({ ...u, passwordChanged: !u.firstLogin });
-      } catch (err) {
-        // token fallback
-        const token = localStorage.getItem("fibuca_token");
-        if (err.response?.status === 401 && token) {
-          try {
-            const res2 = await api.get("/api/me", {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const u = res2.data.user;
-            setUser({ ...u, passwordChanged: !u.firstLogin });
-            return;
-          } catch {
-            setUser(null);
-          }
-        } else {
-          setUser(null);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (!user || user.role !== role) {
+    return <Navigate to="/login" replace />;
+  }
 
-    loadUser();
-  }, []);
-
-  const logout = async () => {
-    try {
-      await api.post("/api/logout");
-    } catch {
-      /* ignore */
-    } finally {
-      setUser(null);
-      localStorage.removeItem("fibuca_token");
-      localStorage.removeItem("fibuca_user");
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      const res = await api.get("/api/me");
-      const u = res.data.user;
-      setUser({ ...u, passwordChanged: !u.firstLogin });
-    } catch {
-      setUser(null);
-    }
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{ user, setUser, loading, logout, refreshUser }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
+  return <Outlet />;
 }
