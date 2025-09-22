@@ -1,58 +1,55 @@
 import { useEffect, useState } from 'react';
-import { api }               from '../lib/api'      // ← add this
-
+import { api, setAuthToken } from '../lib/api';
 import DataTable from 'react-data-table-component';
 import {
   FaDownload,
   FaFilePdf,
   FaEdit,
   FaTrash,
-  FaUpload,
-  FaHome,
-  FaFileExcel,
-  FaChartBar
+  FaUpload
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import DashboardLayout from '../components/DashboardLayout';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const location = useLocation();
-
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
 
-  const adminMenus = [
-    { label: 'Dashboard', href: '/admin', icon: FaHome },
-    { label: 'Bulk Upload', href: '/admin/upload', icon: FaFileExcel },
-    { label: 'Reports', href: '/admin/reports', icon: FaChartBar }
-  ];
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('fibuca_user'));
+    const user =
+      JSON.parse(localStorage.getItem('fibuca_user')) ||
+      JSON.parse(sessionStorage.getItem('fibuca_user'));
+    const token =
+      localStorage.getItem('fibuca_token') ||
+      sessionStorage.getItem('fibuca_token');
+
     if (!user || user.role !== 'ADMIN') {
       navigate('/login');
+      return;
     }
+
+    if (token) setAuthToken(token);
     fetchUsers();
   }, []);
 
   const fetchUsers = () => {
-    /*api.get('http://localhost:4000/submissions', { */
-      api.get('/submissions', {
-
-      headers: {
-        'ngrok-skip-browser-warning': '69420'
-      }
-    }).then((res) => {
-      setUsers(res.data);
-      setFilteredUsers(res.data);
-    })
+    api
+      .get('/submissions', {
+        headers: {
+          'ngrok-skip-browser-warning': '69420'
+        }
+      })
+      .then((res) => {
+        setUsers(res.data);
+        setFilteredUsers(res.data);
+      })
       .catch((err) => console.error(err));
   };
 
@@ -121,19 +118,23 @@ export default function AdminDashboard() {
       confirmButtonText: 'Yes, delete it!'
     }).then((result) => {
       if (result.isConfirmed) {
-        api.delete(`/submissions/${id}`, {
-          headers: { 'ngrok-skip-browser-warning': '69420' }
-        }).then(() => fetchUsers())
+        api
+          .delete(`/submissions/${id}`, {
+            headers: { 'ngrok-skip-browser-warning': '69420' }
+          })
+          .then(() => fetchUsers())
           .catch((err) => console.error(err));
       }
     });
   };
 
   const handleUpdate = () => {
-    api.put(`/submissions/${editingUser.id}`, editForm).then(() => {
-      setEditingUser(null);
-      fetchUsers();
-    })
+    api
+      .put(`/submissions/${editingUser.id}`, editForm)
+      .then(() => {
+        setEditingUser(null);
+        fetchUsers();
+      })
       .catch((err) => console.error(err));
   };
 
@@ -184,9 +185,6 @@ export default function AdminDashboard() {
       name: 'PDF',
       cell: (row) => (
         <a
-          //'http://localhost:4000/submit-form', formdata
-
-          //href={`https://5307b834865a.ngrok-free.app/${row.pdfPath}`.replace(/\\/g, '/')}
           href={`/${row.pdfPath}`.replace(/\\/g, '/')}
           target="_blank"
           rel="noopener noreferrer"
@@ -217,16 +215,12 @@ export default function AdminDashboard() {
     }
   ];
 
-  const user = JSON.parse(localStorage.getItem('fibuca_user'));
-
   return (
-
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-4">
       <h1 className="text-3xl font-bold text-blue-700">FIBUCA Submissions</h1>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
-
           <label className="bg-blue-600 text-white text-center py-2 px-4 rounded cursor-pointer hover:bg-blue-700">
             <FaUpload className="inline mr-2" />
             {uploading ? 'Uploading...' : 'Upload Excel'}
@@ -265,23 +259,24 @@ export default function AdminDashboard() {
       </div>
 
       <div className="bg-white rounded shadow-md p-4 overflow-x-auto">
-        <p className="text-sm text-gray-500 mb-2 md:hidden">
-          📱 Swipe left to view full table
-        </p>
-        <DataTable
-          columns={columns}
-          data={filteredUsers}
-          pagination
-          highlightOnHover
-          striped
-          responsive
-        />
+        {filteredUsers.length === 0 ? (
+          <p className="text-center text-gray-500">No submissions found.</p>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={filteredUsers}
+            pagination
+            highlightOnHover
+            striped
+            responsive
+          />
+        )}
       </div>
 
-      {editingUser && (
+          {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Edit User</h2>
+            <h2 className="text-xl font-bold mb-4">Edit Submission</h2>
             {['employeeName', 'employeeNumber', 'employerName', 'dues', 'witness'].map((field) => (
               <div className="mb-3" key={field}>
                 <label className="block text-sm font-medium capitalize">
@@ -314,6 +309,5 @@ export default function AdminDashboard() {
         </div>
       )}
     </div>
-
   );
 }
