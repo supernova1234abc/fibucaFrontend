@@ -15,8 +15,30 @@ import AdminReports from './pages/AdminReports';
 import ClientDashboard from './pages/ClientDashboard';
 
 import PrivateRoute from './components/PrivateRoute';
+import DashboardLayout from './components/DashboardLayout'; // ✅ restored
 import { useAuth } from './context/AuthContext';
 import './index.css';
+
+// --- Menus ---
+const clientMenus = [
+  { href: '/client', label: 'Overview' },
+  { href: '/client/pdf', label: 'PDF Form' },
+  { href: '/client/generate', label: 'Generate ID' },
+  { href: '/client/idcards', label: 'Your ID Cards' },
+  { href: '/client/publications', label: 'Publications' },
+];
+
+const adminMenus = [
+  { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/upload', label: 'Upload Data' },
+  { href: '/admin/reports', label: 'Reports' },
+  { href: '/admin/users', label: 'Users' },
+];
+
+const superMenus = [
+  { href: '/superadmin', label: 'Users' },
+  { href: '/superadmin/reports', label: 'All Reports' },
+];
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -45,25 +67,31 @@ export default function App() {
 
           {/* Super Admin */}
           <Route element={<PrivateRoute role="SUPERADMIN" />}>
-            <Route path="/superadmin" element={<ManagerDashboard />} />
-            <Route path="/superadmin/reports" element={<ManagerDashboard />} />
+            <Route element={<DashboardLayout user={user} menus={superMenus} />}>
+              <Route path="/superadmin" element={<ManagerDashboard />} />
+              <Route path="/superadmin/reports" element={<ManagerDashboard />} />
+            </Route>
           </Route>
 
           {/* Admin */}
           <Route element={<PrivateRoute role="ADMIN" />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/upload" element={<AdminUpload />} />
-            <Route path="/admin/reports" element={<AdminReports />} />
-            <Route path="/admin/users" element={<UserManagement />} />
+            <Route element={<DashboardLayout user={user} menus={adminMenus} />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/upload" element={<AdminUpload />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/users" element={<UserManagement />} />
+            </Route>
           </Route>
 
           {/* Client */}
           <Route element={<PrivateRoute role="CLIENT" />}>
-            <Route path="/client" element={<ClientDashboard />} />
-            <Route path="/client/pdf" element={<ClientDashboard />} />
-            <Route path="/client/generate" element={<ClientDashboard />} />
-            <Route path="/client/idcards" element={<ClientDashboard />} />
-            <Route path="/client/publications" element={<ClientDashboard />} />
+            <Route element={<DashboardLayout user={user} menus={clientMenus} />}>
+              <Route path="/client" element={<ClientDashboard />} />
+              <Route path="/client/pdf" element={<ClientDashboard />} />
+              <Route path="/client/generate" element={<ClientDashboard />} />
+              <Route path="/client/idcards" element={<ClientDashboard />} />
+              <Route path="/client/publications" element={<ClientDashboard />} />
+            </Route>
           </Route>
 
           {/* Catch-all → Landing */}
