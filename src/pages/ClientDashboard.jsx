@@ -14,25 +14,30 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const webcamRef = useRef(null);
-  const [isCleaning, setIsCleaning] = useState(false);
   const componentRef = useRef();
 
   const { user } = useAuth();
 
-  // Role-based access
-useEffect(() => {
-  if (!user) return; // wait until user is loaded
-  if (user.role !== 'CLIENT') navigate('/login');
-}, [user, navigate]);
-
-
-  // Submissions
+  const [isCleaning, setIsCleaning] = useState(false);
   const [submission, setSubmission] = useState(null);
   const [loadingSubmission, setLoadingSubmission] = useState(true);
+  const [idCards, setIdCards] = useState([]);
+  const [loadingCards, setLoadingCards] = useState(true);
+  const [photo, setPhoto] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
+  // Role-based access
   useEffect(() => {
     if (!user) return;
-    (async () => {
+    if (user.role !== 'CLIENT') navigate('/login');
+  }, [user, navigate]);
+
+  // Fetch submissions
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchSubmissions = async () => {
       setLoadingSubmission(true);
       try {
         const res = await api.get('/submissions');
@@ -47,13 +52,12 @@ useEffect(() => {
       } finally {
         setLoadingSubmission(false);
       }
-    })();
+    };
+
+    fetchSubmissions();
   }, [user]);
 
-  // ID Cards
-  const [idCards, setIdCards] = useState([]);
-  const [loadingCards, setLoadingCards] = useState(true);
-
+  // Fetch ID cards
   const fetchIdCards = useCallback(async () => {
     if (!user?.id) return;
     setLoadingCards(true);
@@ -68,28 +72,30 @@ useEffect(() => {
     }
   }, [user]);
 
-  useEffect(() => { fetchIdCards(); }, [fetchIdCards]);
+  useEffect(() => {
+    fetchIdCards();
+  }, [fetchIdCards]);
 
-  // Photo upload
-  const [photo, setPhoto] = useState(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-
+  // Capture photo from webcam
   const capturePhoto = () => {
     const dataUrl = webcamRef.current?.getScreenshot();
     if (!dataUrl) return;
-    fetch(dataUrl).then(res => res.blob()).then(blob => {
-      const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      setPhoto(file);
-      setShowCamera(false);
-    }).catch(console.error);
+
+    fetch(dataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setPhoto(file);
+        setShowCamera(false);
+      })
+      .catch(console.error);
   };
 
-
-
+  // Handle photo upload
   const handlePhotoSubmit = async (e) => {
     e.preventDefault();
     if (!photo) return toast.error('Please upload or capture a photo.');
+
     const card = idCards[0];
     if (!card) return toast.error('No placeholder ID card found.');
 
@@ -101,33 +107,32 @@ useEffect(() => {
 
     try {
       console.log('📤 Uploading photo:', photo);
-      await api.put(`/api/idcards/${card.id}/photo`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'ngrok-skip-browser-warning': '1'
-        }
-      });
 
+      // Upload photo to backend
+      const uploadRes = await api.post(`/api/idcards/${card.id}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      console.log('Upload response:', uploadRes.data);
+
+      // Optional: trigger photo cleaning
       const cleanRes = await api.put(`/api/idcards/${card.id}/clean-photo`);
-      console.log('🧼 Clean response:', cleanRes.data);
+      console.log('Clean response:', cleanRes.data);
 
       toast.success('Photo uploaded and cleaned!');
       await fetchIdCards();
       navigate('/client/idcards');
     } catch (err) {
-      console.error('Upload or cleanup failed:', err);
-      toast.error('Upload or cleanup failed');
+      console.error('Upload or cleanup failed:', err.response?.data || err.message);
+      toast.error('Upload or cleanup failed. Check console.');
     } finally {
       setUploadingPhoto(false);
       setIsCleaning(false);
     }
   };
 
-
-
   if (!user) return null;
 
-  // Determine section based on URL
+  // Determine section
   const path = location.pathname;
   let section = 'overview';
   if (path.endsWith('/pdf')) section = 'pdf';
@@ -135,7 +140,6 @@ useEffect(() => {
   else if (path.endsWith('/generate')) section = 'generate';
   else if (path.endsWith('/publications')) section = 'publications';
 
-  // Sidebar menu
   const menus = [
     { href: '/client', label: 'Overview', icon: FaUserCircle },
     { href: '/client/pdf', label: 'PDF Form', icon: FaFilePdf },
@@ -187,8 +191,11 @@ useEffect(() => {
       {section === 'idcards' && (
         <div>
           <h2 className="text-xl font-bold text-blue-700 mb-4">Your ID Cards</h2>
-          {loadingCards ? <p className="text-gray-500">Loading…</p> : idCards.length === 0 ? <p className="text-gray-500">No ID cards found.</p> :
-            <div className="space-y-8">{idCards.map(card => <div key={card.id}><IDCard ref={componentRef} card={card} /></div>)}</div>}
+          {loadingCards ? <p className="text-gray-500">Loading…</p> :
+            idCards.length === 0 ? <p className="text-gray-500">No ID cards found.</p> :
+              <div className="space-y-8">
+                {idCards.map(card => <div key={card.id}><IDCard ref={componentRef} card={card} /></div>)}
+              </div>}
         </div>
       )}
 
@@ -196,62 +203,59 @@ useEffect(() => {
       {section === 'generate' && (
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-xl font-bold mb-4">Add Your Photo</h2>
-          {loadingCards ? <p className="text-gray-500">Loading placeholder card…</p> : idCards.length === 0 ? <p className="text-red-500">You need a placeholder card. Check “Overview.”</p> :
-            <>
-              <div className="mb-4 space-y-1">
-                <p><strong>Name:</strong> {user.name}</p>
-                <p><strong>Company:</strong> {idCards[0]?.company || submission?.employerName || 'N/A'}</p>
-                <p><strong>Role / Title:</strong> {getCardRole()}</p>
-                <p><strong>Card #:</strong> {idCards[0].cardNumber}</p>
-              </div>
-              <form onSubmit={handlePhotoSubmit} className="space-y-4">
-                <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} className="border p-2 rounded w-full" />
-                <button type="button" onClick={() => setShowCamera(s => !s)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
-                  {showCamera ? 'Close Camera' : 'Use Camera'}
-                </button>
-                {showCamera && (
-                  <div className="space-y-2">
-                    <Webcam
-                      audio={false}
-                      screenshotFormat="image/jpeg"
-                      ref={webcamRef}
-                      className="border rounded mx-auto"
-                      videoConstraints={{ facingMode: 'user' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={capturePhoto}
-                      disabled={uploadingPhoto || isCleaning}
-                      className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                        }`}
-                    >
-                      Capture Photo
-                    </button>
-                  </div>
-                )}
+          {loadingCards ? <p className="text-gray-500">Loading placeholder card…</p> :
+            idCards.length === 0 ? <p className="text-red-500">You need a placeholder card. Check “Overview.”</p> :
+              <>
+                <div className="mb-4 space-y-1">
+                  <p><strong>Name:</strong> {user.name}</p>
+                  <p><strong>Company:</strong> {idCards[0]?.company || submission?.employerName || 'N/A'}</p>
+                  <p><strong>Role / Title:</strong> {getCardRole()}</p>
+                  <p><strong>Card #:</strong> {idCards[0].cardNumber}</p>
+                </div>
+                <form onSubmit={handlePhotoSubmit} className="space-y-4">
+                  <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} className="border p-2 rounded w-full" />
 
-                <button
-                  type="submit"
-                  disabled={uploadingPhoto || isCleaning}
-                  className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700'
-                    }`}
-                >
-                  Upload Photo
-                </button>
+                  <button type="button" onClick={() => setShowCamera(s => !s)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                    {showCamera ? 'Close Camera' : 'Use Camera'}
+                  </button>
 
-                {(uploadingPhoto || isCleaning) && (
-                  <div className="flex items-center justify-center mt-4">
-                    <div className="animate-spin h-6 w-6 border-4 border-blue-400 border-t-transparent rounded-full"></div>
-                    <span className="ml-2 text-blue-600 text-sm">Processing photo...</span>
-                  </div>
-                )}
+                  {showCamera && (
+                    <div className="space-y-2">
+                      <Webcam
+                        audio={false}
+                        screenshotFormat="image/jpeg"
+                        ref={webcamRef}
+                        className="border rounded mx-auto"
+                        videoConstraints={{ facingMode: 'user' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={capturePhoto}
+                        disabled={uploadingPhoto || isCleaning}
+                        className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                      >
+                        Capture Photo
+                      </button>
+                    </div>
+                  )}
 
-              </form>
-            </>}
+                  <button
+                    type="submit"
+                    disabled={uploadingPhoto || isCleaning}
+                    className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                  >
+                    Upload Photo
+                  </button>
+
+                  {(uploadingPhoto || isCleaning) && (
+                    <div className="flex items-center justify-center mt-4">
+                      <div className="animate-spin h-6 w-6 border-4 border-blue-400 border-t-transparent rounded-full"></div>
+                      <span className="ml-2 text-blue-600 text-sm">Processing photo...</span>
+                    </div>
+                  )}
+
+                </form>
+              </>}
         </div>
       )}
 

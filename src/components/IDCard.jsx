@@ -1,8 +1,8 @@
 // src/components/IDCard.jsx
-import React, { forwardRef } from "react"
-import { QRCodeSVG as QRCode } from "qrcode.react"
+import React, { forwardRef } from "react";
+import { QRCodeSVG as QRCode } from "qrcode.react";
 
-const baseURL = import.meta.env.VITE_BACKEND_URL
+const baseURL = import.meta.env.VITE_BACKEND_URL;
 
 const IDCard = forwardRef(({ card }, ref) => {
   const formattedDate = card?.issuedAt
@@ -11,29 +11,24 @@ const IDCard = forwardRef(({ card }, ref) => {
         month: "short",
         year: "numeric",
       })
-    : "N/A"
+    : "N/A";
 
   const getFirstAndLastName = (fullName) => {
-    if (!fullName) return "Name"
-    const parts = fullName.trim().split(/\s+/)
-
-    // Old method: first + last
-    // return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]}` : parts[0]
-
-    const first = parts[0].toUpperCase()
-    const last =
-      parts.length > 1 ? parts[parts.length - 1].toUpperCase() : ""
-    return last ? `${first} ${last}` : first
-  }
+    if (!fullName) return "Name";
+    const parts = fullName.trim().split(/\s+/);
+    const first = parts[0].toUpperCase();
+    const last = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+    return last ? `${first} ${last}` : first;
+  };
 
   const cardStyle =
     "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
     "rounded-lg shadow-md border overflow-hidden print:bg-gradient-to-br " +
-    "px-3 pt-8 pb-1 text-[10px] leading-tight"
+    "px-3 pt-8 pb-1 text-[10px] leading-tight";
 
   return (
     <div className="flex flex-col items-center space-y-4 p-4">
-      {/* Print button – hidden when actually printing */}
+      {/* Print button */}
       <button
         onClick={() => window.print()}
         className="px-3 py-1 bg-blue-600 text-white text-xs rounded shadow hover:bg-blue-700 print:hidden"
@@ -41,7 +36,6 @@ const IDCard = forwardRef(({ card }, ref) => {
         Print ID
       </button>
 
-      {/* Both sides */}
       <div
         ref={ref}
         className="flex flex-col md:flex-row gap-4"
@@ -50,7 +44,7 @@ const IDCard = forwardRef(({ card }, ref) => {
           printColorAdjust: "exact",
         }}
       >
-        {/* — FRONT SIDE — */}
+        {/* FRONT SIDE */}
         <div className={cardStyle} style={{ fontFamily: "Inter, sans-serif" }}>
           {/* Banner */}
           <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 rounded-t-lg flex items-center justify-center">
@@ -77,7 +71,7 @@ const IDCard = forwardRef(({ card }, ref) => {
                   alt="ID Photo"
                   className="object-cover w-full h-full rounded-md shadow"
                   onError={(e) => {
-                    e.currentTarget.src = "/fallback-avatar.png"
+                    e.currentTarget.src = "/fallback-avatar.png";
                   }}
                 />
               ) : (
@@ -87,7 +81,6 @@ const IDCard = forwardRef(({ card }, ref) => {
             <p className="text-xs font-mono ml-2 text-black text-center truncate max-w-[19rem]">
               {getFirstAndLastName(card?.fullName)}
             </p>
-
             <p className="text-xs text-gray-700 text-center truncate max-w-[10rem]">
               {card?.role || "Position"}
             </p>
@@ -105,14 +98,12 @@ const IDCard = forwardRef(({ card }, ref) => {
 
           {/* ID# + Date */}
           <div className="absolute bottom-2 right-3 flex flex-col items-center space-y-0">
-            <p className="text-xs font-mono">
-              ID: {card?.cardNumber || "N/A"}
-            </p>
+            <p className="text-xs font-mono">ID: {card?.cardNumber || "N/A"}</p>
             <p className="text-xs">Issued: {formattedDate}</p>
           </div>
         </div>
 
-        {/* — BACK SIDE — */}
+        {/* BACK SIDE */}
         <div className={cardStyle} style={{ fontFamily: "Inter, sans-serif" }}>
           <p className="font-semibold text-center mb-1">
             This Staff Identity is the Property of
@@ -124,12 +115,8 @@ const IDCard = forwardRef(({ card }, ref) => {
           <p className="text-center mb-0.5">
             5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.
           </p>
-          <p className="text-center mb-0.5">
-            Tel: +255732999782, Fax: +255732999783
-          </p>
-          <p className="text-center mb-0.5">
-            E-mail: fibucatradeunion@gmail.com
-          </p>
+          <p className="text-center mb-0.5">Tel: +255732999782, Fax: +255732999783</p>
+          <p className="text-center mb-0.5">E-mail: fibucatradeunion@gmail.com</p>
           <p className="text-center mb-4">
             If lost and found return to the above address
           </p>
@@ -144,7 +131,7 @@ const IDCard = forwardRef(({ card }, ref) => {
         </div>
       </div>
     </div>
-  )
-})
+  );
+});
 
-export default IDCard
+export default IDCard;
