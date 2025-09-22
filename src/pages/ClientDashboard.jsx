@@ -71,6 +71,7 @@ export default function ClientDashboard() {
 
   // Photo upload
   const [photo, setPhoto] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
 
   const capturePhoto = () => {
@@ -83,20 +84,32 @@ export default function ClientDashboard() {
     }).catch(console.error);
   };
 
+setUploadingPhoto(true);
+
   const handlePhotoSubmit = async (e) => {
     e.preventDefault();
     if (!photo) return toast.error('Please upload or capture a photo.');
     const card = idCards[0];
     if (!card) return toast.error('No placeholder ID card found.');
+
     const formData = new FormData();
     formData.append('photo', photo);
+
+    setUploadingPhoto(true);
     setIsCleaning(true);
 
     try {
+      console.log('📤 Uploading photo:', photo);
       await api.put(`/api/idcards/${card.id}/photo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data', 'ngrok-skip-browser-warning': '1' }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'ngrok-skip-browser-warning': '1'
+        }
       });
-      await api.put(`/api/idcards/${card.id}/clean-photo`);
+
+      const cleanRes = await api.put(`/api/idcards/${card.id}/clean-photo`);
+      console.log('🧼 Clean response:', cleanRes.data);
+
       toast.success('Photo uploaded and cleaned!');
       await fetchIdCards();
       navigate('/client/idcards');
@@ -104,9 +117,12 @@ export default function ClientDashboard() {
       console.error('Upload or cleanup failed:', err);
       toast.error('Upload or cleanup failed');
     } finally {
+      setUploadingPhoto(false);
       setIsCleaning(false);
     }
   };
+
+  setUploadingPhoto(false);
 
   if (!user) return null;
 
@@ -159,7 +175,7 @@ export default function ClientDashboard() {
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
           {user.pdfPath ? (
-            <a href={`/${user.pdfPath}`.replace(/\\/g,'/')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline">
+            <a href={`/${user.pdfPath}`.replace(/\\/g, '/')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline">
               <FaFilePdf className="mr-2" /> Download Form
             </a>
           ) : <p className="text-gray-500">You haven’t generated your form PDF yet.</p>}
@@ -188,21 +204,51 @@ export default function ClientDashboard() {
                 <p><strong>Card #:</strong> {idCards[0].cardNumber}</p>
               </div>
               <form onSubmit={handlePhotoSubmit} className="space-y-4">
-                <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} className="border p-2 rounded w-full"/>
+                <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} className="border p-2 rounded w-full" />
                 <button type="button" onClick={() => setShowCamera(s => !s)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
                   {showCamera ? 'Close Camera' : 'Use Camera'}
                 </button>
                 {showCamera && (
                   <div className="space-y-2">
-                    <Webcam audio={false} screenshotFormat="image/jpeg" ref={webcamRef} className="border rounded mx-auto"/>
-                    <button type="button" onClick={capturePhoto} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Capture Photo</button>
+                    <Webcam
+                      audio={false}
+                      screenshotFormat="image/jpeg"
+                      ref={webcamRef}
+                      className="border rounded mx-auto"
+                      videoConstraints={{ facingMode: 'user' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      disabled={uploadingPhoto || isCleaning}
+                      className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                    >
+                      Capture Photo
+                    </button>
                   </div>
                 )}
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Upload Photo</button>
-                {isCleaning && <div className="flex items-center justify-center mt-4">
-                  <div className="animate-spin h-6 w-6 border-4 border-blue-400 border-t-transparent rounded-full"></div>
-                  <span className="ml-2 text-blue-600 text-sm">Processing photo...</span>
-                </div>}
+
+                <button
+                  type="submit"
+                  disabled={uploadingPhoto || isCleaning}
+                  className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                >
+                  Upload Photo
+                </button>
+
+                {(uploadingPhoto || isCleaning) && (
+                  <div className="flex items-center justify-center mt-4">
+                    <div className="animate-spin h-6 w-6 border-4 border-blue-400 border-t-transparent rounded-full"></div>
+                    <span className="ml-2 text-blue-600 text-sm">Processing photo...</span>
+                  </div>
+                )}
+
               </form>
             </>}
         </div>
@@ -222,7 +268,7 @@ export default function ClientDashboard() {
 
       {/* Password notice */}
       <div className="bg-yellow-100 text-yellow-800 px-4 py-3 rounded-md flex items-center mt-6">
-        <FaLock className="mr-2"/>
+        <FaLock className="mr-2" />
         <span>
           If you haven’t changed your password,{' '}
           <button onClick={() => openChangePwModal(true)} className="underline font-semibold text-blue-600">click here</button>.
