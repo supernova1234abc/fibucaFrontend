@@ -1,36 +1,35 @@
 // src/pages/Login.jsx
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { api }               from '../lib/api'      // ← add this
-import axios from 'axios'
-import { FaSpinner } from 'react-icons/fa'
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { api, setAuthToken } from '../lib/api';
+import { FaSpinner, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+
 export default function Login() {
-    const { setUser } = useAuth();
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ username: '', password: '' })
-  const [loading, setLoading] = useState(false)
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
-  }
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       const res = await api.post('/api/login', {
         employeeNumber: form.username,
         password: form.password,
-      })
+      });
 
-      const { token, user } = res.data
-
-      // save token for Authorization header fallback (in case cookies are blocked)
-      if (token) localStorage.setItem('fibuca_token', token)
-
-      if (!user) throw new Error('No user returned')
+      const { token, user } = res.data;
+      if (!user) throw new Error('No user returned');
 
       const fibucaUser = {
         id: user.id,
@@ -39,25 +38,31 @@ export default function Login() {
         name: user.name,
         passwordChanged: !user.firstLogin,
         pdfPath: user.pdfPath || null,
+      };
+
+      if (token) {
+        setAuthToken(token);
+        const storage = remember ? localStorage : sessionStorage;
+        storage.setItem('fibuca_token', token);
+        storage.setItem('fibuca_user', JSON.stringify(fibucaUser));
       }
 
-      localStorage.setItem('fibuca_user', JSON.stringify(fibucaUser))
-      setUser(fibucaUser)
+      setUser(fibucaUser);
+      toast.success(`Welcome back, ${fibucaUser.name}`);
 
       if (!fibucaUser.passwordChanged) {
-        navigate('/change-password')
+        navigate('/change-password');
       } else {
-        navigate(`/${fibucaUser.role.toLowerCase()}`)
+        navigate(`/${fibucaUser.role.toLowerCase()}`);
       }
     } catch (err) {
-      console.error('Login error:', err)
-      alert('Invalid username or password.')
+      console.error('Login error:', err);
+      toast.error('Invalid username or password.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  return (
+  };
+return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex items-center justify-center px-4 py-12">
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
         <div className="flex justify-center mb-4">
@@ -79,9 +84,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-1">
-              Username
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Username</label>
             <input
               type="text"
               name="username"
@@ -94,27 +97,39 @@ export default function Login() {
             />
           </div>
 
-          <div className="mb-2">
-            <label className="block text-gray-700 font-medium mb-1">
-              Password
-            </label>
+          <div className="mb-2 relative">
+            <label className="block text-gray-700 font-medium mb-1">Password</label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               value={form.password}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
+              className="w-full px-4 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
               placeholder="Enter your password"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-9 right-3 text-gray-500 hover:text-blue-600"
+              tabIndex={-1}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
-          <div className="text-right mb-4">
-            <Link
-              to="/forgot-password"
-              className="text-blue-600 text-sm hover:underline"
-            >
+          <div className="flex justify-between items-center mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={() => setRemember(!remember)}
+                className="accent-blue-600"
+              />
+              Remember me
+            </label>
+            <Link to="/forgot-password" className="text-blue-600 text-sm hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -137,13 +152,11 @@ export default function Login() {
 
         <p className="text-center text-sm text-gray-500 mt-4">
           Default password:{' '}
-          <span className="text-blue-700 font-medium">
-            will be provided Once
-          </span>
+          <span className="text-blue-700 font-medium">will be provided Once</span>
           <br />
           You must change it after login.
         </p>
       </div>
     </div>
-  )
+  );
 }
