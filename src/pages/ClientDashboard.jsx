@@ -109,9 +109,10 @@ export default function ClientDashboard() {
       console.log('📤 Uploading photo:', photo);
 
       // Upload photo to backend
-      const uploadRes = await api.post(`/api/idcards/${card.id}/photo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+const uploadRes = await api.put(`/api/idcards/${card.id}/photo`, formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+
       console.log('Upload response:', uploadRes.data);
 
       // Optional: trigger photo cleaning
