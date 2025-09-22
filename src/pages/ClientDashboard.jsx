@@ -92,44 +92,43 @@ export default function ClientDashboard() {
   };
 
   // Handle photo upload
-  const handlePhotoSubmit = async (e) => {
-    e.preventDefault();
-    if (!photo) return toast.error('Please upload or capture a photo.');
+// Handle photo upload and automatic cleaning
+const handlePhotoSubmit = async (e) => {
+  e.preventDefault();
+  if (!photo) return toast.error('Please upload or capture a photo.');
 
-    const card = idCards[0];
-    if (!card) return toast.error('No placeholder ID card found.');
+  const card = idCards[0];
+  if (!card) return toast.error('No placeholder ID card found.');
 
-    const formData = new FormData();
-    formData.append('photo', photo);
+  const formData = new FormData();
+  formData.append('photo', photo);
 
-    setUploadingPhoto(true);
-    setIsCleaning(true);
+  setUploadingPhoto(true);
 
-    try {
-      console.log('📤 Uploading photo:', photo);
+  try {
+    console.log('📤 Uploading photo:', photo);
 
-      // Upload photo to backend
-const uploadRes = await api.put(`/api/idcards/${card.id}/photo`, formData, {
-  headers: { 'Content-Type': 'multipart/form-data' }
-});
+    // Upload + clean in a single PUT request
+    const res = await api.put(`/api/idcards/${card.id}/photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
 
-      console.log('Upload response:', uploadRes.data);
+    console.log('Upload & cleaned response:', res.data);
 
-      // Optional: trigger photo cleaning
-      const cleanRes = await api.put(`/api/idcards/${card.id}/clean-photo`);
-      console.log('Clean response:', cleanRes.data);
+    toast.success('Photo uploaded and cleaned!');
+    await fetchIdCards(); // Refresh ID cards
+    navigate('/client/idcards');
 
-      toast.success('Photo uploaded and cleaned!');
-      await fetchIdCards();
-      navigate('/client/idcards');
-    } catch (err) {
-      console.error('Upload or cleanup failed:', err.response?.data || err.message);
-      toast.error('Upload or cleanup failed. Check console.');
-    } finally {
-      setUploadingPhoto(false);
-      setIsCleaning(false);
-    }
-  };
+  } catch (err) {
+    console.error('Upload or cleanup failed:', err.response?.data || err.message);
+    toast.error('Upload failed. Check console.');
+  } finally {
+    setUploadingPhoto(false);
+    setShowCamera(false); // Hide webcam after upload
+    setPhoto(null);       // Clear selected photo
+  }
+};
+
 
   if (!user) return null;
 
