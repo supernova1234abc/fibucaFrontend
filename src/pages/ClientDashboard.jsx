@@ -176,16 +176,24 @@ const handlePhotoSubmit = async (e) => {
       )}
 
       {/* PDF Form */}
-      {section === 'pdf' && (
-        <div className="bg-white rounded shadow p-6">
-          <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
-          {user.pdfPath ? (
-            <a href={`/${user.pdfPath}`.replace(/\\/g, '/')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline">
-              <FaFilePdf className="mr-2" /> Download Form
-            </a>
-          ) : <p className="text-gray-500">You haven’t generated your form PDF yet.</p>}
-        </div>
-      )}
+{section === 'pdf' && (
+  <div className="bg-white rounded shadow p-6">
+    <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
+    {user.pdfPath ? (
+      <a
+        href={`${import.meta.env.VITE_BACKEND_URL}/${user.pdfPath.replace(/\\/g, '/')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center text-blue-600 hover:underline"
+      >
+        <FaFilePdf className="mr-2" /> Download Form
+      </a>
+    ) : (
+      <p className="text-gray-500">You haven’t generated your form PDF yet.</p>
+    )}
+  </div>
+)}
+
 
       {/* ID Cards */}
       {section === 'idcards' && (
