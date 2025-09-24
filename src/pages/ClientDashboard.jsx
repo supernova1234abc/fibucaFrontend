@@ -204,7 +204,8 @@ export default function ClientDashboard() {
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
           {submission?.pdfPath ? (
             <a
-              href={`${import.meta.env.VITE_BACKEND_URL}/${submission.pdfPath.replace(/\\/g, '/')}`}
+              // href={`${import.meta.env.VITE_BACKEND_URL}/${submission.pdfPath.replace(/\\/g, '/')}`}
+              href={submission.pdfPath}  // <-- already public URL 
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-blue-600 hover:underline"
