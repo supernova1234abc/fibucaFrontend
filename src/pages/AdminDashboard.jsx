@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://fibucabackend.onrender.com";
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://fibucabackend.onrender.com';
 
   useEffect(() => {
     const user =
@@ -42,11 +42,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = () => {
     api
-      .get('/submissions', {
-        headers: {
-          'ngrok-skip-browser-warning': '69420'
-        }
-      })
+      .get('/submissions') // no ngrok headers
       .then((res) => {
         setUsers(res.data);
         setFilteredUsers(res.data);
@@ -120,9 +116,7 @@ export default function AdminDashboard() {
     }).then((result) => {
       if (result.isConfirmed) {
         api
-          .delete(`/submissions/${id}`, {
-            headers: { 'ngrok-skip-browser-warning': '69420' }
-          })
+          .delete(`/submissions/${id}`)
           .then(() => fetchUsers())
           .catch((err) => console.error(err));
       }
@@ -178,28 +172,25 @@ export default function AdminDashboard() {
     { name: 'Number', selector: (row) => row.employeeNumber },
     { name: 'Employer', selector: (row) => row.employerName },
     { name: 'Dues', selector: (row) => row.dues },
+    { name: 'Submitted At', selector: (row) => new Date(row.submittedAt).toLocaleString() },
     {
-      name: 'Submitted At',
-      selector: (row) => new Date(row.submittedAt).toLocaleString()
+      name: 'PDF',
+      cell: (row) => {
+        if (!row.pdfPath) return <span className="text-gray-400">No File</span>;
+        // Use BACKEND_URL from .env + normalized path
+        const pdfUrl = `${BACKEND_URL}/${row.pdfPath.replace(/^\/?uploads\//, 'uploads/')}`;
+        return (
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            <FaFilePdf className="inline mr-1" /> Download
+          </a>
+        );
+      }
     },
-
-{
-  name: 'PDF',
-  cell: (row) => {
-    if (!row.pdfPath) return <span className="text-gray-400">No File</span>;
-    const pdfUrl = `${BACKEND_URL}/${row.pdfPath}`.replace(/\\/g, '/');
-    return (
-      <a
-        href={pdfUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 hover:underline"
-      >
-        <FaFilePdf className="inline mr-1" /> Download
-      </a>
-    );
-  }
-},
     {
       name: 'Actions',
       cell: (row) => (
@@ -279,7 +270,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-          {editingUser && (
+      {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Edit Submission</h2>
