@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://fibucabackend.onrender.com";
 
   useEffect(() => {
     const user =
@@ -181,19 +182,24 @@ export default function AdminDashboard() {
       name: 'Submitted At',
       selector: (row) => new Date(row.submittedAt).toLocaleString()
     },
-    {
-      name: 'PDF',
-      cell: (row) => (
-        <a
-          href={`/${row.pdfPath}`.replace(/\\/g, '/')}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          Download
-        </a>
-      )
-    },
+
+{
+  name: 'PDF',
+  cell: (row) => {
+    if (!row.pdfPath) return <span className="text-gray-400">No File</span>;
+    const pdfUrl = `${BACKEND_URL}/${row.pdfPath}`.replace(/\\/g, '/');
+    return (
+      <a
+        href={pdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        <FaFilePdf className="inline mr-1" /> Download
+      </a>
+    );
+  }
+},
     {
       name: 'Actions',
       cell: (row) => (
