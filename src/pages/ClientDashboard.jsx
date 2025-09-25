@@ -44,13 +44,20 @@ export default function ClientDashboard() {
 
   const photoPreviewUrl = useObjectUrl(photo);
 
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
   // Role-based access
   useEffect(() => {
     if (!user) return;
     if (user.role !== 'CLIENT') navigate('/login');
   }, [user, navigate]);
 
-  // Fetch submissions
+  // Fetch submissions with localStorage persistence
   useEffect(() => {
     if (!user) return;
 
@@ -59,10 +66,27 @@ export default function ClientDashboard() {
       try {
         const res = await api.get('/submissions');
         const data = Array.isArray(res.data) ? res.data : [];
+
+        // filter my own submissions
         const mine = data
-          .filter(s => s.employeeNumber === user.employeeNumber)
+          .filter((s) => s.employeeNumber === user.employeeNumber)
           .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-        setSubmission(mine[0] || null);
+
+        let latest = mine[0] || null;
+
+        // Ensure pdfPath is an absolute URL + persist
+        if (latest?.pdfPath) {
+          const backendUrl = import.meta.env.VITE_BACKEND_URL; // e.g. https://your-api.onrender.com
+          if (!latest.pdfPath.startsWith('http')) {
+            latest.pdfPath = `${backendUrl.replace(/\/$/, '')}/${latest.pdfPath.replace(/^\/+/, '')}`;
+          }
+          localStorage.setItem('latestSubmission', JSON.stringify(latest));
+        } else {
+          const cached = localStorage.getItem('latestSubmission');
+          if (cached) latest = JSON.parse(cached);
+        }
+
+        setSubmission(latest);
       } catch (err) {
         console.error('Error fetching submission:', err);
         setSubmission(null);
@@ -80,8 +104,13 @@ export default function ClientDashboard() {
     setLoadingCards(true);
     try {
       const { data } = await api.get(`/api/idcards/${user.id}`);
-      setIdCards(Array.isArray(data) ? data : []);
-      if (data?.[0]?.photoUrl) setCleanedPhotoUrl(data[0].photoUrl);
+      const cards = Array.isArray(data) ? data : [];
+      setIdCards(cards);
+
+      // update cleaned photo only if changed
+      if (cards?.[0]?.photoUrl && cards[0].photoUrl !== cleanedPhotoUrl) {
+        setCleanedPhotoUrl(cards[0].photoUrl);
+      }
     } catch (err) {
       console.warn('Fetch ID cards failed:', err);
       setIdCards([]);
@@ -89,7 +118,7 @@ export default function ClientDashboard() {
     } finally {
       setLoadingCards(false);
     }
-  }, [user]);
+  }, [user, cleanedPhotoUrl]);
 
   useEffect(() => {
     fetchIdCards();
@@ -101,8 +130,8 @@ export default function ClientDashboard() {
     if (!dataUrl) return;
 
     fetch(dataUrl)
-      .then(res => res.blob())
-      .then(blob => {
+      .then((res) => res.blob())
+      .then((blob) => {
         const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
         setPhoto(file);
         setShowCamera(false);
@@ -126,13 +155,13 @@ export default function ClientDashboard() {
 
     try {
       const res = await api.put(`/api/idcards/${card.id}/photo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       toast.success('Photo uploaded and cleaned!');
       await fetchIdCards();
       setPhoto(null);
-
+      setCleanedPhotoUrl(res.data?.cleanedUrl || null);
     } catch (err) {
       console.error('Upload or cleanup failed:', err.response?.data || err.message);
       toast.error('Upload failed. Check console.');
@@ -150,7 +179,7 @@ export default function ClientDashboard() {
 
     setIsCleaning(true);
     try {
-      const res = await api.put(`/api/idcards/${card.id}/clean-photo`);
+      await api.put(`/api/idcards/${card.id}/clean-photo`);
       toast.success('Photo re-cleaned!');
       await fetchIdCards();
     } catch (err) {
@@ -183,7 +212,11 @@ export default function ClientDashboard() {
             <div className="bg-white p-4 rounded shadow">
               <h3 className="font-semibold">Last Submission</h3>
               <p className="text-gray-600">
-                {loadingSubmission ? 'Loading…' : submission ? new Date(submission.submittedAt).toLocaleDateString() : 'None'}
+                {loadingSubmission
+                  ? 'Loading…'
+                  : submission
+                  ? new Date(submission.submittedAt).toLocaleDateString()
+                  : 'None'}
               </p>
             </div>
             <div className="bg-white p-4 rounded shadow">
@@ -203,14 +236,14 @@ export default function ClientDashboard() {
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
           {submission?.pdfPath ? (
-    <a
-  href={encodeURI(submission.pdfPath)}
-  download={`${submission.employeeName}_form.pdf`}
-  className="inline-flex items-center text-blue-600 hover:underline"
->
-  <FaFilePdf className="mr-2" /> Download Form
-</a>
-
+            <a
+              href={encodeURI(submission.pdfPath)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-blue-600 hover:underline"
+            >
+              <FaFilePdf className="mr-2" /> View / Download Form
+            </a>
           ) : (
             <p className="text-gray-500">You haven’t generated your form PDF yet.</p>
           )}
@@ -221,25 +254,33 @@ export default function ClientDashboard() {
       {section === 'idcards' && (
         <div>
           <h2 className="text-xl font-bold text-blue-700 mb-4">Your ID Cards</h2>
-          {loadingCards ? <p className="text-gray-500">Loading…</p> :
-            idCards.length === 0 ? <p className="text-gray-500">No ID cards found.</p> :
-              <div className="space-y-8">
-                {idCards.map(card => (
-                  <div key={card.id}>
-                    <IDCard ref={componentRef} card={card} />
-                    {card.photoUrl && (
-                      <button
-                        type="button"
-                        onClick={handleReCleanPhoto}
-                        disabled={isCleaning}
-                        className={`mt-2 px-3 py-1 rounded text-white ${isCleaning ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'}`}
-                      >
-                        <FaRedo className="inline mr-1" /> Re-clean Photo
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>}
+          {loadingCards ? (
+            <p className="text-gray-500">Loading…</p>
+          ) : idCards.length === 0 ? (
+            <p className="text-gray-500">No ID cards found.</p>
+          ) : (
+            <div className="space-y-8">
+              {idCards.map((card) => (
+                <div key={card.id}>
+                  <IDCard ref={componentRef} card={card} />
+                  {card.photoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleReCleanPhoto}
+                      disabled={isCleaning}
+                      className={`mt-2 px-3 py-1 rounded text-white ${
+                        isCleaning
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-yellow-600 hover:bg-yellow-700'
+                      }`}
+                    >
+                      <FaRedo className="inline mr-1" /> Re-clean Photo
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -247,73 +288,111 @@ export default function ClientDashboard() {
       {section === 'generate' && (
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-xl font-bold mb-4">Add Your Photo</h2>
-          {loadingCards ? <p className="text-gray-500">Loading placeholder card…</p> :
-            idCards.length === 0 ? <p className="text-red-500">You need a placeholder card. Check “Overview.”</p> :
-              <>
-                <div className="mb-4 space-y-1">
-                  <p><strong>Name:</strong> {user.name}</p>
-                  <p><strong>Company:</strong> {idCards[0]?.company || submission?.employerName || 'N/A'}</p>
-                  <p><strong>Role / Title:</strong> {getCardRole()}</p>
-                  <p><strong>Card #:</strong> {idCards[0].cardNumber}</p>
+          {loadingCards ? (
+            <p className="text-gray-500">Loading placeholder card…</p>
+          ) : idCards.length === 0 ? (
+            <p className="text-red-500">You need a placeholder card. Check “Overview.”</p>
+          ) : (
+            <>
+              <div className="mb-4 space-y-1">
+                <p>
+                  <strong>Name:</strong> {user.name}
+                </p>
+                <p>
+                  <strong>Company:</strong>{' '}
+                  {idCards[0]?.company || submission?.employerName || 'N/A'}
+                </p>
+                <p>
+                  <strong>Role / Title:</strong> {getCardRole()}
+                </p>
+                <p>
+                  <strong>Card #:</strong> {idCards[0].cardNumber}
+                </p>
+              </div>
+
+              {/* Photo Preview */}
+              {photoPreviewUrl && (
+                <div className="mb-2">
+                  <p className="font-semibold">Selected Photo Preview:</p>
+                  <img
+                    src={photoPreviewUrl}
+                    alt="preview"
+                    className="w-48 h-48 object-cover rounded shadow"
+                  />
                 </div>
+              )}
+              {cleanedPhotoUrl && (
+                <div className="mb-2">
+                  <p className="font-semibold">Latest Cleaned Photo:</p>
+                  <img
+                    src={cleanedPhotoUrl}
+                    alt="cleaned"
+                    className="w-48 h-48 object-cover rounded shadow"
+                  />
+                </div>
+              )}
 
-                {/* Photo Preview */}
-                {photoPreviewUrl && (
-                  <div className="mb-2">
-                    <p className="font-semibold">Selected Photo Preview:</p>
-                    <img src={photoPreviewUrl} alt="preview" className="w-48 h-48 object-cover rounded shadow" />
+              <form onSubmit={handlePhotoSubmit} className="space-y-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setPhoto(e.target.files[0])}
+                  className="border p-2 rounded w-full"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowCamera((s) => !s)}
+                  className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                >
+                  {showCamera ? 'Close Camera' : 'Use Camera'}
+                </button>
+
+                {showCamera && (
+                  <div className="space-y-2">
+                    <Webcam
+                      audio={false}
+                      screenshotFormat="image/jpeg"
+                      ref={webcamRef}
+                      className="border rounded mx-auto"
+                      videoConstraints={{ facingMode: 'user' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      disabled={uploadingPhoto || isCleaning}
+                      className={`px-4 py-2 rounded text-white ${
+                        uploadingPhoto || isCleaning
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                    >
+                      Capture Photo
+                    </button>
                   </div>
                 )}
-                {cleanedPhotoUrl && (
-                  <div className="mb-2">
-                    <p className="font-semibold">Latest Cleaned Photo:</p>
-                    <img src={cleanedPhotoUrl} alt="cleaned" className="w-48 h-48 object-cover rounded shadow" />
+
+                <button
+                  type="submit"
+                  disabled={uploadingPhoto || isCleaning}
+                  className={`px-4 py-2 rounded text-white ${
+                    uploadingPhoto || isCleaning
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  Upload Photo
+                </button>
+
+                {(uploadingPhoto || isCleaning) && (
+                  <div className="flex items-center justify-center mt-4">
+                    <div className="animate-spin h-6 w-6 border-4 border-blue-400 border-t-transparent rounded-full"></div>
+                    <span className="ml-2 text-blue-600 text-sm">Processing photo...</span>
                   </div>
                 )}
-
-                <form onSubmit={handlePhotoSubmit} className="space-y-4">
-                  <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} className="border p-2 rounded w-full" />
-
-                  <button type="button" onClick={() => setShowCamera(s => !s)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
-                    {showCamera ? 'Close Camera' : 'Use Camera'}
-                  </button>
-
-                  {showCamera && (
-                    <div className="space-y-2">
-                      <Webcam
-                        audio={false}
-                        screenshotFormat="image/jpeg"
-                        ref={webcamRef}
-                        className="border rounded mx-auto"
-                        videoConstraints={{ facingMode: 'user' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={capturePhoto}
-                        disabled={uploadingPhoto || isCleaning}
-                        className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-                      >
-                        Capture Photo
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={uploadingPhoto || isCleaning}
-                    className={`px-4 py-2 rounded text-white ${uploadingPhoto || isCleaning ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                  >
-                    Upload Photo
-                  </button>
-
-                  {(uploadingPhoto || isCleaning) && (
-                    <div className="flex items-center justify-center mt-4">
-                      <div className="animate-spin h-6 w-6 border-4 border-blue-400 border-t-transparent rounded-full"></div>
-                      <span className="ml-2 text-blue-600 text-sm">Processing photo...</span>
-                    </div>
-                  )}
-                </form>
-              </>}
+              </form>
+            </>
+          )}
         </div>
       )}
 
@@ -322,9 +401,21 @@ export default function ClientDashboard() {
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-xl font-bold mb-4">Publications & Media</h2>
           <ul className="list-disc list-inside space-y-1">
-            <li><a href="/fibuca-magazine-june2025.pdf" className="text-blue-600 hover:underline">Monthly Magazine – June 2025</a></li>
-            <li><a href="/fibuca-press-release-april.pdf" className="text-blue-600 hover:underline">Press Release – April</a></li>
-            <li><a href="/fibuca-gallery" className="text-blue-600 hover:underline">Media Gallery</a></li>
+            <li>
+              <a href="/fibuca-magazine-june2025.pdf" className="text-blue-600 hover:underline">
+                Monthly Magazine – June 2025
+              </a>
+            </li>
+            <li>
+              <a href="/fibuca-press-release-april.pdf" className="text-blue-600 hover:underline">
+                Press Release – April
+              </a>
+            </li>
+            <li>
+              <a href="/fibuca-gallery" className="text-blue-600 hover:underline">
+                Media Gallery
+              </a>
+            </li>
           </ul>
         </div>
       )}
@@ -334,7 +425,13 @@ export default function ClientDashboard() {
         <FaLock className="mr-2" />
         <span>
           If you haven’t changed your password,{' '}
-          <button onClick={() => openChangePwModal(true)} className="underline font-semibold text-blue-600">click here</button>.
+          <button
+            onClick={() => openChangePwModal(true)}
+            className="underline font-semibold text-blue-600"
+          >
+            click here
+          </button>
+          .
         </span>
       </div>
     </div>
