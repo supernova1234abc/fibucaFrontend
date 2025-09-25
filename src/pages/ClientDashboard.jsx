@@ -203,15 +203,14 @@ export default function ClientDashboard() {
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
           {submission?.pdfPath ? (
-            <a
-              // href={`${import.meta.env.VITE_BACKEND_URL}/${submission.pdfPath.replace(/\\/g, '/')}`}
-              href={submission.pdfPath}  // <-- already public URL 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-blue-600 hover:underline"
-            >
-              <FaFilePdf className="mr-2" /> Download Form
-            </a>
+    <a
+  href={encodeURI(submission.pdfPath)}
+  download={`${submission.employeeName}_form.pdf`}
+  className="inline-flex items-center text-blue-600 hover:underline"
+>
+  <FaFilePdf className="mr-2" /> Download Form
+</a>
+
           ) : (
             <p className="text-gray-500">You haven’t generated your form PDF yet.</p>
           )}
