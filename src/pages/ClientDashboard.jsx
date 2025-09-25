@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef, useCallback, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChangePwModalContext } from '../components/DashboardLayout';
-import { FaUserCircle, FaFilePdf, FaIdCard, FaPlusCircle, FaBook, FaLock, FaRedo } from 'react-icons/fa';
+import { FaFilePdf, FaIdCard, FaRedo, FaLock } from 'react-icons/fa';
 import Webcam from 'react-webcam';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -44,13 +44,6 @@ export default function ClientDashboard() {
 
   const photoPreviewUrl = useObjectUrl(photo);
 
-  // Cleanup preview URLs on unmount
-  useEffect(() => {
-    return () => {
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    };
-  }, [photoPreviewUrl]);
-
   // Role-based access
   useEffect(() => {
     if (!user) return;
@@ -67,16 +60,14 @@ export default function ClientDashboard() {
         const res = await api.get('/submissions');
         const data = Array.isArray(res.data) ? res.data : [];
 
-        // filter my own submissions
         const mine = data
           .filter((s) => s.employeeNumber === user.employeeNumber)
           .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
 
         let latest = mine[0] || null;
 
-        // Ensure pdfPath is an absolute URL + persist
         if (latest?.pdfPath) {
-          const backendUrl = import.meta.env.VITE_BACKEND_URL; // e.g. https://your-api.onrender.com
+          const backendUrl = import.meta.env.VITE_BACKEND_URL;
           if (!latest.pdfPath.startsWith('http')) {
             latest.pdfPath = `${backendUrl.replace(/\/$/, '')}/${latest.pdfPath.replace(/^\/+/, '')}`;
           }
@@ -107,7 +98,6 @@ export default function ClientDashboard() {
       const cards = Array.isArray(data) ? data : [];
       setIdCards(cards);
 
-      // update cleaned photo only if changed
       if (cards?.[0]?.photoUrl && cards[0].photoUrl !== cleanedPhotoUrl) {
         setCleanedPhotoUrl(cards[0].photoUrl);
       }
@@ -192,7 +182,6 @@ export default function ClientDashboard() {
 
   if (!user) return null;
 
-  // Determine section
   const path = location.pathname;
   let section = 'overview';
   if (path.endsWith('/pdf')) section = 'pdf';
@@ -299,8 +288,7 @@ export default function ClientDashboard() {
                   <strong>Name:</strong> {user.name}
                 </p>
                 <p>
-                  <strong>Company:</strong>{' '}
-                  {idCards[0]?.company || submission?.employerName || 'N/A'}
+                  <strong>Company:</strong> {idCards[0]?.company || submission?.employerName || 'N/A'}
                 </p>
                 <p>
                   <strong>Role / Title:</strong> {getCardRole()}
