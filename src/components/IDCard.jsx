@@ -1,5 +1,5 @@
 // src/components/IDCard.jsx
-import React, { forwardRef } from "react";
+import React, { forwardRef, useMemo } from "react";
 import { QRCodeSVG as QRCode } from "qrcode.react";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
@@ -20,6 +20,65 @@ const IDCard = forwardRef(({ card }, ref) => {
     const last = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
     return last ? `${first} ${last}` : first;
   };
+
+  // New helpers to resolve a usable image URL from multiple possible fields
+  const isUrl = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
+  const isLikelyUuid = (s) =>
+    typeof s === "string" && /^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$/.test(s) || /^[0-9a-fA-F]{24,}$/.test(s);
+
+  const getPhotoSrc = (c) => {
+    if (!c) return null;
+
+    // 1. Prefer explicit cleaned/processed URL fields (different possible keys)
+    const cleanedCandidates = [
+      c.cleanPhotoUrl,
+      c.cleanedPhotoUrl,
+      c.photo?.cleanUrl,
+      c.photo?.clean_url,
+      c.photo?.cdnUrl,
+      c.photo?.cdn_url,
+      c.photo?.url, // sometimes nested
+    ];
+    for (const candidate of cleanedCandidates) {
+      if (candidate && isUrl(candidate)) return candidate;
+      if (candidate && typeof candidate === "string" && !candidate.startsWith("/")) return candidate;
+      if (candidate && typeof candidate === "string") {
+        // treat as backend-relative path
+        return `${baseURL.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
+      }
+    }
+
+    // 2. Raw/original url fields
+    const rawCandidates = [
+      c.rawPhotoUrl,
+      c.raw_photo_url,
+      c.photoUrl,
+      c.photo_url,
+      c.photo?.originalUrl,
+      c.photo?.original_url,
+    ];
+    for (const candidate of rawCandidates) {
+      if (!candidate) continue;
+      if (isUrl(candidate)) return candidate;
+      // if looks like an Uploadcare uuid, build Uploadcare CDN URL
+      if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
+      // treat as backend relative path
+      return `${baseURL.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
+    }
+
+    // 3. If object returned by backend with uploadcare file info
+    if (c.photo && typeof c.photo === "object") {
+      if (c.photo.file && isLikelyUuid(c.photo.file)) return `https://ucarecdn.com/${c.photo.file}/`;
+      if (c.photo.uuid && isLikelyUuid(c.photo.uuid)) return `https://ucarecdn.com/${c.photo.uuid}/`;
+      if (c.photo.cdn_url) return c.photo.cdn_url;
+    }
+
+    // nothing usable
+    return null;
+  };
+
+  // Compute once per card for rendering
+  const photoSrc = useMemo(() => getPhotoSrc(card), [card]);
 
   const cardStyle =
     "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
@@ -65,31 +124,24 @@ const IDCard = forwardRef(({ card }, ref) => {
           {/* Photo + Name + Role */}
           <div className="absolute top-12 ml-3 flex flex-col items-center w-1/3 space-y-0 pt-1">
             <div className="w-24 h-24 mr-16 rounded-full overflow-hidden flex items-center justify-center">
-              {card?.photoUrl ? (
+              {photoSrc ? (
                 <img
-                 // src={`${baseURL.replace(/\/$/, "")}/${card.photoUrl}`}
-                  src={
-                    // prefer Uploadcare cleaned URL or raw URL; fallback to legacy photoUrl
-                  (card?.cleanPhotoUrl && String(card.cleanPhotoUrl).startsWith('http')
-                     ? card.cleanPhotoUrl
-                     : card?.cleanPhotoUrl
-                     ? `${baseURL.replace(/\/$/, "")}/${String(card.cleanPhotoUrl).replace(/^\/+/, '')}`
-                     : (card?.rawPhotoUrl && String(card.rawPhotoUrl).startsWith('http')
-                         ? card.rawPhotoUrl
-                         : card?.rawPhotoUrl
-                         ? `${baseURL.replace(/\/$/, "")}/${String(card.rawPhotoUrl).replace(/^\/+/, '')}`
-                         : `${baseURL.replace(/\/$/, "")}/${card.photoUrl.replace(/^\/+/, '')}`
-                       )
-                   )                  }
-                 alt="ID Photo"
+                  src={photoSrc}
+                  alt="ID Photo"
                   className="object-cover w-full h-full rounded-md shadow"
                   onError={(e) => {
+                    // fallback when the resolved URL fails to load
+                    e.currentTarget.onerror = null;
                     e.currentTarget.src = "/fallback-avatar.png";
                   }}
                 />
+              ) : ( (card?.photoStatus || card?.photo_status) && /process|clean/i.test(String(card?.photoStatus || card?.photo_status || "")) ? (
+                <div className="flex items-center justify-center text-[10px] text-gray-500">
+                  Processing...
+                </div>
               ) : (
                 <span className="text-gray-400 text-xs">No Photo</span>
-              )}
+              ))}
             </div>
             <p className="text-xs font-mono ml-2 text-black text-center truncate max-w-[19rem]">
               {getFirstAndLastName(card?.fullName)}
