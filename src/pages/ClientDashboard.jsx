@@ -9,13 +9,6 @@ import IDCard from '../components/IDCard';
 import { FileUploaderRegular } from '@uploadcare/react-uploader';
 import '@uploadcare/react-uploader/core.css';
 
-// 🔧 Helper to normalize Uploadcare URLs
-const normalizeUploadcareUrl = (url) => {
-  if (!url) return null;
-  if (url.includes('-/remove_bg/')) return url;
-  return `${url}-/remove_bg/`;
-};
-
 export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
@@ -27,8 +20,7 @@ export default function ClientDashboard() {
   const [idCards, setIdCards] = useState([]);
   const [loadingCards, setLoadingCards] = useState(true);
   const [uploadcareUrl, setUploadcareUrl] = useState(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [isCleaning, setIsCleaning] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Simplified state
 
   // -------- Fetch Submissions ----------
   const fetchSubmissions = useCallback(async () => {
@@ -63,14 +55,17 @@ export default function ClientDashboard() {
   }, [user]);
 
   // -------- Fetch ID Cards ----------
-  const fetchIdCards = useCallback(async () => {
+  const fetchIdCards = useCallback(async (showToast = false) => {
     if (!user?.id) return;
     setLoadingCards(true);
     try {
       const { data } = await api.get(`/api/idcards/${user.id}`);
       const cards = Array.isArray(data) ? data : [];
       setIdCards(cards);
-      if (cards?.[0]?.cleanPhotoUrl) setUploadcareUrl(cards[0].cleanPhotoUrl);
+      if (cards?.[0]?.cleanPhotoUrl) {
+        setUploadcareUrl(cards[0].cleanPhotoUrl);
+      }
+      if (showToast) toast.success('ID Card updated!');
     } catch (err) {
       console.warn('Fetch ID cards failed:', err);
       setIdCards([]);
@@ -96,38 +91,39 @@ export default function ClientDashboard() {
       const card = idCards[0];
       if (!card) return toast.error('No placeholder ID card found.');
 
-      setUploadingPhoto(true);
-      setIsCleaning(true);
+      setIsProcessing(true);
 
-      await api.put(`/api/idcards/${card.id}/photo`, {
+      // The backend now handles creating the clean URL. Only send the raw URL.
+      const { data } = await api.put(`/api/idcards/${card.id}/photo`, {
         rawPhotoUrl: rawUrl,
-        cleanPhotoUrl: normalizeUploadcareUrl(rawUrl),
       });
 
       toast.success('✅ Photo uploaded and cleaned successfully!');
-      await fetchIdCards();
-      setUploadcareUrl(normalizeUploadcareUrl(rawUrl));
+      // Update state with the final card data from the backend response.
+      setIdCards([data.card]);
+      setUploadcareUrl(data.card.cleanPhotoUrl);
     } catch (err) {
       console.error('Uploadcare error:', err);
-      toast.error('Upload or link failed.');
+      toast.error('Upload or linking failed.');
     } finally {
-      setUploadingPhoto(false);
-      setIsCleaning(false);
+      setIsProcessing(false);
     }
   };
 
   // -------- Re-clean trigger ----------
   const handleReClean = async (cardId) => {
-    setIsCleaning(true);
+    setIsProcessing(true);
     try {
-      await api.put(`/api/idcards/${cardId}/clean-photo`);
+      const { data } = await api.put(`/api/idcards/${cardId}/clean-photo`);
       toast.success('✅ Photo re-cleaned successfully!');
-      await fetchIdCards();
+      // Update state with the final card data from the backend response.
+      setIdCards([data.card]);
+      setUploadcareUrl(data.card.cleanPhotoUrl);
     } catch (err) {
       console.error('Re-clean error:', err);
       toast.error('Re-clean failed.');
     } finally {
-      setIsCleaning(false);
+      setIsProcessing(false);
     }
   };
 
@@ -207,9 +203,9 @@ export default function ClientDashboard() {
                   {card.rawPhotoUrl && (
                     <button
                       onClick={() => handleReClean(card.id)}
-                      disabled={isCleaning}
+                      disabled={isProcessing}
                       className={`mt-2 px-3 py-1 rounded text-white ${
-                        isCleaning ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'
+                        isProcessing ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'
                       }`}
                     >
                       <FaRedo className="inline mr-1" /> Re-clean Photo
@@ -261,14 +257,14 @@ export default function ClientDashboard() {
                     file.done((info) => handleUploadcareDone(info));
                   }
                 }}
-                disabled={uploadingPhoto || isCleaning}
+                disabled={isProcessing}
               />
 
-              {uploadingPhoto && (
-                <p className="text-blue-600 mt-2 font-semibold">Uploading / Cleaning...</p>
+              {isProcessing && (
+                <p className="text-blue-600 mt-2 font-semibold animate-pulse">Processing...</p>
               )}
 
-              {uploadcareUrl && (
+              {uploadcareUrl && !isProcessing && (
                 <div className="mt-4">
                   <p className="font-semibold">Latest Photo:</p>
                   <img
@@ -300,3 +296,4 @@ export default function ClientDashboard() {
     </div>
   );
 }
+  
