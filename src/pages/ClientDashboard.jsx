@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChangePwModalContext } from '../components/DashboardLayout';
-import { FaFilePdf, FaIdCard, FaRedo, FaLock } from 'react-icons/fa';
+import { FaFilePdf, FaRedo, FaLock } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -9,23 +9,17 @@ import IDCard from '../components/IDCard';
 import { FileUploaderRegular } from '@uploadcare/react-uploader';
 import '@uploadcare/react-uploader/core.css';
 
-// Helper hook for Object URLs
-function useObjectUrl(file) {
-  const [url, setUrl] = useState(null);
-  useEffect(() => {
-    if (!file) return setUrl(null);
-    const objectUrl = URL.createObjectURL(file);
-    setUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
-  return url;
-}
+// 🔧 Helper to normalize Uploadcare URLs
+const normalizeUploadcareUrl = (url) => {
+  if (!url) return null;
+  if (url.includes('-/remove_bg/')) return url;
+  return `${url}-/remove_bg/`;
+};
 
 export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
   const location = useLocation();
-
   const { user } = useAuth();
 
   const [submission, setSubmission] = useState(null);
@@ -36,6 +30,7 @@ export default function ClientDashboard() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
 
+  // -------- Fetch Submissions ----------
   const fetchSubmissions = useCallback(async () => {
     if (!user) return;
     setLoadingSubmission(true);
@@ -45,8 +40,8 @@ export default function ClientDashboard() {
       const mine = data
         .filter((s) => s.employeeNumber === user.employeeNumber)
         .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-      let latest = mine[0] || null;
 
+      let latest = mine[0] || null;
       if (latest?.pdfPath) {
         const backendUrl = import.meta.env.VITE_BACKEND_URL;
         if (!latest.pdfPath.startsWith('http')) {
@@ -67,6 +62,7 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  // -------- Fetch ID Cards ----------
   const fetchIdCards = useCallback(async () => {
     if (!user?.id) return;
     setLoadingCards(true);
@@ -84,67 +80,75 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  // -------- Initialize ----------
   useEffect(() => {
     if (user && user.role !== 'CLIENT') navigate('/login');
     fetchSubmissions();
     fetchIdCards();
   }, [user, navigate, fetchSubmissions, fetchIdCards]);
 
-  // Handle Uploadcare
+  // -------- Handle Uploadcare Upload ----------
   const handleUploadcareDone = async (fileInfo) => {
-    if (!fileInfo?.cdnUrl) return toast.error('Upload failed.');
-    setUploadcareUrl(fileInfo.cdnUrl);
-
-    const card = idCards[0];
-    if (!card) return toast.error('No placeholder ID card found.');
-
-    setUploadingPhoto(true);
-    setIsCleaning(true);
     try {
-      await api.put(`/api/idcards/${card.id}/photo`, { rawPhotoUrl: fileInfo.cdnUrl });
-      toast.success('Photo uploaded successfully!');
+      const rawUrl = fileInfo?.cdnUrl;
+      if (!rawUrl) return toast.error('Upload failed: No URL returned.');
+
+      const card = idCards[0];
+      if (!card) return toast.error('No placeholder ID card found.');
+
+      setUploadingPhoto(true);
+      setIsCleaning(true);
+
+      await api.put(`/api/idcards/${card.id}/photo`, {
+        rawPhotoUrl: rawUrl,
+        cleanPhotoUrl: normalizeUploadcareUrl(rawUrl),
+      });
+
+      toast.success('✅ Photo uploaded and cleaned successfully!');
       await fetchIdCards();
+      setUploadcareUrl(normalizeUploadcareUrl(rawUrl));
     } catch (err) {
-      console.error('Error linking photo URL:', err);
-      toast.error('Linking failed.');
+      console.error('Uploadcare error:', err);
+      toast.error('Upload or link failed.');
     } finally {
       setUploadingPhoto(false);
       setIsCleaning(false);
     }
   };
 
+  // -------- Re-clean trigger ----------
   const handleReClean = async (cardId) => {
     setIsCleaning(true);
     try {
       await api.put(`/api/idcards/${cardId}/clean-photo`);
-      toast.success('Photo re-cleaned!');
+      toast.success('✅ Photo re-cleaned successfully!');
       await fetchIdCards();
     } catch (err) {
-      console.error(err);
+      console.error('Re-clean error:', err);
       toast.error('Re-clean failed.');
     } finally {
       setIsCleaning(false);
     }
   };
 
+  // -------- Section selection ----------
   const section = location.pathname.endsWith('/pdf')
     ? 'pdf'
     : location.pathname.endsWith('/idcards')
     ? 'idcards'
     : location.pathname.endsWith('/generate')
     ? 'generate'
-    : location.pathname.endsWith('/publications')
-    ? 'publications'
     : 'overview';
 
   const getCardRole = () => 'Member';
 
+  // -------- UI ----------
   return (
     <div className="space-y-6">
       {/* Overview */}
       {section === 'overview' && (
         <div>
-          <h1 className="text-2xl font-bold text-blue-700">Hello, {user.name}</h1>
+          <h1 className="text-2xl font-bold text-blue-700">Hello, {user?.name}</h1>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="bg-white p-4 rounded shadow">
               <h3 className="font-semibold">Last Submission</h3>
@@ -168,7 +172,7 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* PDF */}
+      {/* PDF Section */}
       {section === 'pdf' && (
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
@@ -187,7 +191,7 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* ID Cards */}
+      {/* ID Card Section */}
       {section === 'idcards' && (
         <div>
           <h2 className="text-xl font-bold text-blue-700 mb-4">Your ID Cards</h2>
@@ -218,22 +222,24 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* Generate / Uploadcare */}
+      {/* Upload / Generate Section */}
       {section === 'generate' && (
         <div className="bg-white rounded shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Add Your Photo</h2>
+          <h2 className="text-xl font-bold mb-4">Upload / Update Your Photo</h2>
+
           {loadingCards ? (
             <p className="text-gray-500">Loading placeholder card…</p>
           ) : idCards.length === 0 ? (
-            <p className="text-red-500">You need a placeholder card first.</p>
+            <p className="text-red-500">No placeholder ID card available.</p>
           ) : (
             <>
               <div className="mb-4 space-y-1">
                 <p>
-                  <strong>Name:</strong> {user.name}
+                  <strong>Name:</strong> {user?.name}
                 </p>
                 <p>
-                  <strong>Company:</strong> {idCards[0]?.company || submission?.employerName || 'N/A'}
+                  <strong>Company:</strong>{' '}
+                  {idCards[0]?.company || submission?.employerName || 'N/A'}
                 </p>
                 <p>
                   <strong>Role / Title:</strong> {getCardRole()}
@@ -243,16 +249,23 @@ export default function ClientDashboard() {
                 </p>
               </div>
 
+              {/* ✅ FIXED Uploadcare */}
               <FileUploaderRegular
-                pubkey="42db570f1392dabdf82b"
+                pubkey={import.meta.env.VITE_UPLOADCARE_PUBLIC_KEY || '42db570f1392dabdf82b'}
                 multiple={false}
                 sourceList="local, camera, url"
-                onChange={(filePromise) => filePromise.done(handleUploadcareDone)}
+                onChange={(file) => {
+                  if (file?.cdnUrl) {
+                    handleUploadcareDone(file);
+                  } else if (file?.done) {
+                    file.done((info) => handleUploadcareDone(info));
+                  }
+                }}
                 disabled={uploadingPhoto || isCleaning}
               />
 
               {uploadingPhoto && (
-                <p className="text-blue-600 mt-2 font-semibold">Uploading / Processing...</p>
+                <p className="text-blue-600 mt-2 font-semibold">Uploading / Cleaning...</p>
               )}
 
               {uploadcareUrl && (
@@ -270,7 +283,7 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* Password Notice */}
+      {/* Password reminder */}
       <div className="bg-yellow-100 text-yellow-800 px-4 py-3 rounded-md flex items-center mt-6">
         <FaLock className="mr-2" />
         <span>
