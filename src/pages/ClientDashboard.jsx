@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef, useCallback, useContext } from 'rea
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChangePwModalContext } from '../components/DashboardLayout';
 import { FaFilePdf, FaIdCard, FaRedo, FaLock } from 'react-icons/fa';
-import Webcam from 'react-webcam';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -26,64 +25,48 @@ export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const webcamRef = useRef(null);
-  const componentRef = useRef();
 
   const { user } = useAuth();
 
-  const [isCleaning, setIsCleaning] = useState(false);
   const [submission, setSubmission] = useState(null);
   const [loadingSubmission, setLoadingSubmission] = useState(true);
   const [idCards, setIdCards] = useState([]);
   const [loadingCards, setLoadingCards] = useState(true);
-  const [photo, setPhoto] = useState(null);
-  const [cleanedPhotoUrl, setCleanedPhotoUrl] = useState(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
   const [uploadcareUrl, setUploadcareUrl] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
 
-  const photoPreviewUrl = useObjectUrl(photo);
-
-  // Role restriction
-  useEffect(() => {
-    if (user && user.role !== 'CLIENT') navigate('/login');
-  }, [user, navigate]);
-
-  // Fetch submission
-  useEffect(() => {
+  const fetchSubmissions = useCallback(async () => {
     if (!user) return;
-    const fetchSubmissions = async () => {
-      setLoadingSubmission(true);
-      try {
-        const res = await api.get('/submissions');
-        const data = Array.isArray(res.data) ? res.data : [];
-        const mine = data
-          .filter((s) => s.employeeNumber === user.employeeNumber)
-          .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-        let latest = mine[0] || null;
+    setLoadingSubmission(true);
+    try {
+      const res = await api.get('/submissions');
+      const data = Array.isArray(res.data) ? res.data : [];
+      const mine = data
+        .filter((s) => s.employeeNumber === user.employeeNumber)
+        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      let latest = mine[0] || null;
 
-        if (latest?.pdfPath) {
-          const backendUrl = import.meta.env.VITE_BACKEND_URL;
-          if (!latest.pdfPath.startsWith('http')) {
-            latest.pdfPath = `${backendUrl.replace(/\/$/, '')}/${latest.pdfPath.replace(/^\/+/, '')}`;
-          }
-          localStorage.setItem('latestSubmission', JSON.stringify(latest));
-        } else {
-          const cached = localStorage.getItem('latestSubmission');
-          if (cached) latest = JSON.parse(cached);
+      if (latest?.pdfPath) {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+        if (!latest.pdfPath.startsWith('http')) {
+          latest.pdfPath = `${backendUrl.replace(/\/$/, '')}/${latest.pdfPath.replace(/^\/+/, '')}`;
         }
-        setSubmission(latest);
-      } catch (err) {
-        console.error('Error fetching submission:', err);
-        setSubmission(null);
-      } finally {
-        setLoadingSubmission(false);
+        localStorage.setItem('latestSubmission', JSON.stringify(latest));
+      } else {
+        const cached = localStorage.getItem('latestSubmission');
+        if (cached) latest = JSON.parse(cached);
       }
-    };
-    fetchSubmissions();
+
+      setSubmission(latest);
+    } catch (err) {
+      console.error('Error fetching submission:', err);
+      setSubmission(null);
+    } finally {
+      setLoadingSubmission(false);
+    }
   }, [user]);
 
-  // Fetch ID cards
   const fetchIdCards = useCallback(async () => {
     if (!user?.id) return;
     setLoadingCards(true);
@@ -91,37 +74,23 @@ export default function ClientDashboard() {
       const { data } = await api.get(`/api/idcards/${user.id}`);
       const cards = Array.isArray(data) ? data : [];
       setIdCards(cards);
-      if (cards?.[0]?.photoUrl && cards[0].photoUrl !== cleanedPhotoUrl) {
-        setCleanedPhotoUrl(cards[0].photoUrl);
-      }
+      if (cards?.[0]?.cleanPhotoUrl) setUploadcareUrl(cards[0].cleanPhotoUrl);
     } catch (err) {
       console.warn('Fetch ID cards failed:', err);
       setIdCards([]);
-      setCleanedPhotoUrl(null);
+      setUploadcareUrl(null);
     } finally {
       setLoadingCards(false);
     }
-  }, [user, cleanedPhotoUrl]);
+  }, [user]);
 
   useEffect(() => {
+    if (user && user.role !== 'CLIENT') navigate('/login');
+    fetchSubmissions();
     fetchIdCards();
-  }, [fetchIdCards]);
+  }, [user, navigate, fetchSubmissions, fetchIdCards]);
 
-  // Capture photo from webcam
-  const capturePhoto = () => {
-    const dataUrl = webcamRef.current?.getScreenshot();
-    if (!dataUrl) return;
-    fetch(dataUrl)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        setPhoto(file);
-        setShowCamera(false);
-      })
-      .catch(console.error);
-  };
-
-  // Handle Uploadcare result
+  // Handle Uploadcare
   const handleUploadcareDone = async (fileInfo) => {
     if (!fileInfo?.cdnUrl) return toast.error('Upload failed.');
     setUploadcareUrl(fileInfo.cdnUrl);
@@ -132,10 +101,9 @@ export default function ClientDashboard() {
     setUploadingPhoto(true);
     setIsCleaning(true);
     try {
-      const res = await api.put(`/api/idcards/${card.id}/photo-url`, { photoUrl: fileInfo.cdnUrl });
-      toast.success('Photo linked successfully!');
+      await api.put(`/api/idcards/${card.id}/photo`, { rawPhotoUrl: fileInfo.cdnUrl });
+      toast.success('Photo uploaded successfully!');
       await fetchIdCards();
-      setCleanedPhotoUrl(fileInfo.cdnUrl);
     } catch (err) {
       console.error('Error linking photo URL:', err);
       toast.error('Linking failed.');
@@ -145,14 +113,27 @@ export default function ClientDashboard() {
     }
   };
 
-  const path = location.pathname;
-  const section = path.endsWith('/pdf')
+  const handleReClean = async (cardId) => {
+    setIsCleaning(true);
+    try {
+      await api.put(`/api/idcards/${cardId}/clean-photo`);
+      toast.success('Photo re-cleaned!');
+      await fetchIdCards();
+    } catch (err) {
+      console.error(err);
+      toast.error('Re-clean failed.');
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
+  const section = location.pathname.endsWith('/pdf')
     ? 'pdf'
-    : path.endsWith('/idcards')
+    : location.pathname.endsWith('/idcards')
     ? 'idcards'
-    : path.endsWith('/generate')
+    : location.pathname.endsWith('/generate')
     ? 'generate'
-    : path.endsWith('/publications')
+    : location.pathname.endsWith('/publications')
     ? 'publications'
     : 'overview';
 
@@ -218,22 +199,10 @@ export default function ClientDashboard() {
             <div className="space-y-8">
               {idCards.map((card) => (
                 <div key={card.id}>
-                  <IDCard ref={componentRef} card={card} />
-                  {card.photoUrl && (
+                  <IDCard card={card} />
+                  {card.rawPhotoUrl && (
                     <button
-                      type="button"
-                      onClick={async () => {
-                        setIsCleaning(true);
-                        try {
-                          await api.put(`/api/idcards/${card.id}/clean-photo`);
-                          toast.success('Photo re-cleaned!');
-                          await fetchIdCards();
-                        } catch (err) {
-                          toast.error('Re-clean failed.');
-                        } finally {
-                          setIsCleaning(false);
-                        }
-                      }}
+                      onClick={() => handleReClean(card.id)}
                       disabled={isCleaning}
                       className={`mt-2 px-3 py-1 rounded text-white ${
                         isCleaning ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'
@@ -274,21 +243,21 @@ export default function ClientDashboard() {
                 </p>
               </div>
 
-              {/* Uploadcare uploader */}
-              <div className="my-4">
-                <FileUploaderRegular
-                  pubkey="42db570f1392dabdf82b"
-                  multiple={false}
-                  sourceList="local, camera, url"
-                  onChange={(filePromise) => {
-                    filePromise.done(handleUploadcareDone);
-                  }}
-                />
-              </div>
+              <FileUploaderRegular
+                pubkey="42db570f1392dabdf82b"
+                multiple={false}
+                sourceList="local, camera, url"
+                onChange={(filePromise) => filePromise.done(handleUploadcareDone)}
+                disabled={uploadingPhoto || isCleaning}
+              />
+
+              {uploadingPhoto && (
+                <p className="text-blue-600 mt-2 font-semibold">Uploading / Processing...</p>
+              )}
 
               {uploadcareUrl && (
-                <div>
-                  <p className="font-semibold">Uploaded via Uploadcare:</p>
+                <div className="mt-4">
+                  <p className="font-semibold">Latest Photo:</p>
                   <img
                     src={uploadcareUrl}
                     alt="uploadcare-preview"
@@ -301,26 +270,7 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* Publications */}
-      {section === 'publications' && (
-        <div className="bg-white rounded shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Publications & Media</h2>
-          <ul className="list-disc list-inside space-y-1">
-            <li>
-              <a href="/fibuca-magazine-june2025.pdf" className="text-blue-600 hover:underline">
-                Monthly Magazine – June 2025
-              </a>
-            </li>
-            <li>
-              <a href="/fibuca-press-release-april.pdf" className="text-blue-600 hover:underline">
-                Press Release – April
-              </a>
-            </li>
-          </ul>
-        </div>
-      )}
-
-      {/* Password */}
+      {/* Password Notice */}
       <div className="bg-yellow-100 text-yellow-800 px-4 py-3 rounded-md flex items-center mt-6">
         <FaLock className="mr-2" />
         <span>
