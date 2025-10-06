@@ -67,8 +67,21 @@ const IDCard = forwardRef(({ card }, ref) => {
             <div className="w-24 h-24 mr-16 rounded-full overflow-hidden flex items-center justify-center">
               {card?.photoUrl ? (
                 <img
-                  src={`${baseURL.replace(/\/$/, "")}/${card.photoUrl}`}
-                  alt="ID Photo"
+                 // src={`${baseURL.replace(/\/$/, "")}/${card.photoUrl}`}
+                  src={
+                    // prefer Uploadcare cleaned URL or raw URL; fallback to legacy photoUrl
+                  (card?.cleanPhotoUrl && String(card.cleanPhotoUrl).startsWith('http')
+                     ? card.cleanPhotoUrl
+                     : card?.cleanPhotoUrl
+                     ? `${baseURL.replace(/\/$/, "")}/${String(card.cleanPhotoUrl).replace(/^\/+/, '')}`
+                     : (card?.rawPhotoUrl && String(card.rawPhotoUrl).startsWith('http')
+                         ? card.rawPhotoUrl
+                         : card?.rawPhotoUrl
+                         ? `${baseURL.replace(/\/$/, "")}/${String(card.rawPhotoUrl).replace(/^\/+/, '')}`
+                         : `${baseURL.replace(/\/$/, "")}/${card.photoUrl.replace(/^\/+/, '')}`
+                       )
+                   )                  }
+                 alt="ID Photo"
                   className="object-cover w-full h-full rounded-md shadow"
                   onError={(e) => {
                     e.currentTarget.src = "/fallback-avatar.png";
