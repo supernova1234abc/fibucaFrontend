@@ -146,18 +146,19 @@ export default function ClientDashboard() {
   };
 
   // Wrapper for Uploadcare change
-  const onUploadcareChange = (filePromiseOrInfo) => {
-    if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
-      try {
-        filePromiseOrInfo.done((fileInfo) => handleUploadcareDone(fileInfo));
-      } catch (err) {
-        console.warn('Uploadcare .done() failed, trying direct:', err);
-        handleUploadcareDone(filePromiseOrInfo);
-      }
-    } else {
-      handleUploadcareDone(filePromiseOrInfo);
-    }
-  };
+const onUploadcareChange = (filePromiseOrInfo) => {
+  // Check if the input is a promise with a .done method
+  if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
+    // Handle the file once the promise resolves
+    filePromiseOrInfo.done((fileInfo) => {
+      handleUploadcareDone(fileInfo);
+    });
+  } else {
+    // Directly handle the fileInfo object
+    handleUploadcareDone(filePromiseOrInfo);
+  }
+};
+
 
   // Manual re-clean trigger
   const handleReClean = async (cardId) => {
