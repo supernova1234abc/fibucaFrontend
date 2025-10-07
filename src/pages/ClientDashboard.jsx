@@ -168,12 +168,23 @@ export default function ClientDashboard() {
   // Main Uploadcare handler (modified): try client-side removal and upload cleaned image to backend
   const handleUploadcareDone = async (fileInfoOrResult) => {
     const fileInfo = fileInfoOrResult?.fileInfo || fileInfoOrResult;
-    if (!fileInfo?.cdnUrl) {
-      toast.error('Uploadcare did not return a cdnUrl.');
+    // Resolve raw URL robustly
+    const rawUrl = resolveUploadcareRawUrl(fileInfo);
+    if (!rawUrl) {
+      console.warn('Uploadcare returned no usable URL or UUID:', fileInfo);
+      toast.error('Uploadcare did not return a usable URL. Check widget settings.');
       return;
     }
 
-    const rawUrl = fileInfo.cdnUrl;
+    // If the uploader returned only a UUID (no cdnUrl), inform user (we build CDN URL)
+    if (!fileInfo?.cdnUrl && (fileInfo?.uuid || fileInfo?.id || fileInfo?.file)) {
+      toast((t) => (
+        <span>
+          Uploaded to Uploadcare (UUID). Using constructed CDN URL — if image not visible check Uploadcare settings.
+        </span>
+      ));
+    }
+
     // optimistic preview using Uploadcare transform (may be premium)
     setUploadcareUrl(`${rawUrl}-/remove_bg/`);
 
@@ -192,11 +203,10 @@ export default function ClientDashboard() {
       setIsCleaning(true);
       setCleanProgress(0);
 
-      // 2) Try browser-side removal
+      // 2) Try browser-side removal (unchanged)
       const cleanedBlob = await removeBackgroundInBrowser(rawUrl);
 
       if (cleanedBlob) {
-        // upload cleaned image to backend endpoint
         const fd = new FormData();
         fd.append('cleanImage', cleanedBlob, `clean_${card.id}_${Date.now()}.png`);
         const uploadResp = await api.post(`/api/idcards/${card.id}/upload-clean`, fd, {
@@ -209,7 +219,6 @@ export default function ClientDashboard() {
           },
         });
 
-        // update UI with returned card
         const updatedCard = uploadResp.data.card;
         setIdCards([updatedCard]);
         setUploadcareUrl(updatedCard.cleanPhotoUrl);
@@ -231,12 +240,38 @@ export default function ClientDashboard() {
   };
 
   // Wrapper for Uploadcare change (keeps your existing handler)
+  const resolveUploadcareRawUrl = (fileInfo) => {
+    if (!fileInfo) return null;
+    // common property names
+    const cdnCandidates = [fileInfo.cdnUrl, fileInfo.cdn_url, fileInfo.cdnURL, fileInfo.originalUrl, fileInfo.original_url, fileInfo.fileUrl];
+    for (const v of cdnCandidates) {
+      if (v && typeof v === 'string') return v;
+    }
+    // Uploadcare sometimes returns a UUID only (or under file/uuid/id)
+    const uuid = fileInfo.uuid || (fileInfo.file && (fileInfo.file.uuid || fileInfo.file)) || fileInfo.id || fileInfo.file_id;
+    if (uuid && typeof uuid === 'string') {
+      // Build CDN URL from uuid
+      return `https://ucarecdn.com/${uuid.replace(/^\/+|\/+$/g, '')}/`;
+    }
+    return null;
+  };
+
   const onUploadcareChange = (filePromiseOrInfo) => {
+    // File object with .done (Uploadcare widget) — prefer done callback
     if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
       filePromiseOrInfo.done((fileInfo) => handleUploadcareDone(fileInfo));
-    } else {
-      handleUploadcareDone(filePromiseOrInfo);
+      return;
     }
+    // If passed a promise-like with .then
+    if (filePromiseOrInfo && typeof filePromiseOrInfo.then === 'function') {
+      filePromiseOrInfo.then((fileInfo) => handleUploadcareDone(fileInfo)).catch((err) => {
+        console.warn('Uploadcare promise failed:', err);
+        toast.error('Upload failed.');
+      });
+      return;
+    }
+    // Otherwise handle direct info
+    handleUploadcareDone(filePromiseOrInfo);
   };
 
   // Manual re-clean trigger
