@@ -10,7 +10,7 @@ import IDCard from '../components/IDCard';
 import { FileUploaderRegular } from '@uploadcare/react-uploader';
 import '@uploadcare/react-uploader/core.css';
 
-// Helper hook for Object URLs
+// ✅ Helper hook for Object URLs
 function useObjectUrl(file) {
   const [url, setUrl] = useState(null);
   useEffect(() => {
@@ -26,7 +26,6 @@ export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
   const location = useLocation();
-
   const { user } = useAuth();
 
   const [submission, setSubmission] = useState(null);
@@ -36,7 +35,9 @@ export default function ClientDashboard() {
   const [uploadcareUrl, setUploadcareUrl] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [cleanProgress, setCleanProgress] = useState(0);
 
+  // Fetch Submissions
   const fetchSubmissions = useCallback(async () => {
     if (!user) return;
     setLoadingSubmission(true);
@@ -68,6 +69,7 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  // Fetch ID Cards
   const fetchIdCards = useCallback(async () => {
     if (!user?.id) return;
     setLoadingCards(true);
@@ -91,81 +93,100 @@ export default function ClientDashboard() {
     fetchIdCards();
   }, [user, navigate, fetchSubmissions, fetchIdCards]);
 
-  // Robust handler for Uploadcare onChange
-  // Uploadcare onChange may provide:
-  //  - a "filePromise" with .done(handler)
-  //  - or a plain fileInfo object (depending on version / config)
-  // So we handle both safely.
+  // ✅ Main Uploadcare handler
   const handleUploadcareDone = async (fileInfoOrResult) => {
-    // fileInfoOrResult might be the direct fileInfo, or an object from .done()
     const fileInfo = fileInfoOrResult?.fileInfo || fileInfoOrResult;
     if (!fileInfo?.cdnUrl) {
       toast.error('Uploadcare did not return a cdnUrl.');
       return;
     }
 
-    setUploadcareUrl(fileInfo.cdnUrl);
+    const rawUrl = fileInfo.cdnUrl;
+    const cleanUrl = `${rawUrl}-/remove_bg/`;
+    setUploadcareUrl(cleanUrl);
 
-    // find placeholder card
     const card = idCards[0];
     if (!card) {
       toast.error('No placeholder ID card found. Create one first.');
       return;
     }
 
-    // Tell backend the Uploadcare URL — backend should save rawPhotoUrl (and optionally set a clean url)
     setUploadingPhoto(true);
-    setIsCleaning(true);
     try {
-      // NOTE: backend route used here: PUT /api/idcards/:id/photo
-      // body: { rawPhotoUrl: '<uploadcare-cdn-url>' }
-      await api.put(`/api/idcards/${card.id}/photo`, { rawPhotoUrl: fileInfo.cdnUrl });
-      toast.success('Photo linked successfully!');
+      // ✅ Step 1: Save raw photo to backend
+      await api.put(`/api/idcards/${card.id}/photo`, { rawPhotoUrl: rawUrl });
+      toast.success('Photo uploaded. Cleaning in progress…');
+
+      // ✅ Step 2: Simulate cleaning progress animation
+      setIsCleaning(true);
+      setCleanProgress(0);
+      const progressInterval = setInterval(() => {
+        setCleanProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
+      // ✅ Step 3: Call backend to re-clean
+      await api.put(`/api/idcards/${card.id}/clean-photo`);
       await fetchIdCards();
+
+      toast.success('✅ Photo cleaned successfully!');
     } catch (err) {
-      console.error('Error linking photo URL:', err?.response?.data || err?.message || err);
-      toast.error('Linking photo failed. Check console.');
+      console.error('Error linking photo URL:', err?.response?.data || err);
+      toast.error('Photo upload/clean failed.');
     } finally {
       setUploadingPhoto(false);
       setIsCleaning(false);
+      setCleanProgress(0);
     }
   };
 
-  // wrapper used by the component onChange
+  // Wrapper for Uploadcare change
   const onUploadcareChange = (filePromiseOrInfo) => {
-    // If Uploadcare returns a "filePromise" (object with .done), call .done()
     if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
-      // filePromiseOrInfo.done accepts a callback that receives the final fileInfo
       try {
-        filePromiseOrInfo.done((fileInfo) => {
-          handleUploadcareDone(fileInfo);
-        });
+        filePromiseOrInfo.done((fileInfo) => handleUploadcareDone(fileInfo));
       } catch (err) {
-        // fallback: try calling handler with whatever we got
-        console.warn('Uploadcare .done call failed, trying direct pass-through', err);
+        console.warn('Uploadcare .done() failed, trying direct:', err);
         handleUploadcareDone(filePromiseOrInfo);
       }
-      return;
+    } else {
+      handleUploadcareDone(filePromiseOrInfo);
     }
-
-    // Otherwise it's likely already the fileInfo object
-    handleUploadcareDone(filePromiseOrInfo);
   };
 
+  // Manual re-clean trigger
   const handleReClean = async (cardId) => {
     setIsCleaning(true);
+    setCleanProgress(0);
     try {
+      const progressInterval = setInterval(() => {
+        setCleanProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return prev + 20;
+        });
+      }, 300);
+
       await api.put(`/api/idcards/${cardId}/clean-photo`);
-      toast.success('Photo re-cleaned!');
       await fetchIdCards();
+      toast.success('Photo re-cleaned!');
     } catch (err) {
       console.error(err);
       toast.error('Re-clean failed.');
     } finally {
       setIsCleaning(false);
+      setCleanProgress(0);
     }
   };
 
+  // Section control
   const section = location.pathname.endsWith('/pdf')
     ? 'pdf'
     : location.pathname.endsWith('/idcards')
@@ -234,13 +255,23 @@ export default function ClientDashboard() {
                     <button
                       onClick={() => handleReClean(card.id)}
                       disabled={isCleaning}
-                      className={`mt-2 px-3 py-1 rounded text-white ${isCleaning ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+                      className={`mt-2 px-3 py-1 rounded text-white ${
+                        isCleaning ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'
+                      }`}
                     >
                       <FaRedo className="inline mr-1" /> Re-clean Photo
                     </button>
                   )}
                 </div>
               ))}
+            </div>
+          )}
+          {isCleaning && (
+            <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
+              <div
+                className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                style={{ width: `${cleanProgress}%` }}
+              ></div>
             </div>
           )}
         </div>
@@ -265,7 +296,7 @@ export default function ClientDashboard() {
 
               <div className="mb-3">
                 <FileUploaderRegular
-                  pubkey="42db570f1392dabdf82b"
+                  pubkey={import.meta.env.VITE_UPLOADCARE_PUBLIC_KEY || "42db570f1392dabdf82b"}
                   multiple={false}
                   sourceList="local, camera, url"
                   onChange={onUploadcareChange}
@@ -274,11 +305,26 @@ export default function ClientDashboard() {
               </div>
 
               {uploadingPhoto && <p className="text-blue-600 mt-2 font-semibold">Uploading / processing…</p>}
+              {isCleaning && (
+                <div className="mt-2">
+                  <p className="text-yellow-600 font-semibold">Cleaning photo… {cleanProgress}%</p>
+                  <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+                    <div
+                      className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                      style={{ width: `${cleanProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {uploadcareUrl && (
                 <div className="mt-4">
                   <p className="font-semibold">Latest Photo:</p>
-                  <img src={uploadcareUrl} alt="uploadcare-preview" className="w-48 h-48 object-cover rounded shadow" />
+                  <img
+                    src={uploadcareUrl}
+                    alt="uploadcare-preview"
+                    className="w-48 h-48 object-cover rounded shadow"
+                  />
                 </div>
               )}
             </>
@@ -291,7 +337,9 @@ export default function ClientDashboard() {
         <FaLock className="mr-2" />
         <span>
           If you haven’t changed your password,{' '}
-          <button onClick={() => openChangePwModal(true)} className="underline font-semibold text-blue-600">click here</button>.
+          <button onClick={() => openChangePwModal(true)} className="underline font-semibold text-blue-600">
+            click here
+          </button>.
         </span>
       </div>
     </div>
