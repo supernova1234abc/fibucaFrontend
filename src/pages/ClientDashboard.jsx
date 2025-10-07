@@ -394,6 +394,46 @@ export default function ClientDashboard() {
 
   const getCardRole = () => 'Member';
 
+  // Helper to download a remote file as a proper PDF file
+  const downloadPdf = async (url, filenameFallback) => {
+    try {
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
+      const blob = await res.blob();
+
+      // Try content-disposition
+      let filename = filenameFallback || 'form.pdf';
+      const cd = res.headers.get('content-disposition');
+      if (cd) {
+        const m = cd.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+        if (m && m[1]) filename = decodeURIComponent(m[1]);
+      } else {
+        // Try to derive from URL path
+        try {
+          const u = new URL(url);
+          const part = u.pathname.split('/').pop();
+          if (part && /\.pdf$/i.test(part)) filename = part;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      if (!/\.pdf$/i.test(filename)) filename = `${filename}.pdf`;
+
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('PDF download failed:', err);
+      toast.error('Download failed — opening in a new tab');
+      window.open(url, '_blank', 'noopener');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Overview */}
@@ -424,9 +464,17 @@ export default function ClientDashboard() {
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
           {submission?.pdfPath ? (
-            <a href={encodeURI(submission.pdfPath)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline">
-              <FaFilePdf className="mr-2" /> View / Download Form
-            </a>
+            <button
+              onClick={() =>
+                downloadPdf(
+                  submission.pdfPath,
+                  submission.originalFilename || `form_${submission.employeeNumber || user?.employeeNumber || 'form'}.pdf`
+                )
+              }
+              className="inline-flex items-center text-blue-600 hover:underline"
+            >
+              <FaFilePdf className="mr-2" /> Download Form
+            </button>
           ) : (
             <p className="text-gray-500">You haven’t generated your form PDF yet.</p>
           )}
