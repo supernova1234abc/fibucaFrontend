@@ -93,7 +93,79 @@ export default function ClientDashboard() {
     fetchIdCards();
   }, [user, navigate, fetchSubmissions, fetchIdCards]);
 
-  // ✅ Main Uploadcare handler
+  // Load external script helper
+  const loadScript = (src) =>
+    new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+
+  // Browser-side background removal using BodyPix (via CDN). Returns Blob PNG.
+  const removeBackgroundInBrowser = async (imageUrl) => {
+    try {
+      // load tfjs + body-pix UMD builds
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js');
+
+      // create an image element from the URL
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.crossOrigin = 'anonymous';
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = imageUrl;
+      });
+
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // load BodyPix model
+      const net = await window.bodyPix.load({
+        architecture: 'MobileNetV1',
+        outputStride: 16,
+        multiplier: 0.75,
+        quantBytes: 2,
+      });
+
+      // segmentation
+      const segmentation = await net.segmentPerson(img, {
+        internalResolution: 'medium',
+        segmentationThreshold: 0.7,
+      });
+
+      // apply mask: make background transparent
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+      const segData = segmentation.data; // 1 for person, 0 for background
+
+      for (let i = 0, p = 0; i < segData.length; i++, p += 4) {
+        if (!segData[i]) {
+          data[p + 3] = 0; // set alpha to 0 for background pixel
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+
+      // downsize if huge (optional): keep original for quality
+      return await new Promise((resolve) =>
+        canvas.toBlob((blob) => resolve(blob), 'image/png', 0.92)
+      );
+    } catch (err) {
+      console.warn('Browser bg removal failed:', err);
+      return null;
+    }
+  };
+
+  // Main Uploadcare handler (modified): try client-side removal and upload cleaned image to backend
   const handleUploadcareDone = async (fileInfoOrResult) => {
     const fileInfo = fileInfoOrResult?.fileInfo || fileInfoOrResult;
     if (!fileInfo?.cdnUrl) {
@@ -102,8 +174,8 @@ export default function ClientDashboard() {
     }
 
     const rawUrl = fileInfo.cdnUrl;
-    const cleanUrl = `${rawUrl}-/remove_bg/`;
-    setUploadcareUrl(cleanUrl);
+    // optimistic preview using Uploadcare transform (may be premium)
+    setUploadcareUrl(`${rawUrl}-/remove_bg/`);
 
     const card = idCards[0];
     if (!card) {
@@ -113,30 +185,43 @@ export default function ClientDashboard() {
 
     setUploadingPhoto(true);
     try {
-      // ✅ Step 1: Save raw photo to backend
+      // 1) Save raw URL so backend always has it
       await api.put(`/api/idcards/${card.id}/photo`, { rawPhotoUrl: rawUrl });
-      toast.success('Photo uploaded. Cleaning in progress…');
 
-      // ✅ Step 2: Simulate cleaning progress animation
+      toast.success('Photo uploaded. Starting background removal…');
       setIsCleaning(true);
       setCleanProgress(0);
-      const progressInterval = setInterval(() => {
-        setCleanProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 10;
+
+      // 2) Try browser-side removal
+      const cleanedBlob = await removeBackgroundInBrowser(rawUrl);
+
+      if (cleanedBlob) {
+        // upload cleaned image to backend endpoint
+        const fd = new FormData();
+        fd.append('cleanImage', cleanedBlob, `clean_${card.id}_${Date.now()}.png`);
+        const uploadResp = await api.post(`/api/idcards/${card.id}/upload-clean`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (ev) => {
+            if (ev.total) {
+              const pct = Math.round((ev.loaded / ev.total) * 100);
+              setCleanProgress(pct);
+            }
+          },
         });
-      }, 300);
 
-      // ✅ Step 3: Call backend to re-clean
-      await api.put(`/api/idcards/${card.id}/clean-photo`);
-      await fetchIdCards();
-
-      toast.success('✅ Photo cleaned successfully!');
+        // update UI with returned card
+        const updatedCard = uploadResp.data.card;
+        setIdCards([updatedCard]);
+        setUploadcareUrl(updatedCard.cleanPhotoUrl);
+        toast.success('✅ Background removed and saved (client-side).');
+      } else {
+        // fallback: use Uploadcare transformation URL (may or may not work depending on plan)
+        await api.put(`/api/idcards/${card.id}/clean-photo`);
+        await fetchIdCards();
+        toast.success('✅ Cleaned via Uploadcare transform (fallback).');
+      }
     } catch (err) {
-      console.error('Error linking photo URL:', err?.response?.data || err);
+      console.error('Error processing upload:', err?.response?.data || err);
       toast.error('Photo upload/clean failed.');
     } finally {
       setUploadingPhoto(false);
@@ -145,20 +230,14 @@ export default function ClientDashboard() {
     }
   };
 
-  // Wrapper for Uploadcare change
-const onUploadcareChange = (filePromiseOrInfo) => {
-  // Check if the input is a promise with a .done method
-  if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
-    // Handle the file once the promise resolves
-    filePromiseOrInfo.done((fileInfo) => {
-      handleUploadcareDone(fileInfo);
-    });
-  } else {
-    // Directly handle the fileInfo object
-    handleUploadcareDone(filePromiseOrInfo);
-  }
-};
-
+  // Wrapper for Uploadcare change (keeps your existing handler)
+  const onUploadcareChange = (filePromiseOrInfo) => {
+    if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
+      filePromiseOrInfo.done((fileInfo) => handleUploadcareDone(fileInfo));
+    } else {
+      handleUploadcareDone(filePromiseOrInfo);
+    }
+  };
 
   // Manual re-clean trigger
   const handleReClean = async (cardId) => {
