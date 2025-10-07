@@ -274,10 +274,22 @@ export default function ClientDashboard() {
         setUploadcareUrl(updatedCard.cleanPhotoUrl);
         toast.success('✅ Background removed and saved (client-side).');
       } else {
-        // fallback: use Uploadcare transformation URL (may or may not work depending on plan)
-        await api.put(`/api/idcards/${card.id}/clean-photo`);
-        await fetchIdCards();
-        toast.success('✅ Cleaned via Uploadcare transform (fallback).');
+        // NEW: If browser-side removal failed (CORS or model failure),
+        // ask backend to fetch the raw image and attempt server-side cleaning (or at least persist a local copy).
+        try {
+          toast('Browser removal failed; asking server to fetch and attempt cleaning…');
+          const resp = await api.post(`/api/idcards/${card.id}/fetch-and-clean`, { rawPhotoUrl: rawUrl });
+          const updatedCard = resp.data.card;
+          setIdCards([updatedCard]);
+          setUploadcareUrl(updatedCard.cleanPhotoUrl);
+          toast.success('✅ Server fetched and saved cleaned image (or fallback image).');
+        } catch (err) {
+          console.error('Server fetch-and-clean failed:', err?.response?.data || err);
+          // fallback: try Uploadcare transform (may not work on free plan)
+          await api.put(`/api/idcards/${card.id}/clean-photo`);
+          await fetchIdCards();
+          toast.success('✅ Cleaned via Uploadcare transform (fallback).');
+        }
       }
     } catch (err) {
       console.error('Error processing upload:', err?.response?.data || err);
