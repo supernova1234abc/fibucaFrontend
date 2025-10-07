@@ -218,8 +218,36 @@ export default function ClientDashboard() {
   // Main Uploadcare handler (modified): try client-side removal and upload cleaned image to backend
   const handleUploadcareDone = async (fileInfoOrResult) => {
     const fileInfo = fileInfoOrResult?.fileInfo || fileInfoOrResult;
-    // Resolve raw URL robustly
-    const rawUrl = resolveUploadcareRawUrl(fileInfo);
+    // Resolve raw URL robustly (may return a constructed ucarecdn URL from uuid)
+    let rawUrl = resolveUploadcareRawUrl(fileInfo);
+
+    // If we only have an ID/UUID (no cdnUrl), try Uploadcare info endpoint to get an official cdn_url
+    const publicKey = import.meta.env.VITE_UPLOADCARE_PUBLIC_KEY || '42db570f1392dabdf82b';
+    const idCandidate = fileInfo?.uuid || fileInfo?.file_id || fileInfo?.id;
+    if (idCandidate && !(fileInfo?.cdnUrl || fileInfo?.cdn_url || fileInfo?.secure_url || fileInfo?.originalUrl)) {
+      try {
+        const infoUrl = `https://upload.uploadcare.com/info/?jsonerrors=1&pub_key=${encodeURIComponent(publicKey)}&file_id=${encodeURIComponent(idCandidate)}`;
+        const r = await fetch(infoUrl);
+        if (r.ok) {
+          const info = await r.json();
+          // prefer cdn_url, then original_url
+          const candidate = info?.cdn_url || info?.cdnUrl || info?.original_url || info?.originalUrl;
+          if (candidate && typeof candidate === 'string') {
+            rawUrl = candidate;
+            console.debug('Resolved Uploadcare info cdn_url:', rawUrl);
+            toast.success('Uploadcare info resolved; using official CDN URL.');
+          } else {
+            console.debug('Uploadcare info returned no cdn_url, falling back to constructed URL.');
+            toast('Using constructed Uploadcare CDN URL (info returned no cdn_url).');
+          }
+        } else {
+          console.warn('Uploadcare info fetch returned non-OK status', r.status);
+        }
+      } catch (e) {
+        console.warn('Uploadcare info fetch failed:', e);
+      }
+    }
+
     if (!rawUrl) {
       console.warn('Uploadcare returned no usable URL or UUID:', fileInfo);
       toast.error('Uploadcare did not return a usable URL. Check widget settings.');
