@@ -165,6 +165,56 @@ export default function ClientDashboard() {
     }
   };
 
+  // === MOVE: robust resolver must be defined before handler ===
+  const resolveUploadcareRawUrl = (fileInfo) => {
+    if (!fileInfo) return null;
+    // Debug log full object (helps when widget returns unexpected shape)
+    console.debug('Uploadcare fileInfo:', fileInfo);
+
+    // Try known direct URL fields first
+    const cdnCandidates = [
+      fileInfo.cdnUrl,
+      fileInfo.cdn_url,
+      fileInfo.cdnURL,
+      fileInfo.originalUrl,
+      fileInfo.original_url,
+      fileInfo.fileUrl,
+      fileInfo.secure_url,
+      // nested shapes
+      fileInfo.file && fileInfo.file.cdnUrl,
+      fileInfo.file && fileInfo.file.cdn_url,
+      fileInfo.file && fileInfo.file.originalUrl,
+      fileInfo.file && fileInfo.file.secure_url,
+    ];
+    for (const v of cdnCandidates) {
+      if (v && typeof v === 'string') {
+        return v;
+      }
+    }
+
+    // Uploadcare sometimes returns just a UUID or an object containing it
+    const uuidCandidates = [
+      fileInfo.uuid,
+      fileInfo.file && (fileInfo.file.uuid || fileInfo.file.id || fileInfo.file.file_id),
+      fileInfo.id,
+      fileInfo.file_id,
+      fileInfo.file && fileInfo.file_id,
+    ];
+    for (const u of uuidCandidates) {
+      if (u && typeof u === 'string') {
+        const cleaned = u.replace(/^\/+|\/+$/g, '');
+        const built = `https://ucarecdn.com/${cleaned}/`;
+        console.debug('Built Uploadcare CDN URL from uuid-like value:', built);
+        // small user hint (non-blocking)
+        toast('Uploadcare returned an ID only — using constructed CDN URL. If image not visible, check Uploadcare project/public settings.');
+        return built;
+      }
+    }
+
+    // nothing usable
+    return null;
+  };
+
   // Main Uploadcare handler (modified): try client-side removal and upload cleaned image to backend
   const handleUploadcareDone = async (fileInfoOrResult) => {
     const fileInfo = fileInfoOrResult?.fileInfo || fileInfoOrResult;
@@ -237,28 +287,6 @@ export default function ClientDashboard() {
       setIsCleaning(false);
       setCleanProgress(0);
     }
-  };
-
-  // Wrapper for Uploadcare change (keeps your existing handler)
-  const resolveUploadcareRawUrl = (fileInfo) => {
-    if (!fileInfo) return null;
-    // Debug log full object (helps when widget returns unexpected shape)
-    console.debug('Uploadcare fileInfo:', fileInfo);
-
-    // common property names
-    const cdnCandidates = [fileInfo.cdnUrl, fileInfo.cdn_url, fileInfo.cdnURL, fileInfo.originalUrl, fileInfo.original_url, fileInfo.fileUrl, fileInfo.secure_url];
-    for (const v of cdnCandidates) {
-      if (v && typeof v === 'string') return v;
-    }
-    // Uploadcare sometimes returns a UUID only (or under file/uuid/id)
-    const uuid = fileInfo.uuid || (fileInfo.file && (fileInfo.file.uuid || fileInfo.file)) || fileInfo.id || fileInfo.file_id;
-    if (uuid && typeof uuid === 'string') {
-      // Build CDN URL from uuid
-      const built = `https://ucarecdn.com/${uuid.replace(/^\/+|\/+$/g, '')}/`;
-      console.debug('Built Uploadcare CDN URL from uuid:', built);
-      return built;
-    }
-    return null;
   };
 
   const onUploadcareChange = (filePromiseOrInfo) => {
