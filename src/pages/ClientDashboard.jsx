@@ -242,8 +242,11 @@ export default function ClientDashboard() {
   // Wrapper for Uploadcare change (keeps your existing handler)
   const resolveUploadcareRawUrl = (fileInfo) => {
     if (!fileInfo) return null;
+    // Debug log full object (helps when widget returns unexpected shape)
+    console.debug('Uploadcare fileInfo:', fileInfo);
+
     // common property names
-    const cdnCandidates = [fileInfo.cdnUrl, fileInfo.cdn_url, fileInfo.cdnURL, fileInfo.originalUrl, fileInfo.original_url, fileInfo.fileUrl];
+    const cdnCandidates = [fileInfo.cdnUrl, fileInfo.cdn_url, fileInfo.cdnURL, fileInfo.originalUrl, fileInfo.original_url, fileInfo.fileUrl, fileInfo.secure_url];
     for (const v of cdnCandidates) {
       if (v && typeof v === 'string') return v;
     }
@@ -251,7 +254,9 @@ export default function ClientDashboard() {
     const uuid = fileInfo.uuid || (fileInfo.file && (fileInfo.file.uuid || fileInfo.file)) || fileInfo.id || fileInfo.file_id;
     if (uuid && typeof uuid === 'string') {
       // Build CDN URL from uuid
-      return `https://ucarecdn.com/${uuid.replace(/^\/+|\/+$/g, '')}/`;
+      const built = `https://ucarecdn.com/${uuid.replace(/^\/+|\/+$/g, '')}/`;
+      console.debug('Built Uploadcare CDN URL from uuid:', built);
+      return built;
     }
     return null;
   };
@@ -259,18 +264,25 @@ export default function ClientDashboard() {
   const onUploadcareChange = (filePromiseOrInfo) => {
     // File object with .done (Uploadcare widget) — prefer done callback
     if (filePromiseOrInfo && typeof filePromiseOrInfo.done === 'function') {
-      filePromiseOrInfo.done((fileInfo) => handleUploadcareDone(fileInfo));
+      filePromiseOrInfo.done((fileInfo) => {
+        console.debug('Uploadcare .done result:', fileInfo);
+        handleUploadcareDone(fileInfo);
+      });
       return;
     }
     // If passed a promise-like with .then
     if (filePromiseOrInfo && typeof filePromiseOrInfo.then === 'function') {
-      filePromiseOrInfo.then((fileInfo) => handleUploadcareDone(fileInfo)).catch((err) => {
+      filePromiseOrInfo.then((fileInfo) => {
+        console.debug('Uploadcare promise result:', fileInfo);
+        handleUploadcareDone(fileInfo);
+      }).catch((err) => {
         console.warn('Uploadcare promise failed:', err);
         toast.error('Upload failed.');
       });
       return;
     }
     // Otherwise handle direct info
+    console.debug('Uploadcare direct info:', filePromiseOrInfo);
     handleUploadcareDone(filePromiseOrInfo);
   };
 
