@@ -50,8 +50,10 @@ export default function ClientDashboard() {
       let latest = mine[0] || null;
 
       if (latest?.pdfPath) {
+        // If it's a Cloudinary URL, keep it as-is
+        // If it's a relative path, prepend backend URL
         const backendUrl = import.meta.env.VITE_BACKEND_URL;
-        if (!latest.pdfPath.startsWith('http')) {
+        if (latest.pdfPath && !latest.pdfPath.startsWith('http') && !latest.pdfPath.startsWith('https')) {
           latest.pdfPath = `${backendUrl.replace(/\/$/, '')}/${latest.pdfPath.replace(/^\/+/, '')}`;
         }
         localStorage.setItem('latestSubmission', JSON.stringify(latest));
