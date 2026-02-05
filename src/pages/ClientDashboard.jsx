@@ -59,7 +59,13 @@ export default function ClientDashboard() {
         localStorage.setItem('latestSubmission', JSON.stringify(latest));
       } else {
         const cached = localStorage.getItem('latestSubmission');
-        if (cached) latest = JSON.parse(cached);
+        // Only use cache if it belongs to the current user
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          if (cachedData?.employeeNumber === user?.employeeNumber) {
+            latest = cachedData;
+          }
+        }
       }
 
       setSubmission(latest);
