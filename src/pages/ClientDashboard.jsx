@@ -87,11 +87,29 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  // ✅ FIXED: Removed fetchSubmissions/fetchIdCards from dependencies
+  // They're recreated on each render, causing infinite loop
   useEffect(() => {
     if (user && user.role !== 'CLIENT') navigate('/login');
     fetchSubmissions();
     fetchIdCards();
-  }, [user, navigate, fetchSubmissions, fetchIdCards]);
+  }, [user, navigate]);
+
+  // ✅ OPTIMIZED: Preload TensorFlow scripts once when component mounts
+  // This prevents 50MB+ download on first photo upload
+  useEffect(() => {
+    // Preload in background
+    const preloadScripts = async () => {
+      try {
+        await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js');
+        await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js');
+        console.log('✅ TensorFlow & BodyPix preloaded');
+      } catch (err) {
+        console.warn('Failed to preload ML libraries:', err);
+      }
+    };
+    preloadScripts();
+  }, []);
 
   // Load external script helper
   const loadScript = (src) =>
@@ -224,24 +242,19 @@ export default function ClientDashboard() {
     // If we only have an ID/UUID (no cdnUrl), try Uploadcare info endpoint to get an official cdn_url
     const publicKey = import.meta.env.VITE_UPLOADCARE_PUBLIC_KEY || '42db570f1392dabdf82b';
     const idCandidate = fileInfo?.uuid || fileInfo?.file_id || fileInfo?.id;
-    if (idCandidate && !(fileInfo?.cdnUrl || fileInfo?.cdn_url || fileInfo?.secure_url || fileInfo?.originalUrl)) {
+    
+    // ✅ OPTIMIZED: Skip extra API call if we already have a URL
+    if (!rawUrl && idCandidate) {
       try {
         const infoUrl = `https://upload.uploadcare.com/info/?jsonerrors=1&pub_key=${encodeURIComponent(publicKey)}&file_id=${encodeURIComponent(idCandidate)}`;
         const r = await fetch(infoUrl);
         if (r.ok) {
           const info = await r.json();
-          // prefer cdn_url, then original_url
           const candidate = info?.cdn_url || info?.cdnUrl || info?.original_url || info?.originalUrl;
           if (candidate && typeof candidate === 'string') {
             rawUrl = candidate;
             console.debug('Resolved Uploadcare info cdn_url:', rawUrl);
-            toast.success('Uploadcare info resolved; using official CDN URL.');
-          } else {
-            console.debug('Uploadcare info returned no cdn_url, falling back to constructed URL.');
-            toast('Using constructed Uploadcare CDN URL (info returned no cdn_url).');
           }
-        } else {
-          console.warn('Uploadcare info fetch returned non-OK status', r.status);
         }
       } catch (e) {
         console.warn('Uploadcare info fetch failed:', e);
