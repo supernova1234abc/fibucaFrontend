@@ -177,8 +177,10 @@ export default function AdminDashboard() {
       name: 'PDF',
       cell: (row) => {
         if (!row.pdfPath) return <span className="text-gray-400">No File</span>;
-        // Use BACKEND_URL from .env + normalized path
-        const pdfUrl = `${BACKEND_URL}/${row.pdfPath.replace(/^\/?uploads\//, 'uploads/')}`;
+        // If it's a full Cloudinary URL, use directly; otherwise prepend BACKEND_URL
+        const pdfUrl = row.pdfPath.startsWith('http') || row.pdfPath.startsWith('https')
+          ? row.pdfPath
+          : `${BACKEND_URL}/${row.pdfPath.replace(/^\/?uploads\//, 'uploads/')}`;
         return (
           <a
             href={pdfUrl}
