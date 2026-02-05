@@ -177,10 +177,10 @@ export default function AdminDashboard() {
       name: 'PDF',
       cell: (row) => {
         if (!row.pdfPath) return <span className="text-gray-400">No File</span>;
-        // If it's a full Cloudinary URL, use directly; otherwise prepend BACKEND_URL
-        const pdfUrl = row.pdfPath.startsWith('http') || row.pdfPath.startsWith('https')
-          ? row.pdfPath
-          : `${BACKEND_URL}/${row.pdfPath.replace(/^\/?uploads\//, 'uploads/')}`;
+        // If it contains "cloudinary" or starts with http/https, use directly
+        const isCloudinaryUrl = row.pdfPath.includes('cloudinary.com') || row.pdfPath.includes('res.cloudinary');
+        const isFullUrl = row.pdfPath.match(/^https?:/i);
+        const pdfUrl = (isCloudinaryUrl || isFullUrl) ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath.replace(/^\/?uploads\//, 'uploads/')}`;
         return (
           <a
             href={pdfUrl}
