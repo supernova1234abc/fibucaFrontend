@@ -13,6 +13,7 @@
     "@uploadcare/react-uploader": "^1.10.2",
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
+    "framer-motion": "^12.33.0",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^4.0.0",
