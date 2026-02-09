@@ -8,7 +8,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import UserAvatarPopover from '../components/UserAvatarPopover';
+import UserAvatarPopover from '../components/UserAvatarPopover.jsx';
 import ChangePasswordPage from './ChangePassword';
 
 export default function AdminDashboard() {
