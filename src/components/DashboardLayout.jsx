@@ -8,17 +8,15 @@ import ChangePasswordPage from '../pages/ChangePassword';
 // Context to allow children to open change password modal
 export const ChangePwModalContext = createContext(null);
 
-const avatarColors = ['#EF4444','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#6366F1'];
+const avatarColors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#6366F1'];
 
-function getAvatarBg(name='') {
+const getAvatarBg = (name = '') => {
   if (!name) return avatarColors[0];
   const code = name.trim().charCodeAt(0);
   return avatarColors[code % avatarColors.length];
-}
+};
 
-function getFirstName(fullName='') {
-  return fullName.trim().split(/\s+/)[0] || 'User';
-}
+const getFirstName = (fullName = '') => fullName.trim().split(/\s+/)[0] || 'User';
 
 export default function DashboardLayout({ children, menus = [], user }) {
   const navigate = useNavigate();
@@ -29,6 +27,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [showChangePwModal, setShowChangePwModal] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -36,7 +35,17 @@ export default function DashboardLayout({ children, menus = [], user }) {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    // Close on ESC key
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setDropdownOpen(false);
+    };
+    document.addEventListener('keydown', handleEsc);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -69,18 +78,28 @@ export default function DashboardLayout({ children, menus = [], user }) {
   return (
     <ChangePwModalContext.Provider value={setShowChangePwModal}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row">
+
         {/* Sidebar */}
-        <aside className={`fixed md:relative z-40 md:z-20 top-0 left-0 h-screen md:h-auto w-64 bg-[#d5d7d7] shadow-md transition-transform transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <aside
+          className={`fixed md:relative z-40 md:z-20 top-0 left-0 h-screen md:h-auto w-64 bg-[#d5d7d7] dark:bg-gray-800 shadow-md transition-transform transform
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+        >
           <div className="flex items-center justify-between p-4 border-b border-gray-300 md:block">
-            <h2 className="text-lg font-bold text-blue-600">FIBUCA Portal</h2>
-            <button className="md:hidden" onClick={() => setSidebarOpen(false)}><FaTimes size={22} /></button>
+            <h2 className="text-lg font-bold text-blue-600 dark:text-blue-400">FIBUCA Portal</h2>
+            <button className="md:hidden" onClick={() => setSidebarOpen(false)}>
+              <FaTimes size={22} />
+            </button>
           </div>
+
           <nav className="p-4 space-y-2">
             {menus.map((menu, idx) => (
               <button
                 key={idx}
                 onClick={() => { navigate(menu.href); setSidebarOpen(false); }}
-                className={`flex items-center gap-2 w-full text-left px-4 py-2 rounded-md transition-all duration-200 ${isActive(menu.href) ? 'bg-white text-blue-700 font-semibold shadow' : 'text-gray-800 hover:bg-[#c2c4c5]'}`}
+                className={`flex items-center gap-2 w-full text-left px-4 py-2 rounded-md transition-all duration-200
+                  ${isActive(menu.href)
+                    ? 'bg-white dark:bg-gray-700 text-blue-700 font-semibold shadow'
+                    : 'text-gray-800 dark:text-gray-200 hover:bg-[#c2c4c5] dark:hover:bg-gray-700'}`}
               >
                 {menu.icon && <menu.icon size={16} />}
                 {menu.label}
@@ -91,18 +110,27 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-h-screen">
+
+          {/* Header */}
           <header className="bg-blue-700 text-white flex items-center justify-between px-4 py-4 shadow-md md:px-6 relative z-30">
             <div className="flex items-center gap-2">
-              <button className="md:hidden" onClick={() => setSidebarOpen(true)}><FaBars size={24} /></button>
+              <button className="md:hidden" onClick={() => setSidebarOpen(true)}>
+                <FaBars size={24} />
+              </button>
               <span className="text-xl font-bold">FIBUCA</span>
             </div>
+
             <div className="relative" ref={dropdownRef}>
               <button className="flex items-center gap-2 focus:outline-none" onClick={() => setDropdownOpen(prev => !prev)}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold" style={{ backgroundColor: getAvatarBg(user?.name) }}>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                  style={{ backgroundColor: getAvatarBg(user?.name) }}
+                >
                   {user?.name?.trim()?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <span className="hidden md:inline">{getFirstName(user?.name)}</span>
               </button>
+
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md shadow-lg z-40">
                   <button
@@ -112,7 +140,10 @@ export default function DashboardLayout({ children, menus = [], user }) {
                     <FaKey /> Change Password
                   </button>
                   <div className="px-4 py-2">
-                    <button onClick={handleLogout} className="flex items-center bg-red-600 hover:bg-red-700 text-white text-center py-2 px-4 rounded font-semibold shadow transition">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded font-semibold shadow w-full transition"
+                    >
                       Logout
                     </button>
                   </div>
@@ -121,6 +152,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
             </div>
           </header>
 
+          {/* Page Content */}
           <main className="flex-1 p-4 overflow-y-auto">
             {children || <Outlet />}
           </main>
@@ -142,7 +174,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                   ✕
                 </button>
                 <ChangePasswordPage
-                  inModal={true}
+                  inModal
                   onSuccess={() => setShowChangePwModal(false)}
                   onCancel={() => setShowChangePwModal(false)}
                 />
