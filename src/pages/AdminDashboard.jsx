@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import UserAvatarPopover from '../components/UserAvatarPopover';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -17,12 +18,18 @@ export default function AdminDashboard() {
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
 
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://fibucabackend.onrender.com';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://fibuca-backend.vercel.app';
 
   // Auth & Fetch Users
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('fibuca_user')) || JSON.parse(sessionStorage.getItem('fibuca_user'));
     const token = localStorage.getItem('fibuca_token') || sessionStorage.getItem('fibuca_token');
+<div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-900 rounded shadow-md mb-4">
+  <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">FIBUCA Submissions</h1>
+
+  {/* Avatar popover */}
+  <UserAvatarPopover user={JSON.parse(localStorage.getItem('fibuca_user'))} />
+</div>
 
     if (!user || user.role !== 'ADMIN') {
       navigate('/login');

@@ -9,6 +9,8 @@ import { api } from '../lib/api';
 import IDCard from '../components/IDCard';
 import { FileUploaderRegular } from '@uploadcare/react-uploader';
 import '@uploadcare/react-uploader/core.css';
+import UserAvatarPopover from '../components/UserAvatarPopover';
+
 
 // Hook to generate object URL for previewing File objects
 function useObjectUrl(file) {
@@ -300,6 +302,11 @@ export default function ClientDashboard() {
   // ---------------------- RENDER ----------------------
   return (
     <div className="space-y-6">
+   {/* Avatar popover */}
+      <div className="flex justify-end">
+        <UserAvatarPopover user={user} />
+      </div>
+
       {/* Overview */}
       {section === 'overview' && (
         <div>
