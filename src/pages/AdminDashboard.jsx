@@ -212,11 +212,13 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-900 rounded shadow-md mb-4">
         <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">FIBUCA Submissions</h1>
-        <UserAvatarPopover
-          user={currentUser}
-          onLogout={handleLogout}
-          onChangePassword={() => setShowChangePwModal(true)}
-        />
+{currentUser && (
+  <UserAvatarPopover
+    user={currentUser}
+    onLogout={handleLogout}
+    onChangePassword={() => setShowChangePwModal(true)}
+  />
+)}
       </div>
 
       {/* Upload & Export Controls */}
