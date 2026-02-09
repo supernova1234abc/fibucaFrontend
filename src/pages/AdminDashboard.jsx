@@ -24,12 +24,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('fibuca_user')) || JSON.parse(sessionStorage.getItem('fibuca_user'));
     const token = localStorage.getItem('fibuca_token') || sessionStorage.getItem('fibuca_token');
-<div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-900 rounded shadow-md mb-4">
-  <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">FIBUCA Submissions</h1>
 
-  {/* Avatar popover */}
-  <UserAvatarPopover user={JSON.parse(localStorage.getItem('fibuca_user'))} />
-</div>
 
     if (!user || user.role !== 'ADMIN') {
       navigate('/login');
@@ -188,8 +183,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-3xl font-bold text-blue-700">FIBUCA Submissions</h1>
-
+   {/* HEADER */}
+    <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-900 rounded shadow-md mb-4">
+      <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">FIBUCA Submissions</h1>
+      <UserAvatarPopover user={JSON.parse(localStorage.getItem('fibuca_user'))} />
+    </div>
+    
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
           <label className="bg-blue-600 text-white text-center py-2 px-4 rounded cursor-pointer hover:bg-blue-700">
