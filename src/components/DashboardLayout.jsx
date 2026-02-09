@@ -120,12 +120,36 @@ export default function DashboardLayout({ children, menus = [], user }) {
               <span className="text-xl font-bold">FIBUCA</span>
             </div>
 
-<UserAvatarPopover
-  user={user}
-  onLogout={handleLogout}
-  onChangePassword={() => setShowChangePwModal(true)}
-/>
+            <div className="relative" ref={dropdownRef}>
+              <button className="flex items-center gap-2 focus:outline-none" onClick={() => setDropdownOpen(prev => !prev)}>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                  style={{ backgroundColor: getAvatarBg(user?.name) }}
+                >
+                  {user?.name?.trim()?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <span className="hidden md:inline">{getFirstName(user?.name)}</span>
+              </button>
 
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md shadow-lg z-40">
+                  <button
+                    onClick={() => { setShowChangePwModal(true); setDropdownOpen(false); }}
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <FaKey /> Change Password
+                  </button>
+                  <div className="px-4 py-2">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded font-semibold shadow w-full transition"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </header>
 
           {/* Page Content */}
