@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import UserAvatarPopover from '../components/UserAvatarPopover';
+import ChangePasswordPage from './ChangePassword';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -17,20 +18,18 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [showChangePwModal, setShowChangePwModal] = useState(false);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://fibuca-backend.vercel.app';
+  const currentUser = JSON.parse(localStorage.getItem('fibuca_user')) || JSON.parse(sessionStorage.getItem('fibuca_user'));
 
   // Auth & Fetch Users
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('fibuca_user')) || JSON.parse(sessionStorage.getItem('fibuca_user'));
     const token = localStorage.getItem('fibuca_token') || sessionStorage.getItem('fibuca_token');
-
-
-    if (!user || user.role !== 'ADMIN') {
+    if (!currentUser || currentUser.role !== 'ADMIN') {
       navigate('/login');
       return;
     }
-
     if (token) setAuthToken(token);
     fetchUsers();
   }, [navigate]);
@@ -44,7 +43,33 @@ export default function AdminDashboard() {
       .catch(err => console.error(err));
   }, []);
 
-  // Export to Excel
+  // Logout
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'You will be logged out!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, logout',
+    }).then(result => {
+      if (result.isConfirmed) {
+        localStorage.removeItem('fibuca_user');
+        localStorage.removeItem('fibuca_token');
+        Swal.fire({
+          icon: 'success',
+          title: 'Logged Out',
+          text: 'You have been successfully logged out.',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        navigate('/login');
+      }
+    });
+  };
+
+  // Export Excel
   const exportToExcel = () => {
     if (!filteredUsers.length) return Swal.fire('No Data', 'There are no records to export.', 'info');
     const dataToExport = filteredUsers.map((user, index) => ({
@@ -61,7 +86,7 @@ export default function AdminDashboard() {
     XLSX.writeFile(workbook, 'fibuca_clients.xlsx');
   };
 
-  // Export to PDF
+  // Export PDF
   const exportToPDF = () => {
     if (!filteredUsers.length) return Swal.fire('No Data', 'There are no records to export.', 'info');
     const doc = new jsPDF();
@@ -150,7 +175,7 @@ export default function AdminDashboard() {
       Swal.fire({ icon: 'error', title: 'Upload Failed', text: 'Check your file and try again.' });
     } finally {
       setUploading(false);
-      e.target.value = null; // reset input
+      e.target.value = null;
     }
   };
 
@@ -183,12 +208,18 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-   {/* HEADER */}
-    <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-900 rounded shadow-md mb-4">
-      <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">FIBUCA Submissions</h1>
-      <UserAvatarPopover user={JSON.parse(localStorage.getItem('fibuca_user'))} />
-    </div>
-    
+
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-900 rounded shadow-md mb-4">
+        <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">FIBUCA Submissions</h1>
+        <UserAvatarPopover
+          user={currentUser}
+          onLogout={handleLogout}
+          onChangePassword={() => setShowChangePwModal(true)}
+        />
+      </div>
+
+      {/* Upload & Export Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
           <label className="bg-blue-600 text-white text-center py-2 px-4 rounded cursor-pointer hover:bg-blue-700">
@@ -209,6 +240,7 @@ export default function AdminDashboard() {
         <input type="text" placeholder="Search..." className="p-2 border rounded w-full md:w-60" onChange={e => handleSearch(e.target.value)} />
       </div>
 
+      {/* DataTable */}
       <div className="bg-white dark:bg-gray-800 rounded shadow-md p-4 overflow-x-auto">
         {filteredUsers.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-300">No submissions found.</p>
@@ -251,6 +283,31 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePwModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-30"
+            onClick={() => setShowChangePwModal(false)}
+          />
+          <div className="fixed inset-0 flex items-center justify-center z-40">
+            <div className="relative w-full max-w-md">
+              <button
+                className="absolute top-0 right-0 m-2 text-white text-lg font-bold"
+                onClick={() => setShowChangePwModal(false)}
+              >
+                ✕
+              </button>
+              <ChangePasswordPage
+                inModal
+                onSuccess={() => setShowChangePwModal(false)}
+                onCancel={() => setShowChangePwModal(false)}
+              />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

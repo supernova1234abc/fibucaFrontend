@@ -11,7 +11,6 @@ import { FileUploaderRegular } from '@uploadcare/react-uploader';
 import '@uploadcare/react-uploader/core.css';
 import UserAvatarPopover from '../components/UserAvatarPopover';
 
-
 // Hook to generate object URL for previewing File objects
 function useObjectUrl(file) {
   const [url, setUrl] = useState(null);
@@ -302,7 +301,7 @@ export default function ClientDashboard() {
   // ---------------------- RENDER ----------------------
   return (
     <div className="space-y-6">
-   {/* Avatar popover */}
+      {/* Avatar popover */}
       <div className="flex justify-end">
         <UserAvatarPopover user={user} />
       </div>
