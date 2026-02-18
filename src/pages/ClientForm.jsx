@@ -29,6 +29,8 @@ export default function ClientForm() {
 
   const sigPadRef = useRef(null);
   const witnessSigPadRef = useRef(null);
+  const [employeeSignatureData, setEmployeeSignatureData] = useState(null);
+  const [witnessSignatureData, setWitnessSignatureData] = useState(null);
 
   const navigate = useNavigate();
 
@@ -104,8 +106,8 @@ export default function ClientForm() {
       // Employee signature box
       doc.text("Employee Signature", pageWidth / 2, currentY - 5, { align: 'center' });
       doc.rect(pageWidth / 2 - 50, currentY, 100, 40);
-      if (hasEmployeeSignature) {
-        doc.addImage(sigPadRef.current.getCanvas().toDataURL(), 'PNG', pageWidth / 2 - 48, currentY + 2, 96, 36);
+      if (hasEmployeeSignature && employeeSignatureData) {
+        doc.addImage(employeeSignatureData, 'PNG', pageWidth / 2 - 48, currentY + 2, 96, 36);
       }
       doc.text(form.employeeDate, pageWidth / 2, currentY + 55, { align: 'center' });
 
@@ -114,8 +116,8 @@ export default function ClientForm() {
       // Witness signature box
       doc.text("Witness Signature", pageWidth / 2, currentY - 5, { align: 'center' });
       doc.rect(pageWidth / 2 - 50, currentY, 100, 40);
-      if (hasWitnessSignature) {
-        doc.addImage(witnessSigPadRef.current.getCanvas().toDataURL(), 'PNG', pageWidth / 2 - 48, currentY + 2, 96, 36);
+      if (hasWitnessSignature && witnessSignatureData) {
+        doc.addImage(witnessSignatureData, 'PNG', pageWidth / 2 - 48, currentY + 2, 96, 36);
       }
       doc.text(form.witnessDate, pageWidth / 2, currentY + 55, { align: 'center' });
 
@@ -206,6 +208,90 @@ export default function ClientForm() {
             'Generate & Submit PDF'
           )}
         </button>
+
+        {/* Employee Signature Modal */}
+        {showEmployeeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-4 rounded w-11/12 max-w-md">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold">Employee Signature</h3>
+                <button onClick={() => setShowEmployeeModal(false)} className="text-gray-600">Close</button>
+              </div>
+              <div className="border rounded">
+                <SignatureCanvas ref={sigPadRef} penColor="black" canvasProps={{width: 500, height: 180, className: 'w-full'}} />
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    sigPadRef.current?.clear();
+                    setEmployeeSignatureData(null);
+                    setHasEmployeeSignature(false);
+                  }}
+                  className="bg-gray-200 px-3 py-1 rounded"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => {
+                    if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
+                      Swal.fire({ icon: 'warning', title: 'No signature', text: 'Please sign before saving.' });
+                      return;
+                    }
+                    const data = sigPadRef.current.getTrimmedCanvas().toDataURL('image/png');
+                    setEmployeeSignatureData(data);
+                    setHasEmployeeSignature(true);
+                    setShowEmployeeModal(false);
+                  }}
+                  className="bg-blue-500 text-white px-3 py-1 rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Witness Signature Modal */}
+        {showWitnessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-4 rounded w-11/12 max-w-md">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold">Witness Signature</h3>
+                <button onClick={() => setShowWitnessModal(false)} className="text-gray-600">Close</button>
+              </div>
+              <div className="border rounded">
+                <SignatureCanvas ref={witnessSigPadRef} penColor="black" canvasProps={{width: 500, height: 180, className: 'w-full'}} />
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    witnessSigPadRef.current?.clear();
+                    setWitnessSignatureData(null);
+                    setHasWitnessSignature(false);
+                  }}
+                  className="bg-gray-200 px-3 py-1 rounded"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => {
+                    if (!witnessSigPadRef.current || witnessSigPadRef.current.isEmpty()) {
+                      Swal.fire({ icon: 'warning', title: 'No signature', text: 'Please sign before saving.' });
+                      return;
+                    }
+                    const data = witnessSigPadRef.current.getTrimmedCanvas().toDataURL('image/png');
+                    setWitnessSignatureData(data);
+                    setHasWitnessSignature(true);
+                    setShowWitnessModal(false);
+                  }}
+                  className="bg-blue-500 text-white px-3 py-1 rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         </div>
         </div>
