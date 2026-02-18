@@ -74,19 +74,39 @@ export default function ClientForm() {
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
-      let currentY = 20;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let currentY = 30;
 
-      // Title centered
+      // helper to load image from public folder
+      const loadImageDataUrl = async (url) => {
+        try {
+          const res = await fetch(url);
+          const blob = await res.blob();
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          return null;
+        }
+      };
+
+      // Try to draw sample form image as background to match desired output
+      const bgData = await loadImageDataUrl('/images/sample form.JPG');
+      if (bgData) {
+        try {
+          doc.addImage(bgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+        } catch (e) {
+          // ignore background if addImage fails
+        }
+      }
+
+      // Title and centered fields
       doc.setFont('Times', 'bold');
-      doc.setFontSize(14);
-      doc.text(
-        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
-        pageWidth / 2,
-        currentY,
-        { align: 'center' }
-      );
-
-      currentY += 20;
+      doc.setFontSize(13);
+      doc.text("EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES", pageWidth / 2, currentY, { align: 'center' });
+      currentY += 18;
       doc.setFont('Times', 'normal');
       doc.setFontSize(12);
 
@@ -101,7 +121,7 @@ export default function ClientForm() {
       drawCenteredField("TRADE UNION NAME", "FIBUCA");
       drawCenteredField("INITIAL MONTHLY UNION DUES", form.dues);
 
-      currentY += 20;
+      currentY += 18;
 
       // Employee signature box
       doc.text("Employee Signature", pageWidth / 2, currentY - 5, { align: 'center' });
