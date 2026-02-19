@@ -186,19 +186,23 @@ export default function ClientForm() {
       const signHeight = 15;
 
       // EMPLOYEE SIGNATURE SECTION
+      doc.setFont("Times", "normal");
+      doc.setFontSize(12);
+      
       // Underline for signature
       doc.line(margin, y, margin + 60, y);
       const empX = margin + (60 - signWidth) / 2;
       doc.addImage(employeeSignature, "PNG", empX, y - signHeight, signWidth, signHeight);
       
-      // Date underline on right
+      // Date underline on right side
       const dateLineStart = pageWidth - margin - 40;
-      doc.line(dateLineStart, y + 1, pageWidth - margin, y + 1);
+      doc.line(dateLineStart, y, pageWidth - margin, y);
       doc.setFontSize(11);
       doc.text(form.employeeDate, dateLineStart + 20, y);
       
-      y += 8; // Space below underline for label
-      // Label BELOW the underline
+      y += 6; // Space below underlines
+      
+      // Labels BELOW (centered under their specific underlines)
       doc.setFont("Times", "normal");
       doc.setFontSize(10);
       doc.text("Employee Signature", margin, y, { align: "center", maxWidth: 60 });
@@ -206,40 +210,30 @@ export default function ClientForm() {
 
       y += 12;
 
-      // ✅ WITNESS NAME AND SIGNATURE - SAME LINE
+      // ✅ WITNESS NAME AND SIGNATURE - ONE LINE ONLY
       doc.setFont("Times", "normal");
       doc.setFontSize(12);
-      doc.text("Witness Name and Signature:", margin, y);
       
-      // Name and Signature on SAME LINE
-      const witnessNameStart = margin + 55;
-      const witnessNameWidth = 45;
+      const witnessNameStart = margin;
+      const witnessNameWidth = 40;
       
       // Name underline
-      doc.line(witnessNameStart, y + 1, witnessNameStart + witnessNameWidth, y + 1);
+      doc.line(witnessNameStart, y, witnessNameStart + witnessNameWidth, y);
       doc.text(form.witness, witnessNameStart + 5, y);
       
-      // Signature underline - next to name, same Y position
-      const witnessSignStart = witnessNameStart + witnessNameWidth + 15;
+      // Signature underline - with proper spacing
+      const witnessSignStart = witnessNameStart + witnessNameWidth + 10;
       const witnessSignWidth = pageWidth - margin - witnessSignStart;
-      doc.line(witnessSignStart, y + 1, pageWidth - margin, y + 1);
+      doc.line(witnessSignStart, y, witnessSignStart + witnessSignWidth, y);
       const witX = witnessSignStart + (witnessSignWidth - signWidth) / 2;
       doc.addImage(witnessSignature, "PNG", witX, y - signHeight, signWidth, signHeight);
       
-      // Date underline on right
-      const witDateLineStart = pageWidth - margin - 40;
-      doc.line(witDateLineStart, y + 1, pageWidth - margin, y + 1);
-      doc.setFontSize(11);
-      doc.text(form.witnessDate, witDateLineStart + 20, y);
+      y += 6; // Space below underline
       
-      y += 8; // Space below underline
-      
-      // Labels below (on same line)
+      // ONE SINGLE LABEL BELOW
       doc.setFont("Times", "normal");
-      doc.setFontSize(9);
-      doc.text("Name", witnessNameStart, y, { align: "center", maxWidth: witnessNameWidth });
-      doc.text("Signature", witnessSignStart, y, { align: "center", maxWidth: witnessSignWidth });
-      doc.text("Date", witDateLineStart + 20, y, { align: "center" });
+      doc.setFontSize(10);
+      doc.text("Witness Name and Signature", pageWidth / 2, y, { align: "center" });
 
       const pdfBlob = doc.output("blob");
       const formData = new FormData();
