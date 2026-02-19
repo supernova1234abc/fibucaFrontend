@@ -1,348 +1,391 @@
-import { useState, useRef, useEffect } from "react";
-import SignatureCanvas from "react-signature-canvas";
-import jsPDF from "jspdf";
-import { api } from "../lib/api";
-import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
-import { FaSpinner } from "react-icons/fa";
+import { useState, useRef, useEffect } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
+import jsPDF from 'jspdf';
+import { api } from '../lib/api';
+import { useNavigate, Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import { FaSpinner } from 'react-icons/fa';
 
 export default function ClientForm() {
-  const navigate = useNavigate();
-
   const [form, setForm] = useState({
-    employeeName: "",
-    employeeNumber: "",
-    employerName: "",
-    dues: "1%",
-    witness: "",
-    employeeDate: "",
-    witnessDate: ""
+    employeeName: '',
+    employeeNumber: '',
+    employerName: '',
+    dues: '1%',
+    witness: '',
+    employeeDate: '',
+    witnessDate: ''
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-
-  const [employeeSigOpen, setEmployeeSigOpen] = useState(false);
-  const [witnessSigOpen, setWitnessSigOpen] = useState(false);
-
-  const [employeeSignature, setEmployeeSignature] = useState(null);
-  const [witnessSignature, setWitnessSignature] = useState(null);
+  const [hasEmployeeSignature, setHasEmployeeSignature] = useState(false);
+  const [hasWitnessSignature, setHasWitnessSignature] = useState(false);
 
   const sigPadRef = useRef(null);
   const witnessSigPadRef = useRef(null);
+  const navigate = useNavigate();
 
+  // ================= DEFAULT DATES =================
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    setForm(f => ({ ...f, employeeDate: today, witnessDate: today }));
+    const today = new Date().toISOString().split('T')[0];
+    setForm(f => ({
+      ...f,
+      employeeDate: today,
+      witnessDate: today
+    }));
   }, []);
 
-  const handleChange = e => {
+  // ================= HANDLERS =================
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setErrors(prev => ({ ...prev, [e.target.name]: null }));
   };
 
-  const validate = () => {
+  const clearSignature = () => {
+    if (sigPadRef.current) {
+      sigPadRef.current.clear();
+      setHasEmployeeSignature(false);
+    }
+  };
+
+  const clearWitnessSignature = () => {
+    if (witnessSigPadRef.current) {
+      witnessSigPadRef.current.clear();
+      setHasWitnessSignature(false);
+    }
+  };
+
+  // ================= VALIDATION =================
+  const validateForm = () => {
     const newErrors = {};
-    Object.keys(form).forEach(key => {
-      if (!form[key]) newErrors[key] = "Required";
-    });
-    if (!employeeSignature) newErrors.employeeSignature = "Required";
-    if (!witnessSignature) newErrors.witnessSignature = "Required";
+
+    if (!form.employeeName.trim())
+      newErrors.employeeName = 'Employee name is required';
+
+    if (!form.employeeNumber.trim())
+      newErrors.employeeNumber = 'Employee number is required';
+
+    if (!form.employerName.trim())
+      newErrors.employerName = 'Employer name is required';
+
+    if (!form.witness.trim())
+      newErrors.witness = 'Witness name is required';
+
+    if (!hasEmployeeSignature)
+      newErrors.employeeSignature = 'Employee signature is required';
+
+    if (!hasWitnessSignature)
+      newErrors.witnessSignature = 'Witness signature is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  /* ================= PDF GENERATION ================= */
+  const formValid =
+    form.employeeName.trim() &&
+    form.employeeNumber.trim() &&
+    form.employerName.trim() &&
+    form.witness.trim() &&
+    hasEmployeeSignature &&
+    hasWitnessSignature;
 
+  // ================= PDF GENERATION =================
   const generatePDF = async () => {
-    if (!validate()) {
-      Swal.fire("Missing Information", "Please complete all fields.", "warning");
+    if (!validateForm()) {
+      Swal.fire({
+        title: 'Missing Information',
+        text: 'Please complete all required fields.',
+        icon: 'warning'
+      });
       return;
     }
-
-    const agreements = `
-1. I hereby instruct my employer to deduct union dues monthly.
-2. I agree that deductions may be adjusted with written notice.
-3. I may cancel this instruction by giving one month written notice.
-    `;
-
-    const confirm = await Swal.fire({
-      title: "Agreement Confirmation",
-      html: `<div style="text-align:left">${agreements.replace(/\n/g, "<br/>")}</div>`,
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonText: "I Agree & Submit"
-    });
-
-    if (!confirm.isConfirmed) return;
 
     setLoading(true);
 
     try {
-      const doc = new jsPDF("p", "mm", "a4");
+      const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const centerX = pageWidth / 2;
       const margin = 20;
       let y = 20;
 
-      doc.setFont("Times", "italic");
-      doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
-
-      y += 8;
+      // ===== Header =====
+      doc.setFont('Times', 'italic');
+      doc.setFontSize(12);
+      doc.text('Employment and Labour Relations (General)', centerX, y, { align: 'center' });
+      y += 4;
       doc.line(margin, y, pageWidth - margin, y);
-      y += 6;
-
-      doc.setFont("Times", "italic");
-      doc.text("G.N No 47 (contd)", margin, y);
-
-      doc.setFont("Times", "normal");
-      doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
 
       y += 15;
 
-      doc.setFont("Times", "bold");
+      doc.setFont('Times', 'bold');
+      doc.setFontSize(14);
       doc.text(
-        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES",
-        pageWidth / 2,
+        'EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES\nOF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES',
+        centerX,
         y,
-        { align: "center", maxWidth: 170 }
+        { align: 'center' }
       );
 
       y += 15;
-      doc.setFont("Times", "normal");
 
-      const drawField = (label, value) => {
-        doc.text(`${label}:`, pageWidth / 2, y, { align: "center" });
-        y += 6;
-        doc.text(value, pageWidth / 2, y, { align: "center" });
-        doc.line(margin, y + 1, pageWidth - margin, y + 1);
-        y += 10;
-      };
-
-      drawField("EMPLOYEE NAME", form.employeeName);
-      drawField("EMPLOYEE NUMBER", form.employeeNumber);
-      drawField("EMPLOYER NAME", form.employerName);
-      drawField("TRADE UNION NAME", "FIBUCA");
-
-      // 1% centered & grey
-      doc.setTextColor(150);
-      drawField("INITIAL MONTHLY UNION DUES", form.dues);
-      doc.setTextColor(0);
-
-      y += 5;
-
-      const clauses = [
-        "1. I hereby instruct my employer to deduct union dues monthly.",
-        "2. I agree deductions may be adjusted with written notice.",
-        "3. I may cancel this instruction with one month notice."
-      ];
-
-      clauses.forEach(text => {
-        const split = doc.splitTextToSize(text, 160);
-        doc.text(split, pageWidth / 2, y, { align: "center" });
-        y += split.length * 6 + 4;
-      });
+      doc.setFont('Times', 'italic');
+      doc.setFontSize(11);
+      doc.text('(Made under Regulation 34(1))', centerX, y, { align: 'center' });
 
       y += 15;
 
-      const signWidth = 50;
-      const signHeight = 20;
+      doc.setFont('Times', 'normal');
+      doc.setFontSize(12);
 
-      doc.text("Employee Signature:", margin, y);
-      doc.addImage(employeeSignature, "PNG", margin + 5, y + 5, signWidth, signHeight);
-      doc.line(margin + 70, y + 20, pageWidth - margin, y + 20);
-      doc.text("Date", pageWidth - margin - 15, y + 25);
-      doc.text(form.employeeDate, pageWidth - margin, y + 25, { align: "right" });
+      const drawField = (label, value) => {
+        doc.text(`${label}:`, margin, y);
+        doc.text(value, margin + 55, y);
+        doc.line(margin + 55, y + 1, pageWidth - margin, y + 1);
+        y += 10;
+      };
 
-      y += 40;
-
-      doc.text("Witness Name:", margin, y);
-      doc.text(form.witness, margin + 40, y);
+      drawField("EMPLOYEE’S NAME", form.employeeName);
+      drawField("EMPLOYEE NUMBER", form.employeeNumber);
+      drawField("EMPLOYER NAME", form.employerName);
+      drawField("TRADE UNION NAME", "FIBUCA");
+      drawField("INITIAL MONTHLY UNION DUES", form.dues);
 
       y += 10;
 
-      doc.text("Witness Signature:", margin, y);
-      doc.addImage(witnessSignature, "PNG", margin + 5, y + 5, signWidth, signHeight);
-      doc.line(margin + 70, y + 20, pageWidth - margin, y + 20);
-      doc.text("Date", pageWidth - margin - 15, y + 25);
-      doc.text(form.witnessDate, pageWidth - margin, y + 25, { align: "right" });
+      // ===== Declaration Clauses =====
+      const clauses = [
+        "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
+        "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
+        "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
+      ];
 
-      const pdfBlob = doc.output("blob");
+      clauses.forEach(text => {
+        const split = doc.splitTextToSize(text, pageWidth - margin * 2);
+        doc.text(split, margin, y);
+        y += split.length * 7;
+        y += 3;
+      });
+
+      y += 10;
+
+      // ===== Signatures =====
+      doc.line(margin, y, margin + 60, y);
+      doc.text('Employee Signature', margin, y + 5);
+      doc.addImage(sigPadRef.current.toDataURL(), 'PNG', margin, y - 20, 50, 15);
+      doc.text(form.employeeDate, pageWidth - 60, y);
+
+      y += 30;
+
+      doc.line(margin, y, margin + 60, y);
+      doc.text('Witness Name & Signature', margin, y + 5);
+      doc.text(form.witness, margin, y - 5);
+      doc.addImage(witnessSigPadRef.current.toDataURL(), 'PNG', margin + 70, y - 20, 50, 15);
+      doc.text(form.witnessDate, pageWidth - 60, y);
+
+      // ===== Send to Backend =====
+      const pdfBlob = doc.output('blob');
       const formData = new FormData();
-      formData.append("pdf", pdfBlob);
-      formData.append("data", JSON.stringify(form));
+      formData.append('pdf', pdfBlob, `${form.employeeName}_form.pdf`);
+      formData.append('data', JSON.stringify(form));
 
-      const response = await api.post("/submit-form", formData);
+      const res = await api.post('/submit-form', formData);
+      const creds = res.data.loginCredentials;
 
-      if (response.data.loginCredentials) {
-        await Swal.fire({
-          title: "Account Created Successfully! 🎉",
-          html: `
-            <div style="text-align: left; margin: 20px 0;">
-              <p><strong>Your account has been created.</strong></p>
-              <p style="margin-top: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
-                <strong>Username:</strong> <code>${response.data.loginCredentials.username}</code><br/>
-                <strong>Default Password:</strong> <code>${response.data.loginCredentials.password}</code>
-              </p>
-              <p style="margin-top: 15px; color: #d32f2f;"><strong>⚠️ Please save these credentials.</strong></p>
-              <p style="font-size: 12px; margin-top: 10px;">You will be redirected to login page.</p>
-            </div>
-          `,
-          icon: "success",
-          confirmButtonText: "Go to Login",
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        });
-      } else {
-        await Swal.fire({
-          title: "Form Submitted Successfully",
-          text: "Your form has been submitted. You will receive login credentials via email.",
-          icon: "success",
-          confirmButtonText: "Continue to Login"
-        });
-      }
+      await api.post(
+        '/api/login',
+        { employeeNumber: creds.username, password: creds.password },
+        { withCredentials: true }
+      );
 
-      navigate("/login");
+      Swal.fire({
+        title: 'Registered & Logged In!',
+        html: `
+          <p><b>Username:</b> ${creds.username}</p>
+          <p><b>Password:</b> ${creds.password}</p>
+          <p>Please save your credentials.</p>
+        `,
+        icon: 'success',
+        confirmButtonText: 'Go to Dashboard'
+      }).then(() => navigate('/client'));
 
     } catch (err) {
-      Swal.fire("Error", "Submission failed.", "error");
+      Swal.fire({
+        title: 'Submission Failed',
+        text: err.response?.data?.error || 'Unexpected error occurred.',
+        icon: 'error'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= UI ================= */
-
+  // ================= UI =================
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex justify-center">
-      <div className="bg-white shadow-lg w-full max-w-4xl p-6">
-
-        <div className="text-center">
-          <h1 className="italic text-sm">Employment and Labour Relations (General)</h1>
-          <div className="border-b mt-2"></div>
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center px-4 py-8">
+      <div className="bg-white shadow-xl w-full max-w-4xl">
+        <div className="flex justify-between items-center p-6 border-b-2 border-gray-300">
+          <h1 className="text-sm italic">Employment and Labour Relations (General)</h1>
+          <Link to="/" className="text-blue-500 text-sm hover:underline">
+            ← Home
+          </Link>
         </div>
 
-        <div className="flex justify-between text-sm mt-2">
-          <span className="italic">G.N No 47 (contd)</span>
-          <span>TUF. 15</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {["employeeName","employeeNumber","employerName","witness"].map(field => (
-            <div key={field}>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {field.replace(/([A-Z])/g," $1")}
-              </label>
-              <input
-                name={field}
-                value={form[field]}
-                onChange={handleChange}
-                className={`w-full border-b-2 p-2 ${errors[field] ? "border-red-500" : "border-gray-400"}`}
-              />
+        <div className="p-8 space-y-8">
+          {/* Fields */}
+          <div className="grid grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <Input label="Employee Name" name="employeeName" form={form} handleChange={handleChange} errors={errors} loading={loading} />
+              <Input label="Employee Number" name="employeeNumber" form={form} handleChange={handleChange} errors={errors} loading={loading} />
+              <Input label="Employer Name" name="employerName" form={form} handleChange={handleChange} errors={errors} loading={loading} />
             </div>
-          ))}
 
-          <div>
-            <label className="block text-xs font-bold uppercase mb-1">Initial Monthly Union Dues</label>
-            <div className="border-b-2 p-2 text-center text-gray-400">
-              1%
+            <div className="space-y-6">
+              <StaticField label="Trade Union Name" value="FIBUCA" />
+              <SelectField form={form} handleChange={handleChange} loading={loading} />
+              <Input label="Witness Name" name="witness" form={form} handleChange={handleChange} errors={errors} loading={loading} />
             </div>
           </div>
-        </div>
 
-        {/* SIGNATURE BOXES */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <SignatureBox
-            label="Employee Signature"
-            signature={employeeSignature}
-            openModal={() => setEmployeeSigOpen(true)}
-            error={errors.employeeSignature}
+          {/* Declaration Text */}
+          <div className="text-sm leading-relaxed border-t pt-6 space-y-3">
+            <p>1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.</p>
+            <p>2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.</p>
+            <p>3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer.</p>
+          </div>
+
+          {/* Signatures */}
+          <SignatureSection
+            sigPadRef={sigPadRef}
+            witnessSigPadRef={witnessSigPadRef}
+            setHasEmployeeSignature={setHasEmployeeSignature}
+            setHasWitnessSignature={setHasWitnessSignature}
+            clearSignature={clearSignature}
+            clearWitnessSignature={clearWitnessSignature}
+            errors={errors}
+            form={form}
+            handleChange={handleChange}
+            loading={loading}
           />
 
-          <SignatureBox
-            label="Witness Signature"
-            signature={witnessSignature}
-            openModal={() => setWitnessSigOpen(true)}
-            error={errors.witnessSignature}
-          />
+          {/* Submit */}
+          <button
+            onClick={generatePDF}
+            disabled={!formValid || loading}
+            className={`w-full py-3 rounded-md text-white font-semibold ${
+              loading || !formValid ? 'bg-gray-400' : 'bg-blue-700 hover:bg-blue-800'
+            }`}
+          >
+            {loading ? <FaSpinner className="animate-spin mx-auto" /> : 'Generate & Submit PDF'}
+          </button>
         </div>
-
-        <button
-          onClick={generatePDF}
-          disabled={loading}
-          className="mt-8 w-full bg-blue-700 text-white py-3 rounded"
-        >
-          {loading ? <FaSpinner className="animate-spin mx-auto" /> : "Generate & Submit PDF"}
-        </button>
       </div>
-
-      {employeeSigOpen && (
-        <SignatureModal
-          close={() => setEmployeeSigOpen(false)}
-          save={(img) => { setEmployeeSignature(img); setEmployeeSigOpen(false); }}
-          sigPadRef={sigPadRef}
-        />
-      )}
-
-      {witnessSigOpen && (
-        <SignatureModal
-          close={() => setWitnessSigOpen(false)}
-          save={(img) => { setWitnessSignature(img); setWitnessSigOpen(false); }}
-          sigPadRef={witnessSigPadRef}
-        />
-      )}
     </div>
   );
 }
 
-/* ================= COMPONENTS ================= */
+/* ===== Reusable Components ===== */
 
-function SignatureBox({ label, signature, openModal, error }) {
+function Input({ label, name, form, handleChange, errors, loading }) {
   return (
     <div>
-      <label className="block text-xs font-bold uppercase mb-2">{label}</label>
-      <div
-        onClick={openModal}
-        className="border-2 border-gray-400 h-20 flex items-center justify-center cursor-pointer bg-white"
-      >
-        {signature ? <img src={signature} alt="signature" className="h-14" /> : "Tap to Sign"}
-      </div>
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      <label className="block text-xs font-bold mb-2 uppercase">{label}</label>
+      <input
+        name={name}
+        value={form[name]}
+        onChange={handleChange}
+        disabled={loading}
+        className={`w-full p-2 border-b-2 ${errors[name] ? 'border-red-500' : 'border-gray-400'} bg-transparent`}
+      />
+      {errors[name] && <p className="text-red-600 text-xs mt-1">{errors[name]}</p>}
     </div>
   );
 }
 
-function SignatureModal({ close, save, sigPadRef }) {
+function StaticField({ label, value }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-      <div className="bg-white p-4 w-full max-w-lg rounded shadow-lg">
-        <h2 className="text-center font-bold mb-4">Sign Below</h2>
+    <div>
+      <label className="block text-xs font-bold mb-2 uppercase">{label}</label>
+      <div className="w-full p-2 border-b-2 border-gray-400">{value}</div>
+    </div>
+  );
+}
 
+function SelectField({ form, handleChange, loading }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold mb-2 uppercase">Initial Monthly Union Dues</label>
+      <select
+        name="dues"
+        value={form.dues}
+        onChange={handleChange}
+        disabled={loading}
+        className="w-full p-2 border-b-2 border-gray-400 bg-transparent"
+      >
+        <option>1%</option>
+        <option>1.5%</option>
+        <option>2%</option>
+        <option>2.5%</option>
+      </select>
+    </div>
+  );
+}
+
+function SignatureSection({
+  sigPadRef,
+  witnessSigPadRef,
+  setHasEmployeeSignature,
+  setHasWitnessSignature,
+  clearSignature,
+  clearWitnessSignature,
+  errors,
+  form,
+  handleChange,
+  loading
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-8 border-t pt-8">
+      <div>
+        <label className="block text-xs font-bold mb-3 uppercase">Employee Signature</label>
         <SignatureCanvas
           ref={sigPadRef}
           penColor="black"
-          velocityFilterWeight={0.7}
-          minWidth={1}
-          maxWidth={2.5}
-          canvasProps={{
-            className: "border w-full h-60"
-          }}
+          onEnd={() => setHasEmployeeSignature(true)}
+          canvasProps={{ width: 250, height: 80, className: 'border-2 border-gray-400 bg-white' }}
         />
+        {errors.employeeSignature && <p className="text-red-600 text-xs mt-1">{errors.employeeSignature}</p>}
+        <button onClick={clearSignature} className="text-xs text-red-600 mt-2">Clear</button>
 
-        <div className="flex justify-between mt-4">
-          <button onClick={() => sigPadRef.current.clear()} className="text-red-600">
-            Clear
-          </button>
-          <button
-            onClick={() => {
-              const img = sigPadRef.current.toDataURL();
-              save(img);
-            }}
-            className="bg-blue-700 text-white px-4 py-2 rounded"
-          >
-            Save Signature
-          </button>
-        </div>
+        <input
+          type="date"
+          name="employeeDate"
+          value={form.employeeDate}
+          onChange={handleChange}
+          disabled={loading}
+          className="w-full mt-4 p-2 border-b-2 border-gray-400 bg-transparent"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold mb-3 uppercase">Witness Signature</label>
+        <SignatureCanvas
+          ref={witnessSigPadRef}
+          penColor="black"
+          onEnd={() => setHasWitnessSignature(true)}
+          canvasProps={{ width: 250, height: 80, className: 'border-2 border-gray-400 bg-white' }}
+        />
+        {errors.witnessSignature && <p className="text-red-600 text-xs mt-1">{errors.witnessSignature}</p>}
+        <button onClick={clearWitnessSignature} className="text-xs text-red-600 mt-2">Clear</button>
+
+        <input
+          type="date"
+          name="witnessDate"
+          value={form.witnessDate}
+          onChange={handleChange}
+          disabled={loading}
+          className="w-full mt-4 p-2 border-b-2 border-gray-400 bg-transparent"
+        />
       </div>
     </div>
   );
