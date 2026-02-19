@@ -105,7 +105,7 @@ export default function ClientForm() {
       y += 5;
 
       // G.N No and TUF placement
-      doc.setFont("Times", "normal");
+      doc.setFont("Times", "italic");
       doc.setFontSize(11);
       doc.text("G.N No. 47 (contd.)", margin, y);
       doc.setFont("Times", "bold");
@@ -114,7 +114,7 @@ export default function ClientForm() {
       y += 12;
 
       // TITLE
-      doc.setFont("Times", "bold");
+      doc.setFont("Times", "normal");
       doc.setFontSize(13);
       doc.text(
         "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
@@ -134,9 +134,13 @@ export default function ClientForm() {
       doc.setFontSize(12);
 
       const drawField = (label, value) => {
+        const fieldStart = margin + 55;
+        const fieldWidth = pageWidth - margin - fieldStart;
+        const fieldCenter = fieldStart + fieldWidth / 2;
+        
         doc.text(`${label}:`, margin, y);
-        doc.text(value, margin + 55, y);
-        doc.line(margin + 55, y + 1, pageWidth - margin, y + 1);
+        doc.text(value, fieldCenter, y, { align: "center" }); // ✅ CENTER THE VALUE
+        doc.line(fieldStart, y + 1, pageWidth - margin, y + 1);
         y += 10;
       };
 
@@ -275,19 +279,21 @@ export default function ClientForm() {
             <div className="border-b-2 p-2 border-gray-400">FIBUCA</div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase mb-1">Initial Monthly Union Dues</label>
-            <select
-              name="dues"
-              value={form.dues}
-              onChange={handleChange}
-              className="w-full border-b-2 p-2 border-gray-400"
-            >
-              <option>1%</option>
-              <option>1.5%</option>
-              <option>2%</option>
-            </select>
-          </div>
+<div>
+  <label className="block text-xs font-bold uppercase mb-1">
+    Initial Monthly Union Dues
+  </label>
+  <select
+    name="dues"
+    value="1%"
+    onChange={() => {}}
+    className="w-full border-b-2 p-2 border-gray-400 bg-gray-100 text-gray-500 cursor-not-allowed"
+    disabled
+  >
+    <option>1%</option>
+  </select>
+</div>
+
         </div>
 
         {/* SIGNATURE PREVIEW BOXES */}
