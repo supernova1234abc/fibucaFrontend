@@ -7,17 +7,12 @@ const getBackendURL = () => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:3000';
   }
-  if (productionURL) return productionURL;
-
-  // If running locally, use localhost backend. Otherwise default to same origin.
-  // Returning window.location.origin ensures deployed frontends post to their
-  // own origin (useful when backend is hosted under same domain) instead of
-  // incorrectly targeting port 3000 on remote devices.
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:3000';
+  if (productionURL) {
+    console.log('[api] Using VITE_BACKEND_URL:', productionURL);
+    return productionURL;
   }
 
-  console.warn('[api] VITE_BACKEND_URL not set — defaulting to same origin:', window.location.origin);
+  console.log('[api] No VITE_BACKEND_URL set, using origin:', window.location.origin);
   return window.location.origin;
 };
 
