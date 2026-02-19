@@ -210,30 +210,37 @@ export default function ClientForm() {
 
       y += 12;
 
-      // ✅ WITNESS NAME AND SIGNATURE - ONE LINE ONLY
+      // ✅ WITNESS NAME AND SIGNATURE + DATE - SAME ROW
       doc.setFont("Times", "normal");
       doc.setFontSize(12);
       
       const witnessNameStart = margin;
-      const witnessNameWidth = 40;
+      const witnessNameWidth = 35;
       
       // Name underline
       doc.line(witnessNameStart, y, witnessNameStart + witnessNameWidth, y);
       doc.text(form.witness, witnessNameStart + 5, y);
       
       // Signature underline - with proper spacing
-      const witnessSignStart = witnessNameStart + witnessNameWidth + 10;
-      const witnessSignWidth = pageWidth - margin - witnessSignStart;
+      const witnessSignStart = witnessNameStart + witnessNameWidth + 8;
+      const witnessDateLineStart = pageWidth - margin - 40;
+      const witnessSignWidth = witnessDateLineStart - witnessSignStart - 5;
       doc.line(witnessSignStart, y, witnessSignStart + witnessSignWidth, y);
       const witX = witnessSignStart + (witnessSignWidth - signWidth) / 2;
       doc.addImage(witnessSignature, "PNG", witX, y - signHeight, signWidth, signHeight);
       
-      y += 6; // Space below underline
+      // Witness Date underline on right side
+      doc.line(witnessDateLineStart, y, pageWidth - margin, y);
+      doc.setFontSize(11);
+      doc.text(form.witnessDate, witnessDateLineStart + 20, y);
       
-      // ONE SINGLE LABEL BELOW
+      y += 6; // Space below underlines
+      
+      // LABELS BELOW (centered under their specific underlines)
       doc.setFont("Times", "normal");
-      doc.setFontSize(10);
-      doc.text("Witness Name and Signature", pageWidth / 2, y, { align: "center" });
+      doc.setFontSize(9);
+      doc.text("Witness Name and Signature", witnessNameStart + (witnessSignWidth + witnessNameWidth + 8) / 2, y, { align: "center", maxWidth: 60 });
+      doc.text("Date", witnessDateLineStart + 20, y, { align: "center" });
 
       const pdfBlob = doc.output("blob");
       const formData = new FormData();
