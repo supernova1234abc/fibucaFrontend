@@ -174,14 +174,33 @@ export default function ClientForm() {
 
       const response = await api.post("/submit-form", formData);
 
-      await Swal.fire({
-        title: "Account Created",
-        html: `
-          <b>Username:</b> ${response.data.username}<br/>
-          <b>Default Password:</b> ${response.data.password}
-        `,
-        icon: "success"
-      });
+      if (response.data.loginCredentials) {
+        await Swal.fire({
+          title: "Account Created Successfully! 🎉",
+          html: `
+            <div style="text-align: left; margin: 20px 0;">
+              <p><strong>Your account has been created.</strong></p>
+              <p style="margin-top: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+                <strong>Username:</strong> <code>${response.data.loginCredentials.username}</code><br/>
+                <strong>Default Password:</strong> <code>${response.data.loginCredentials.password}</code>
+              </p>
+              <p style="margin-top: 15px; color: #d32f2f;"><strong>⚠️ Please save these credentials.</strong></p>
+              <p style="font-size: 12px; margin-top: 10px;">You will be redirected to login page.</p>
+            </div>
+          `,
+          icon: "success",
+          confirmButtonText: "Go to Login",
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+      } else {
+        await Swal.fire({
+          title: "Form Submitted Successfully",
+          text: "Your form has been submitted. You will receive login credentials via email.",
+          icon: "success",
+          confirmButtonText: "Continue to Login"
+        });
+      }
 
       navigate("/login");
 
