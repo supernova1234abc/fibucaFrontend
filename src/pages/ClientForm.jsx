@@ -133,22 +133,35 @@ export default function ClientForm() {
       doc.setFont("Times", "normal");
       doc.setFontSize(12);
 
+      // Regular fields - left-aligned with slight padding (looks like someone filled it)
       const drawField = (label, value) => {
+        const fieldStart = margin + 55;
+        const fieldWidth = pageWidth - margin - fieldStart;
+        const fieldPos = fieldStart + fieldWidth * 0.15; // 15% offset from left (slight padding)
+        
+        doc.text(`${label}:`, margin, y);
+        doc.text(value, fieldPos, y); // ✅ LEFT-ALIGNED WITH PADDING
+        doc.line(fieldStart, y + 1, pageWidth - margin, y + 1);
+        y += 10;
+      };
+
+      // Dues field - centered (for fixed values like "1%")
+      const drawCenteredField = (label, value) => {
         const fieldStart = margin + 55;
         const fieldWidth = pageWidth - margin - fieldStart;
         const fieldCenter = fieldStart + fieldWidth / 2;
         
         doc.text(`${label}:`, margin, y);
-        doc.text(value, fieldCenter, y, { align: "center" }); // ✅ CENTER THE VALUE
+        doc.text(value, fieldCenter, y, { align: "center" }); // ✅ CENTERED
         doc.line(fieldStart, y + 1, pageWidth - margin, y + 1);
         y += 10;
       };
 
-      drawField("EMPLOYEE’S NAME", form.employeeName);
+      drawField("EMPLOYEE'S NAME", form.employeeName);
       drawField("EMPLOYEE NUMBER", form.employeeNumber);
       drawField("EMPLOYER NAME", form.employerName);
       drawField("TRADE UNION NAME", "FIBUCA");
-      drawField("INITIAL MONTHLY UNION DUES", form.dues);
+      drawCenteredField("INITIAL MONTHLY UNION DUES", form.dues);
 
       y += 8;
 
