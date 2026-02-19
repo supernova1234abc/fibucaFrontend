@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import jsPDF from "jspdf";
 import { api } from "../lib/api";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { FaSpinner } from "react-icons/fa";
 
@@ -31,7 +31,6 @@ export default function ClientForm() {
   const sigPadRef = useRef(null);
   const witnessSigPadRef = useRef(null);
 
-  // Default dates
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setForm(f => ({ ...f, employeeDate: today, witnessDate: today }));
@@ -44,11 +43,9 @@ export default function ClientForm() {
 
   const validate = () => {
     const newErrors = {};
-
-    if (!form.employeeName.trim()) newErrors.employeeName = "Required";
-    if (!form.employeeNumber.trim()) newErrors.employeeNumber = "Required";
-    if (!form.employerName.trim()) newErrors.employerName = "Required";
-    if (!form.witness.trim()) newErrors.witness = "Required";
+    Object.keys(form).forEach(key => {
+      if (!form[key]) newErrors[key] = "Required";
+    });
     if (!employeeSignature) newErrors.employeeSignature = "Required";
     if (!witnessSignature) newErrors.witnessSignature = "Required";
 
@@ -56,12 +53,29 @@ export default function ClientForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ================= PDF =================
+  /* ================= PDF GENERATION ================= */
+
   const generatePDF = async () => {
     if (!validate()) {
       Swal.fire("Missing Information", "Please complete all fields.", "warning");
       return;
     }
+
+    const agreements = `
+1. I hereby instruct my employer to deduct union dues monthly.
+2. I agree that deductions may be adjusted with written notice.
+3. I may cancel this instruction by giving one month written notice.
+    `;
+
+    const confirm = await Swal.fire({
+      title: "Agreement Confirmation",
+      html: `<div style="text-align:left">${agreements.replace(/\n/g, "<br/>")}</div>`,
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "I Agree & Submit"
+    });
+
+    if (!confirm.isConfirmed) return;
 
     setLoading(true);
 
@@ -71,101 +85,105 @@ export default function ClientForm() {
       const margin = 20;
       let y = 20;
 
-      // HEADER
       doc.setFont("Times", "italic");
-      doc.setFontSize(12);
       doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
 
-      y += 6;
+      y += 8;
       doc.line(margin, y, pageWidth - margin, y);
+      y += 6;
 
-      y += 5;
+      doc.setFont("Times", "italic");
+      doc.text("G.N No 47 (contd)", margin, y);
 
-      // G.N No and TUF placement
       doc.setFont("Times", "normal");
-      doc.setFontSize(11);
-      doc.text("G.N No. 47 (contd.)", margin, y);
-      doc.setFont("Times", "bold");
       doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
 
-      y += 12;
+      y += 15;
 
-      // TITLE
       doc.setFont("Times", "bold");
-      doc.setFontSize(13);
       doc.text(
-        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
+        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES",
         pageWidth / 2,
         y,
         { align: "center", maxWidth: 170 }
       );
 
-      y += 10;
-      doc.setFont("Times", "italic");
-      doc.setFontSize(11);
-      doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
-
       y += 15;
-
       doc.setFont("Times", "normal");
-      doc.setFontSize(12);
 
       const drawField = (label, value) => {
-        doc.text(`${label}:`, margin, y);
-        doc.text(value, margin + 55, y);
-        doc.line(margin + 55, y + 1, pageWidth - margin, y + 1);
+        doc.text(`${label}:`, pageWidth / 2, y, { align: "center" });
+        y += 6;
+        doc.text(value, pageWidth / 2, y, { align: "center" });
+        doc.line(margin, y + 1, pageWidth - margin, y + 1);
         y += 10;
       };
 
-      drawField("EMPLOYEE’S NAME", form.employeeName);
+      drawField("EMPLOYEE NAME", form.employeeName);
       drawField("EMPLOYEE NUMBER", form.employeeNumber);
       drawField("EMPLOYER NAME", form.employerName);
       drawField("TRADE UNION NAME", "FIBUCA");
-      drawField("INITIAL MONTHLY UNION DUES", form.dues);
 
-      y += 8;
+      // 1% centered & grey
+      doc.setTextColor(150);
+      drawField("INITIAL MONTHLY UNION DUES", form.dues);
+      doc.setTextColor(0);
+
+      y += 5;
 
       const clauses = [
-        "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
-        "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
-        "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
+        "1. I hereby instruct my employer to deduct union dues monthly.",
+        "2. I agree deductions may be adjusted with written notice.",
+        "3. I may cancel this instruction with one month notice."
       ];
 
       clauses.forEach(text => {
-        const split = doc.splitTextToSize(text, pageWidth - margin * 2);
-        doc.text(split, margin, y);
+        const split = doc.splitTextToSize(text, 160);
+        doc.text(split, pageWidth / 2, y, { align: "center" });
         y += split.length * 6 + 4;
       });
 
+      y += 15;
+
+      const signWidth = 50;
+      const signHeight = 20;
+
+      doc.text("Employee Signature:", margin, y);
+      doc.addImage(employeeSignature, "PNG", margin + 5, y + 5, signWidth, signHeight);
+      doc.line(margin + 70, y + 20, pageWidth - margin, y + 20);
+      doc.text("Date", pageWidth - margin - 15, y + 25);
+      doc.text(form.employeeDate, pageWidth - margin, y + 25, { align: "right" });
+
+      y += 40;
+
+      doc.text("Witness Name:", margin, y);
+      doc.text(form.witness, margin + 40, y);
+
       y += 10;
 
-      // SIGNATURE CENTERING
-      const signWidth = 50;
-      const signHeight = 15;
-
-      // Employee signature line
-      doc.line(margin, y, margin + 60, y);
-      const empX = margin + (60 - signWidth) / 2;
-      doc.addImage(employeeSignature, "PNG", empX, y - signHeight, signWidth, signHeight);
-      doc.text(form.employeeDate, pageWidth - margin, y, { align: "right" });
-
-      y += 25;
-
-      // Witness signature line
-      doc.line(margin, y, margin + 60, y);
-      const witX = margin + (60 - signWidth) / 2;
-      doc.addImage(witnessSignature, "PNG", witX, y - signHeight, signWidth, signHeight);
-      doc.text(form.witnessDate, pageWidth - margin, y, { align: "right" });
+      doc.text("Witness Signature:", margin, y);
+      doc.addImage(witnessSignature, "PNG", margin + 5, y + 5, signWidth, signHeight);
+      doc.line(margin + 70, y + 20, pageWidth - margin, y + 20);
+      doc.text("Date", pageWidth - margin - 15, y + 25);
+      doc.text(form.witnessDate, pageWidth - margin, y + 25, { align: "right" });
 
       const pdfBlob = doc.output("blob");
       const formData = new FormData();
-      formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
+      formData.append("pdf", pdfBlob);
       formData.append("data", JSON.stringify(form));
 
-      await api.post("/submit-form", formData);
+      const response = await api.post("/submit-form", formData);
 
-      Swal.fire("Success", "Form submitted successfully.", "success")
-        .then(() => navigate("/client"));
+      await Swal.fire({
+        title: "Account Created",
+        html: `
+          <b>Username:</b> ${response.data.username}<br/>
+          <b>Default Password:</b> ${response.data.password}
+        `,
+        icon: "success"
+      });
+
+      navigate("/login");
 
     } catch (err) {
       Swal.fire("Error", "Submission failed.", "error");
@@ -174,25 +192,23 @@ export default function ClientForm() {
     }
   };
 
-  // ================= UI =================
+  /* ================= UI ================= */
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 flex justify-center">
       <div className="bg-white shadow-lg w-full max-w-4xl p-6">
 
-        {/* HEADER */}
         <div className="text-center">
           <h1 className="italic text-sm">Employment and Labour Relations (General)</h1>
           <div className="border-b mt-2"></div>
         </div>
 
         <div className="flex justify-between text-sm mt-2">
-          <span>G.N No. 47 (contd.)</span>
-          <span className="font-bold">TUF. 15</span>
+          <span className="italic">G.N No 47 (contd)</span>
+          <span>TUF. 15</span>
         </div>
 
-        {/* FORM GRID - responsive */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-
           {["employeeName","employeeNumber","employerName","witness"].map(field => (
             <div key={field}>
               <label className="block text-xs font-bold uppercase mb-1">
@@ -208,28 +224,15 @@ export default function ClientForm() {
           ))}
 
           <div>
-            <label className="block text-xs font-bold uppercase mb-1">Trade Union Name</label>
-            <div className="border-b-2 p-2 border-gray-400">FIBUCA</div>
-          </div>
-
-          <div>
             <label className="block text-xs font-bold uppercase mb-1">Initial Monthly Union Dues</label>
-            <select
-              name="dues"
-              value={form.dues}
-              onChange={handleChange}
-              className="w-full border-b-2 p-2 border-gray-400"
-            >
-              <option>1%</option>
-              <option>1.5%</option>
-              <option>2%</option>
-            </select>
+            <div className="border-b-2 p-2 text-center text-gray-400">
+              1%
+            </div>
           </div>
         </div>
 
-        {/* SIGNATURE PREVIEW BOXES */}
+        {/* SIGNATURE BOXES */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-
           <SignatureBox
             label="Employee Signature"
             signature={employeeSignature}
@@ -243,10 +246,8 @@ export default function ClientForm() {
             openModal={() => setWitnessSigOpen(true)}
             error={errors.witnessSignature}
           />
-
         </div>
 
-        {/* SUBMIT */}
         <button
           onClick={generatePDF}
           disabled={loading}
@@ -256,7 +257,6 @@ export default function ClientForm() {
         </button>
       </div>
 
-      {/* SIGNATURE MODALS */}
       {employeeSigOpen && (
         <SignatureModal
           close={() => setEmployeeSigOpen(false)}
@@ -302,6 +302,9 @@ function SignatureModal({ close, save, sigPadRef }) {
         <SignatureCanvas
           ref={sigPadRef}
           penColor="black"
+          velocityFilterWeight={0.7}
+          minWidth={1}
+          maxWidth={2.5}
           canvasProps={{
             className: "border w-full h-60"
           }}
