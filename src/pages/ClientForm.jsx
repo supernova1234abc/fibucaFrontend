@@ -147,7 +147,7 @@ export default function ClientForm() {
 
       // Dues field - centered (for fixed values like "1%")
       const drawCenteredField = (label, value) => {
-        const fieldStart = margin + 55;
+        const fieldStart = margin + 60;
         const fieldWidth = pageWidth - margin - fieldStart;
         const fieldCenter = fieldStart + fieldWidth / 2;
         
