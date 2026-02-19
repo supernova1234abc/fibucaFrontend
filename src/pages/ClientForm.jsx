@@ -228,7 +228,7 @@ export default function ClientForm() {
       } else {
         await Swal.fire({
           title: "Form Submitted",
-          text: "Your form has been submitted successfully. Login credentials will be sent to your email.",
+          text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
           icon: "success",
           confirmButtonText: "Go to Login"
         });
