@@ -13,7 +13,7 @@ const getBackendURL = () => {
 export const api = axios.create({
   baseURL: getBackendURL(),
   withCredentials: true,
-  timeout: 90000, // 90 seconds for file uploads
+  timeout: 120000, // 120 seconds for file uploads (increased for mobile)
 });
 
 // In-memory token (optional, used if set manually)

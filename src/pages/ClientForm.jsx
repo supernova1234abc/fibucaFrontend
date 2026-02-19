@@ -229,7 +229,40 @@ const generatePDF = async () => {
     formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
     formData.append("data", JSON.stringify(form));
 
-    const response = await api.post("/submit-form", formData);
+    // ✅ Retry logic for mobile networks
+    let response;
+    let lastError;
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Show progress on retries
+        if (attempt > 1) {
+          console.log(`🔄 Retry attempt ${attempt}/${maxRetries}...`);
+        }
+        
+        response = await api.post("/submit-form", formData, {
+          timeout: 120000, // 120 seconds for mobile
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        });
+        break; // Success, exit loop
+      } catch (err) {
+        lastError = err;
+        console.error(`❌ Attempt ${attempt} failed:`, err.message);
+        
+        if (attempt < maxRetries) {
+          // Wait before retry (exponential backoff)
+          const waitTime = 1000 * Math.pow(2, attempt - 1);
+          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error("Form submission failed after retries");
+    }
 
     if (response.data.loginCredentials) {
       await Swal.fire({
@@ -269,10 +302,14 @@ const generatePDF = async () => {
     let errorMessage = "Submission failed.";
     if (err.response?.data?.error) {
       errorMessage = err.response.data.error;
+    } else if (err.code === 'ECONNABORTED') {
+      errorMessage = "Request timeout. The network is slow. Please try again.";
+    } else if (err.message === 'Network Error' || !navigator.onLine) {
+      errorMessage = "Network error. Please check your internet connection and try again.";
+    } else if (err.message?.includes('413')) {
+      errorMessage = "File too large. Try compressing the PDF.";
     } else if (err.message) {
       errorMessage = err.message;
-    } else if (!navigator.onLine) {
-      errorMessage = "No internet connection. Please check your connection and try again.";
     }
     
     Swal.fire("Error", errorMessage, "error");
