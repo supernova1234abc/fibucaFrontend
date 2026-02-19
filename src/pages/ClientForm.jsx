@@ -99,7 +99,7 @@ export default function ClientForm() {
       doc.setFontSize(12);
       doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
 
-      y += 6;
+      y += 2; // ✅ REDUCED SPACE - text closer to underline
       doc.line(margin, y, pageWidth - margin, y);
 
       y += 5;
@@ -190,18 +190,21 @@ export default function ClientForm() {
       doc.line(margin, y, margin + 60, y);
       const empX = margin + (60 - signWidth) / 2;
       doc.addImage(employeeSignature, "PNG", empX, y - signHeight, signWidth, signHeight);
-      y += 5; // Space below underline for label
+      
+      // Date underline on right
+      const dateLineStart = pageWidth - margin - 40;
+      doc.line(dateLineStart, y + 1, pageWidth - margin, y + 1);
+      doc.setFontSize(11);
+      doc.text(form.employeeDate, dateLineStart + 20, y);
+      
+      y += 8; // Space below underline for label
       // Label BELOW the underline
       doc.setFont("Times", "normal");
       doc.setFontSize(10);
       doc.text("Employee Signature", margin, y, { align: "center", maxWidth: 60 });
-      
-      // Date on right side (same line as signature)
-      y -= 5; // Go back up to signature line
-      doc.setFontSize(11);
-      doc.text(form.employeeDate, pageWidth - margin, y, { align: "right" });
+      doc.text("Date", dateLineStart + 20, y, { align: "center" });
 
-      y += 20;
+      y += 12;
 
       // ✅ WITNESS NAME AND SIGNATURE - SAME LINE
       doc.setFont("Times", "normal");
@@ -223,18 +226,20 @@ export default function ClientForm() {
       const witX = witnessSignStart + (witnessSignWidth - signWidth) / 2;
       doc.addImage(witnessSignature, "PNG", witX, y - signHeight, signWidth, signHeight);
       
+      // Date underline on right
+      const witDateLineStart = pageWidth - margin - 40;
+      doc.line(witDateLineStart, y + 1, pageWidth - margin, y + 1);
+      doc.setFontSize(11);
+      doc.text(form.witnessDate, witDateLineStart + 20, y);
+      
       y += 8; // Space below underline
       
       // Labels below (on same line)
+      doc.setFont("Times", "normal");
       doc.setFontSize(9);
       doc.text("Name", witnessNameStart, y, { align: "center", maxWidth: witnessNameWidth });
       doc.text("Signature", witnessSignStart, y, { align: "center", maxWidth: witnessSignWidth });
-      
-      // Date on right
-
-      y -= 8;
-      doc.setFontSize(11);
-      doc.text(form.witnessDate, pageWidth - margin, y, { align: "right" });
+      doc.text("Date", witDateLineStart + 20, y, { align: "center" });
 
       const pdfBlob = doc.output("blob");
       const formData = new FormData();
