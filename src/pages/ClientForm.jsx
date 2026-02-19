@@ -1,281 +1,292 @@
-import { useState, useRef, useEffect } from "react";
-import SignatureCanvas from "react-signature-canvas";
-import jsPDF from "jspdf";
-import { api } from "../lib/api";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
-import { FaSpinner } from "react-icons/fa";
 
 export default function ClientForm() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
+  /* ===============================
+     STATE
+  ================================= */
+  const [formData, setFormData] = useState({
+    fullName: "",
+    phone: "",
+    address: "",
     employeeName: "",
-    employeeNumber: "",
-    employerName: "",
-    witness: "",
-    employeeDate: "",
-    witnessDate: ""
+    witnessName: "",
+    dateClient: "",
+    dateEmployee: "",
+    dateWitness: "",
   });
 
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [employeeSignature, setEmployeeSignature] = useState(null);
-  const [witnessSignature, setWitnessSignature] = useState(null);
+  const [activeSignature, setActiveSignature] = useState(null);
+  const [signatures, setSignatures] = useState({
+    client: null,
+    employee: null,
+    witness: null,
+  });
 
-  const sigPadRef = useRef(null);
-  const witnessSigPadRef = useRef(null);
+  const [showAgreement, setShowAgreement] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [generatedCreds, setGeneratedCreds] = useState(null);
 
+  const canvasRef = useRef(null);
+  const ctxRef = useRef(null);
+  const drawing = useRef(false);
+
+  /* ===============================
+     RESPONSIVE FIX
+  ================================= */
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    setForm(f => ({ ...f, employeeDate: today, witnessDate: today }));
-  }, []);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = 500 * ratio;
+    canvas.height = 200 * ratio;
+    canvas.style.width = "100%";
+    canvas.style.height = "200px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(ratio, ratio);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctxRef.current = ctx;
+  }, [activeSignature]);
+
+  /* ===============================
+     SIGNATURE DRAWING (SMOOTH + PRESSURE)
+  ================================= */
+  const startDrawing = (e) => {
+    drawing.current = true;
+    draw(e);
   };
 
-  const validate = () => {
-    const e = {};
-    if (!form.employeeName) e.employeeName = true;
-    if (!form.employeeNumber) e.employeeNumber = true;
-    if (!form.employerName) e.employerName = true;
-    if (!form.witness) e.witness = true;
-    if (!employeeSignature) e.employeeSignature = true;
-    if (!witnessSignature) e.witnessSignature = true;
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  const endDrawing = () => {
+    drawing.current = false;
+    ctxRef.current.beginPath();
   };
 
-  // Trim transparent space from signature
-  const trimSignature = (dataURL) => {
-    const img = new Image();
-    img.src = dataURL;
-    return new Promise(resolve => {
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
+  const draw = (e) => {
+    if (!drawing.current) return;
 
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const pixels = imgData.data;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-        let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+    const pressure = e.pressure || 0.5;
+    ctxRef.current.lineWidth = 1 + pressure * 3;
 
-        for (let y = 0; y < canvas.height; y++) {
-          for (let x = 0; x < canvas.width; x++) {
-            const index = (y * canvas.width + x) * 4;
-            if (pixels[index + 3] > 0) {
-              minX = Math.min(minX, x);
-              minY = Math.min(minY, y);
-              maxX = Math.max(maxX, x);
-              maxY = Math.max(maxY, y);
-            }
-          }
-        }
-
-        const trimmedWidth = maxX - minX;
-        const trimmedHeight = maxY - minY;
-
-        const trimmedCanvas = document.createElement("canvas");
-        trimmedCanvas.width = trimmedWidth;
-        trimmedCanvas.height = trimmedHeight;
-
-        trimmedCanvas.getContext("2d").drawImage(
-          canvas,
-          minX, minY,
-          trimmedWidth, trimmedHeight,
-          0, 0,
-          trimmedWidth, trimmedHeight
-        );
-
-        resolve(trimmedCanvas.toDataURL());
-      };
-    });
+    ctxRef.current.lineTo(x, y);
+    ctxRef.current.stroke();
+    ctxRef.current.beginPath();
+    ctxRef.current.moveTo(x, y);
   };
 
-  const confirmAgreements = async () => {
-    const { isConfirmed } = await Swal.fire({
-      title: "Confirm Agreement",
-      html: `
-        <p style="text-align:left;font-size:14px">
-        1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.<br><br>
-        2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.<br><br>
-        3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer.
-        </p>
-      `,
-      confirmButtonText: "I Agree & Submit",
-      showCancelButton: true
-    });
-
-    return isConfirmed;
+  const saveSignature = () => {
+    const image = canvasRef.current.toDataURL("image/png");
+    setSignatures((prev) => ({ ...prev, [activeSignature]: image }));
+    setActiveSignature(null);
   };
 
-  const generatePDF = async () => {
-    if (!validate()) return;
+  /* ===============================
+     INPUT HANDLER
+  ================================= */
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-    const agreed = await confirmAgreements();
-    if (!agreed) return;
+  /* ===============================
+     SUBMIT
+  ================================= */
+  const handleSubmit = (e) => {
+    e.preventDefault();
 
-    setLoading(true);
-
-    try {
-      const trimmedEmployee = await trimSignature(employeeSignature);
-      const trimmedWitness = await trimSignature(witnessSignature);
-
-      const doc = new jsPDF("p", "mm", "a4");
-      const w = doc.internal.pageSize.getWidth();
-      const margin = 20;
-      let y = 20;
-
-      doc.setFont("Times", "italic");
-      doc.text("Employment and Labour Relations (General)", w / 2, y, { align: "center" });
-      y += 6;
-      doc.line(margin, y, w - margin, y);
-      y += 5;
-
-      doc.setFont("Times", "italic");
-      doc.text("G.N No. 47 (contd.)", margin, y);
-      doc.setFont("Times", "normal");
-      doc.text("TUF. 15", w - margin, y, { align: "right" });
-      y += 12;
-
-      doc.setFont("Times", "bold");
-      doc.text(
-        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
-        w / 2,
-        y,
-        { align: "center", maxWidth: 170 }
-      );
-      y += 10;
-
-      doc.setFont("Times", "italic");
-      doc.text("(Made under Regulation 34(1))", w / 2, y, { align: "center" });
-      y += 15;
-
-      doc.setFont("Times", "normal");
-
-      const field = (label, value) => {
-        doc.text(label, margin, y);
-        doc.text(value, margin + 60, y);
-        doc.line(margin + 60, y + 1, w - margin, y + 1);
-        y += 10;
-      };
-
-      field("EMPLOYEE’S NAME:", form.employeeName);
-      field("EMPLOYEE NUMBER:", form.employeeNumber);
-      field("EMPLOYER NAME:", form.employerName);
-      field("TRADE UNION NAME:", "FIBUCA");
-      field("INITIAL MONTHLY UNION DUES:", "1%");
-
-      y += 15;
-
-      const signWidth = 45;
-      const signHeight = 15;
-
-      // Employee
-      doc.text("Employee Signature", margin, y);
-      doc.line(margin, y + 5, margin + 60, y + 5);
-      doc.addImage(trimmedEmployee, "PNG",
-        margin + (60 - signWidth) / 2,
-        y - 8,
-        signWidth,
-        signHeight
-      );
-
-      doc.text("Date:", w - 60, y);
-      doc.line(w - 45, y + 5, w - margin, y + 5);
-      doc.text(form.employeeDate, w - 43, y);
-
-      y += 25;
-
-      // Witness
-      doc.text("Witness Name & Signature", margin, y);
-      doc.line(margin, y + 5, margin + 60, y + 5);
-      doc.addImage(trimmedWitness, "PNG",
-        margin + (60 - signWidth) / 2,
-        y - 8,
-        signWidth,
-        signHeight
-      );
-
-      doc.text("Date:", w - 60, y);
-      doc.line(w - 45, y + 5, w - margin, y + 5);
-      doc.text(form.witnessDate, w - 43, y);
-
-      const pdfBlob = doc.output("blob");
-      const formData = new FormData();
-      formData.append("pdf", pdfBlob);
-      formData.append("data", JSON.stringify(form));
-
-      const res = await api.post("/submit-form", formData);
-      const creds = res.data.loginCredentials;
-
-      await Swal.fire({
-        title: "Registration Successful",
-        html: `
-          <b>Username:</b> ${creds.username}<br>
-          <b>Password:</b> ${creds.password}<br><br>
-          Please save these credentials.
-        `,
-        icon: "success"
-      });
-
-      navigate("/login");
-
-    } catch {
-      Swal.fire("Error", "Submission failed", "error");
+    if (!signatures.client || !signatures.employee || !signatures.witness) {
+      alert("All signatures required.");
+      return;
     }
 
-    setLoading(false);
+    const username = formData.phone;
+    const password = Math.random().toString(36).slice(-8);
+
+    setGeneratedCreds({ username, password });
+    setShowCredentials(true);
+
+    setTimeout(() => {
+      navigate("/login");
+    }, 4000);
   };
 
+  /* ===============================
+     UI
+  ================================= */
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex justify-center">
-      <div className="bg-white w-full max-w-4xl p-6 shadow-lg">
+    <div className="min-h-screen bg-gray-100 p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow"
+      >
+        {/* HEADER */}
+        <h2 className="text-center font-bold text-lg border-b pb-2">
+          CLIENT REGISTRATION FORM
+        </h2>
 
-        <div className="text-center italic text-sm">
-          Employment and Labour Relations (General)
+        <div className="flex justify-between text-sm mt-1">
+          <span className="italic text-gray-600">
+            G.N No. 47 (contd.)
+          </span>
+          <span className="font-bold">TUF. 15</span>
         </div>
-        <div className="border-b mt-2"></div>
 
-        <div className="flex justify-between text-sm mt-2">
-          <span className="italic">G.N No. 47 (contd.)</span>
-          <span>TUF. 15</span>
+        <p className="text-gray-500 text-sm mt-2">
+          1% (This rate is statutory and auto-applied)
+        </p>
+
+        {/* INPUTS */}
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <input
+            name="fullName"
+            placeholder="Full Name"
+            onChange={handleChange}
+            required
+            className="border p-2 rounded w-full"
+          />
+          <input
+            name="phone"
+            placeholder="Phone Number"
+            onChange={handleChange}
+            required
+            className="border p-2 rounded w-full"
+          />
+          <input
+            name="address"
+            placeholder="Address"
+            onChange={handleChange}
+            required
+            className="border p-2 rounded w-full md:col-span-2"
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {["employeeName","employeeNumber","employerName","witness"].map(f => (
-            <div key={f}>
-              <label className="text-xs font-bold uppercase">{f}</label>
-              <input
-                name={f}
-                value={form[f]}
-                onChange={handleChange}
-                className="w-full border-b-2 p-2 border-gray-400"
-              />
+        {/* SIGNATURE BLOCK */}
+        <div className="mt-8 space-y-6">
+          {["client", "employee", "witness"].map((role) => (
+            <div key={role}>
+              <p className="font-medium capitalize">
+                {role} Signature
+              </p>
+              <div
+                onClick={() => setActiveSignature(role)}
+                className="border-b border-black h-16 flex items-end justify-center cursor-pointer"
+              >
+                {signatures[role] ? (
+                  <img
+                    src={signatures[role]}
+                    alt="signature"
+                    className="h-12 object-contain"
+                  />
+                ) : (
+                  <span className="text-gray-400 text-sm">
+                    Tap to Sign
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2">
+                <label className="text-sm">Date</label>
+                <input
+                  type="date"
+                  name={`date${role.charAt(0).toUpperCase() + role.slice(1)}`}
+                  onChange={handleChange}
+                  required
+                  className="border-b border-black w-40 ml-2 outline-none"
+                />
+              </div>
             </div>
           ))}
-          <div>
-            <label className="text-xs font-bold uppercase">Trade Union Name</label>
-            <div className="border-b-2 p-2 text-gray-500">FIBUCA</div>
-          </div>
-          <div>
-            <label className="text-xs font-bold uppercase">Initial Monthly Union Dues</label>
-            <div className="border-b-2 p-2 text-gray-500">1%</div>
-          </div>
         </div>
 
-        <button
-          onClick={generatePDF}
-          disabled={loading}
-          className="mt-8 w-full bg-blue-700 text-white py-3 rounded"
-        >
-          {loading ? <FaSpinner className="animate-spin mx-auto"/> : "Generate & Submit"}
-        </button>
-      </div>
+        {/* AGREEMENT */}
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => setShowAgreement(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Review Agreement & Submit
+          </button>
+        </div>
+      </form>
+
+      {/* SIGNATURE MODAL */}
+      {activeSignature && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+          <div className="bg-white p-4 rounded-lg w-full max-w-lg">
+            <canvas
+              ref={canvasRef}
+              onPointerDown={startDrawing}
+              onPointerUp={endDrawing}
+              onPointerMove={draw}
+              className="border w-full touch-none"
+            />
+            <div className="flex justify-between mt-3">
+              <button
+                onClick={() => ctxRef.current.clearRect(0, 0, 500, 200)}
+                className="text-red-600"
+              >
+                Clear
+              </button>
+              <button
+                onClick={saveSignature}
+                className="bg-green-600 text-white px-4 py-1 rounded"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AGREEMENT MODAL */}
+      {showAgreement && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded max-w-lg">
+            <p className="mb-3">
+              1. Client agrees to comply with all statutory regulations.
+            </p>
+            <p className="mb-3">
+              2. Client acknowledges applicable tax obligations.
+            </p>
+            <p className="mb-3">
+              3. Client confirms information provided is accurate.
+            </p>
+            <button
+              onClick={() => {
+                setShowAgreement(false);
+                document.querySelector("form").requestSubmit();
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Agree & Submit
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CREDENTIALS POPUP */}
+      {showCredentials && generatedCreds && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded max-w-md text-center">
+            <h3 className="font-bold mb-3">Account Created</h3>
+            <p>Username: {generatedCreds.username}</p>
+            <p>Password: {generatedCreds.password}</p>
+            <p className="text-sm mt-3 text-gray-500">
+              Redirecting to login...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
