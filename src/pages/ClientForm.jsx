@@ -63,6 +63,29 @@ export default function ClientForm() {
       return;
     }
 
+    // Show agreement confirmation
+    const agreements = `
+      <div style="text-align: left; padding: 15px;">
+        <p><strong>By submitting this form, you agree to:</strong></p>
+        <div style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
+          <p>1. I hereby instruct my employer to deduct union dues monthly from my wages.</p>
+          <p>2. I agree that deductions may be adjusted with written notice.</p>
+          <p>3. I may cancel this instruction by giving one month written notice to my trade union and employer.</p>
+        </div>
+      </div>
+    `;
+
+    const confirmAgreement = await Swal.fire({
+      title: "Confirm Agreement",
+      html: agreements,
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "I Agree & Submit",
+      cancelButtonText: "Cancel"
+    });
+
+    if (!confirmAgreement.isConfirmed) return;
+
     setLoading(true);
 
     try {
@@ -162,10 +185,39 @@ export default function ClientForm() {
       formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
       formData.append("data", JSON.stringify(form));
 
-      await api.post("/submit-form", formData);
+      const response = await api.post("/submit-form", formData);
 
-      Swal.fire("Success", "Form submitted successfully.", "success")
-        .then(() => navigate("/client"));
+      if (response.data.loginCredentials) {
+        await Swal.fire({
+          title: "✅ Account Created Successfully!",
+          html: `
+            <div style="text-align: left; margin: 20px 0;">
+              <p><strong>Your form has been submitted and account created.</strong></p>
+              <p style="margin-top: 15px; padding: 12px; background-color: #f0f0f0; border-radius: 5px; border-left: 4px solid #1976d2;">
+                <strong>Login Credentials:</strong><br/><br/>
+                <span style="font-size: 14px;"><strong>Username:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.username}</code><br/><br/>
+                <span style="font-size: 14px;"><strong>Password:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.password}</code>
+              </p>
+              <p style="margin-top: 15px; color: #d32f2f; font-size: 13px;"><strong>⚠️ Save these credentials. You'll need them to log in and change your password.</strong></p>
+              <p style="margin-top: 10px; font-size: 12px; color: #666;">You will be redirected to the login page.</p>
+            </div>
+          `,
+          icon: "success",
+          confirmButtonText: "Go to Login",
+          confirmButtonColor: "#1976d2",
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+      } else {
+        await Swal.fire({
+          title: "Form Submitted",
+          text: "Your form has been submitted successfully. Login credentials will be sent to your email.",
+          icon: "success",
+          confirmButtonText: "Go to Login"
+        });
+      }
+
+      navigate("/login");
 
     } catch (err) {
       Swal.fire("Error", "Submission failed.", "error");
@@ -294,10 +346,34 @@ function SignatureBox({ label, signature, openModal, error }) {
 }
 
 function SignatureModal({ close, save, sigPadRef }) {
+  const handleClose = () => {
+    Swal.fire({
+      title: "Close without saving?",
+      text: "Your signature will be lost.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, close",
+      cancelButtonText: "Keep signing"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        close();
+      }
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
       <div className="bg-white p-4 w-full max-w-lg rounded shadow-lg">
-        <h2 className="text-center font-bold mb-4">Sign Below</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-center font-bold flex-1">Sign Below</h2>
+          <button
+            onClick={handleClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
 
         <SignatureCanvas
           ref={sigPadRef}
@@ -308,18 +384,26 @@ function SignatureModal({ close, save, sigPadRef }) {
         />
 
         <div className="flex justify-between mt-4">
-          <button onClick={() => sigPadRef.current.clear()} className="text-red-600">
+          <button onClick={() => sigPadRef.current.clear()} className="text-red-600 px-4 py-2">
             Clear
           </button>
-          <button
-            onClick={() => {
-              const img = sigPadRef.current.toDataURL();
-              save(img);
-            }}
-            className="bg-blue-700 text-white px-4 py-2 rounded"
-          >
-            Save Signature
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleClose}
+              className="border border-gray-400 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                const img = sigPadRef.current.toDataURL();
+                save(img);
+              }}
+              className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800"
+            >
+              Save Signature
+            </button>
+          </div>
         </div>
       </div>
     </div>
