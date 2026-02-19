@@ -317,21 +317,35 @@ const generatePDF = async () => {
 
   } catch (err) {
     console.error("❌ Submission error:", err);
-    
+    console.error('submission response status:', err.response?.status, 'data:', err.response?.data);
+
     let errorMessage = "Submission failed.";
+    const status = err.response?.status;
+
     if (err.response?.data?.error) {
       errorMessage = err.response.data.error;
+    } else if (status === 408) {
+      errorMessage = "Request timeout. The server timed out while processing your upload.";
     } else if (err.code === 'ECONNABORTED') {
       errorMessage = "Request timeout. The network is slow. Please try again.";
     } else if (err.message === 'Network Error' || !navigator.onLine) {
       errorMessage = "Network error. Please check your internet connection and try again.";
+    } else if (status >= 400 && status < 500) {
+      errorMessage = `Request failed (${status}). ${err.response?.data?.error || ''}`;
+    } else if (status >= 500) {
+      errorMessage = `Server error (${status}). Please try again later.`;
     } else if (err.message?.includes('413')) {
       errorMessage = "File too large. Try compressing the PDF.";
     } else if (err.message) {
       errorMessage = err.message;
     }
-    
-    Swal.fire("Error", errorMessage, "error");
+
+    // Show detailed hint and a copyable console message for debugging
+    Swal.fire({
+      title: 'Error',
+      html: `<div>${errorMessage}</div><div style="margin-top:8px;font-size:12px;color:#666">(Open browser console for full details)</div>`,
+      icon: 'error'
+    });
   } finally {
     setLoading(false);
   }

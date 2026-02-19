@@ -9,16 +9,16 @@ const getBackendURL = () => {
   }
   if (productionURL) return productionURL;
 
-  // Fallback for devices on the same LAN where VITE_BACKEND_URL isn't set.
-  // Use the current host with port 3000 (common dev backend port).
-  try {
-    const fallback = `${window.location.protocol}//${window.location.hostname}:3000`;
-    console.warn('[api] VITE_BACKEND_URL not set, falling back to', fallback);
-    return fallback;
-  } catch (e) {
-    console.warn('[api] Unable to determine fallback backend URL, using /');
-    return '/';
+  // If running locally, use localhost backend. Otherwise default to same origin.
+  // Returning window.location.origin ensures deployed frontends post to their
+  // own origin (useful when backend is hosted under same domain) instead of
+  // incorrectly targeting port 3000 on remote devices.
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3000';
   }
+
+  console.warn('[api] VITE_BACKEND_URL not set — defaulting to same origin:', window.location.origin);
+  return window.location.origin;
 };
 
 export const api = axios.create({
