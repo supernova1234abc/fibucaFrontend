@@ -20,10 +20,15 @@ export function AuthProvider({ children }) {
     const cachedUser = localStorage.getItem('fibuca_user');
     const cachedToken = localStorage.getItem('fibuca_token');
 
+    // ✅ ALWAYS restore token if it exists - critical for mobile networks & page refresh
+    if (cachedToken) {
+      setAuthToken(cachedToken);
+      console.log('🔐 Token restored from localStorage');
+    }
+
     if (cachedUser && cachedToken) {
       const parsedUser = JSON.parse(cachedUser);
       setUser(parsedUser);
-      setAuthToken(cachedToken);
       setLoading(false);
       return;
     }
@@ -35,7 +40,8 @@ export function AuthProvider({ children }) {
         setUser({ ...u, passwordChanged: !u.firstLogin });
         localStorage.setItem('fibuca_user', JSON.stringify(u));
       })
-      .catch(() => {
+      .catch(err => {
+        console.warn('⚠️ Auth check failed (may be offline or network issue):', err.message);
         setUser(null);
       })
       .finally(() => setLoading(false));
