@@ -211,115 +211,249 @@ export default function ClientForm() {
 
   // ================= UI =================
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-10">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-blue-700">
-            FIBUCA Union Form
-          </h2>
-          <Link to="/" className="text-blue-500 text-sm hover:underline">
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center px-4 py-8">
+      <div className="bg-white shadow-xl w-full max-w-4xl">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b-2 border-gray-300">
+          <div className="flex-1">
+            <h1 className="text-sm italic font-medium text-gray-700">
+              Employment and Labour Relations (General)
+            </h1>
+          </div>
+          <Link to="/" className="text-blue-500 text-sm hover:underline ml-4">
             ← Home
           </Link>
         </div>
 
-        {[
-          { name: 'employeeName', label: 'Employee Name' },
-          { name: 'employeeNumber', label: 'Employee Number' },
-          { name: 'employerName', label: 'Employer Name' },
-          { name: 'witness', label: 'Witness Name' }
-        ].map(({ name, label }) => (
-          <div className="mb-4" key={name}>
-            <label className="font-medium text-gray-700">{label}</label>
-            <input
-              name={name}
-              value={form[name]}
-              onChange={handleChange}
-              disabled={loading}
-              className={`w-full p-3 border rounded-md ${
-                errors[name] ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors[name] && (
-              <p className="text-red-600 text-sm">{errors[name]}</p>
-            )}
+        <div className="p-8">
+          {/* A4-style layout matching PDF format */}
+          
+          {/* Form Fields Section */}
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            {/* Left Column */}
+            <div className="space-y-6">
+              <div>
+                <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                  Employee's Name
+                </label>
+                <input
+                  name="employeeName"
+                  value={form.employeeName}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className={`w-full p-2 border-b-2 ${
+                    errors.employeeName ? 'border-red-500' : 'border-gray-400'
+                  } focus:outline-none focus:border-blue-600 bg-transparent text-sm`}
+                />
+                {errors.employeeName && (
+                  <p className="text-red-600 text-xs mt-1">{errors.employeeName}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                  Employee Number
+                </label>
+                <input
+                  name="employeeNumber"
+                  value={form.employeeNumber}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className={`w-full p-2 border-b-2 ${
+                    errors.employeeNumber ? 'border-red-500' : 'border-gray-400'
+                  } focus:outline-none focus:border-blue-600 bg-transparent text-sm`}
+                />
+                {errors.employeeNumber && (
+                  <p className="text-red-600 text-xs mt-1">{errors.employeeNumber}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                  Employer Name
+                </label>
+                <input
+                  name="employerName"
+                  value={form.employerName}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className={`w-full p-2 border-b-2 ${
+                    errors.employerName ? 'border-red-500' : 'border-gray-400'
+                  } focus:outline-none focus:border-blue-600 bg-transparent text-sm`}
+                />
+                {errors.employerName && (
+                  <p className="text-red-600 text-xs mt-1">{errors.employerName}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              <div>
+                <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                  Trade Union Name
+                </label>
+                <div className="w-full p-2 border-b-2 border-gray-400 bg-transparent text-sm text-gray-700">
+                  FIBUCA
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                  Initial Monthly Union Dues
+                </label>
+                <select
+                  name="dues"
+                  value={form.dues}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="w-full p-2 border-b-2 border-gray-400 focus:outline-none focus:border-blue-600 bg-transparent text-sm"
+                >
+                  <option>1%</option>
+                  <option>1.5%</option>
+                  <option>2%</option>
+                  <option>2.5%</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                  Witness Name
+                </label>
+                <input
+                  name="witness"
+                  value={form.witness}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className={`w-full p-2 border-b-2 ${
+                    errors.witness ? 'border-red-500' : 'border-gray-400'
+                  } focus:outline-none focus:border-blue-600 bg-transparent text-sm`}
+                />
+                {errors.witness && (
+                  <p className="text-red-600 text-xs mt-1">{errors.witness}</p>
+                )}
+              </div>
+            </div>
           </div>
-        ))}
 
-        {/* Employee Signature */}
-        <div className="mb-6">
-          <label className="font-medium">Employee Signature</label>
-          <SignatureCanvas
-            ref={sigPadRef}
-            penColor="black"
-            onEnd={() => {
-              setHasEmployeeSignature(!sigPadRef.current.isEmpty());
-              setErrors(prev => ({ ...prev, employeeSignature: null }));
-            }}
-            canvasProps={{
-              width: 300,
-              height: 100,
-              className: 'border rounded-md'
-            }}
-          />
-          {errors.employeeSignature && (
-            <p className="text-red-600 text-sm">
-              {errors.employeeSignature}
-            </p>
-          )}
-          <button
-            onClick={clearSignature}
-            className="text-sm text-red-600 mt-1"
-          >
-            Clear
-          </button>
+          {/* Signature Section */}
+          <div className="border-t-2 border-gray-300 pt-8">
+            <div className="grid grid-cols-2 gap-8">
+              {/* Employee Signature */}
+              <div>
+                <div className="mb-4">
+                  <label className="block text-xs uppercase font-bold text-gray-700 mb-3">
+                    Employee Signature
+                  </label>
+                  <SignatureCanvas
+                    ref={sigPadRef}
+                    penColor="black"
+                    onEnd={() => {
+                      setHasEmployeeSignature(!sigPadRef.current.isEmpty());
+                      setErrors(prev => ({ ...prev, employeeSignature: null }));
+                    }}
+                    canvasProps={{
+                      width: 250,
+                      height: 80,
+                      className: 'border-2 border-gray-400 rounded-sm bg-white'
+                    }}
+                  />
+                  {errors.employeeSignature && (
+                    <p className="text-red-600 text-xs mt-1">
+                      {errors.employeeSignature}
+                    </p>
+                  )}
+                  <button
+                    onClick={clearSignature}
+                    className="text-xs text-red-600 mt-2 hover:underline"
+                  >
+                    Clear Signature
+                  </button>
+                </div>
+                <div className="mt-4 pt-2 border-t-2 border-gray-400">
+                  <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                    Date
+                  </label>
+                  <input
+                    name="employeeDate"
+                    type="date"
+                    value={form.employeeDate}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className="w-full p-2 border-b-2 border-gray-400 focus:outline-none focus:border-blue-600 bg-transparent text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Witness Signature */}
+              <div>
+                <div className="mb-4">
+                  <label className="block text-xs uppercase font-bold text-gray-700 mb-3">
+                    Witness Signature
+                  </label>
+                  <SignatureCanvas
+                    ref={witnessSigPadRef}
+                    penColor="black"
+                    onEnd={() => {
+                      setHasWitnessSignature(!witnessSigPadRef.current.isEmpty());
+                      setErrors(prev => ({ ...prev, witnessSignature: null }));
+                    }}
+                    canvasProps={{
+                      width: 250,
+                      height: 80,
+                      className: 'border-2 border-gray-400 rounded-sm bg-white'
+                    }}
+                  />
+                  {errors.witnessSignature && (
+                    <p className="text-red-600 text-xs mt-1">
+                      {errors.witnessSignature}
+                    </p>
+                  )}
+                  <button
+                    onClick={clearWitnessSignature}
+                    className="text-xs text-red-600 mt-2 hover:underline"
+                  >
+                    Clear Signature
+                  </button>
+                </div>
+                <div className="mt-4 pt-2 border-t-2 border-gray-400">
+                  <label className="block text-xs uppercase font-bold text-gray-700 mb-2">
+                    Date
+                  </label>
+                  <input
+                    name="witnessDate"
+                    type="date"
+                    value={form.witnessDate}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className="w-full p-2 border-b-2 border-gray-400 focus:outline-none focus:border-blue-600 bg-transparent text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="mt-8 flex gap-4">
+            <button
+              onClick={generatePDF}
+              disabled={!formValid || loading}
+              className={`flex-1 py-3 rounded-md text-white font-semibold uppercase text-sm tracking-wide ${
+                loading || !formValid
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-700 hover:bg-blue-800'
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <FaSpinner className="animate-spin" /> Submitting…
+                </span>
+              ) : (
+                'Generate & Submit PDF'
+              )}
+            </button>
+          </div>
         </div>
-
-        {/* Witness Signature */}
-        <div className="mb-6">
-          <label className="font-medium">Witness Signature</label>
-          <SignatureCanvas
-            ref={witnessSigPadRef}
-            penColor="black"
-            onEnd={() => {
-              setHasWitnessSignature(!witnessSigPadRef.current.isEmpty());
-              setErrors(prev => ({ ...prev, witnessSignature: null }));
-            }}
-            canvasProps={{
-              width: 300,
-              height: 100,
-              className: 'border rounded-md'
-            }}
-          />
-          {errors.witnessSignature && (
-            <p className="text-red-600 text-sm">
-              {errors.witnessSignature}
-            </p>
-          )}
-          <button
-            onClick={clearWitnessSignature}
-            className="text-sm text-red-600 mt-1"
-          >
-            Clear
-          </button>
-        </div>
-
-        <button
-          onClick={generatePDF}
-          disabled={!formValid || loading}
-          className={`w-full py-3 rounded-md text-white font-semibold ${
-            loading || !formValid
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <FaSpinner className="animate-spin" /> Submitting…
-            </span>
-          ) : (
-            'Generate & Submit PDF'
-          )}
-        </button>
       </div>
     </div>
   );
