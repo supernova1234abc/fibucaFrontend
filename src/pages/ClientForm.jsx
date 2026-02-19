@@ -233,6 +233,23 @@ const generatePDF = async () => {
     let response;
     let lastError;
     const maxRetries = 3;
+    // Debug: log which backend we're submitting to and online status
+    try {
+      console.log('Submitting to', api.defaults.baseURL || '(no baseURL)', 'online:', navigator.onLine);
+    } catch (e) {
+      console.log('Submitting (api not available)', e);
+    }
+
+    // Show an uploading modal so mobile users see progress
+    const uploadingModal = Swal.fire({
+      title: 'Uploading...',
+      html: 'Please wait while we generate and upload your form.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -261,9 +278,11 @@ const generatePDF = async () => {
     }
 
     if (!response) {
+      Swal.close();
       throw lastError || new Error("Form submission failed after retries");
     }
 
+    Swal.close();
     if (response.data.loginCredentials) {
       await Swal.fire({
         title: "✅ Account Created Successfully!",
