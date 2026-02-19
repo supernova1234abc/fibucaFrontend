@@ -106,7 +106,7 @@ const generatePDF = async () => {
 
     // ================= TITLE =================
     doc.setFont("Times", "normal");
-    doc.setFontSize(13);
+    doc.setFontSize(11);
     doc.text(
       "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
       pageWidth / 2,
@@ -207,6 +207,10 @@ const generatePDF = async () => {
     doc.line(witSignStart, y, witSignEnd, y);
     doc.line(witDateStart, y, witDateEnd, y);
 
+    // Add witness name text
+    doc.setFontSize(11);
+    doc.text(form.witness, witSignStart + 5, y);
+
     const witImgX = witSignStart + (lineWidth - signWidth) / 2;
     doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
 
@@ -225,13 +229,53 @@ const generatePDF = async () => {
     formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
     formData.append("data", JSON.stringify(form));
 
-    await api.post("/submit-form", formData);
+    const response = await api.post("/submit-form", formData);
 
-    Swal.fire("Success", "Form submitted successfully.", "success");
+    if (response.data.loginCredentials) {
+      await Swal.fire({
+        title: "✅ Account Created Successfully!",
+        html: `
+          <div style="text-align: left; margin: 20px 0;">
+            <p><strong>Your form has been submitted and account created.</strong></p>
+            <p style="margin-top: 15px; padding: 12px; background-color: #f0f0f0; border-radius: 5px; border-left: 4px solid #1976d2;">
+              <strong>Login Credentials:</strong><br/><br/>
+              <span style="font-size: 14px;"><strong>Username:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.username}</code><br/><br/>
+              <span style="font-size: 14px;"><strong>Password:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.password}</code>
+            </p>
+            <p style="margin-top: 15px; color: #d32f2f; font-size: 13px;"><strong>⚠️ Save these credentials. You'll need them to log in and change your password.</strong></p>
+            <p style="margin-top: 10px; font-size: 12px; color: #666;">You will be redirected to the login page.</p>
+          </div>
+        `,
+        icon: "success",
+        confirmButtonText: "Go to Login",
+        confirmButtonColor: "#1976d2",
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+    } else {
+      await Swal.fire({
+        title: "Form Submitted",
+        text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
+        icon: "success",
+        confirmButtonText: "Go to Login"
+      });
+    }
+
     navigate("/login");
 
   } catch (err) {
-    Swal.fire("Error", "Submission failed.", "error");
+    console.error("❌ Submission error:", err);
+    
+    let errorMessage = "Submission failed.";
+    if (err.response?.data?.error) {
+      errorMessage = err.response.data.error;
+    } else if (err.message) {
+      errorMessage = err.message;
+    } else if (!navigator.onLine) {
+      errorMessage = "No internet connection. Please check your connection and try again.";
+    }
+    
+    Swal.fire("Error", errorMessage, "error");
   } finally {
     setLoading(false);
   }
