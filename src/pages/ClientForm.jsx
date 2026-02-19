@@ -57,247 +57,186 @@ export default function ClientForm() {
   };
 
   // ================= PDF =================
-  const generatePDF = async () => {
-    if (!validate()) {
-      Swal.fire("Missing Information", "Please complete all fields.", "warning");
-      return;
-    }
+const generatePDF = async () => {
+  if (!validate()) {
+    Swal.fire("Missing Information", "Please complete all fields.", "warning");
+    return;
+  }
 
-    // Show agreement confirmation
-    const agreements = `
-      <div style="text-align: left; padding: 15px;">
+  const confirmAgreement = await Swal.fire({
+    title: "Confirm Agreement",
+    html: `
+      <div style="text-align:left">
         <p><strong>By submitting this form, you agree to:</strong></p>
-        <div style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
-          <p>1. I hereby instruct my employer to deduct union dues monthly from my wages.</p>
-          <p>2. I agree that deductions may be adjusted with written notice.</p>
-          <p>3. I may cancel this instruction by giving one month written notice to my trade union and employer.</p>
-        </div>
+        <p>1. Employer will deduct union dues monthly.</p>
+        <p>2. Deductions may be adjusted with written notice.</p>
+        <p>3. You may cancel by one month written notice.</p>
       </div>
-    `;
+    `,
+    icon: "info",
+    showCancelButton: true,
+    confirmButtonText: "I Agree & Submit"
+  });
 
-    const confirmAgreement = await Swal.fire({
-      title: "Confirm Agreement",
-      html: agreements,
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonText: "I Agree & Submit",
-      cancelButtonText: "Cancel"
+  if (!confirmAgreement.isConfirmed) return;
+
+  setLoading(true);
+
+  try {
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let y = 20;
+
+    // ================= HEADER =================
+    doc.setFont("Times", "italic");
+    doc.setFontSize(12);
+    doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
+
+    y += 3;
+    doc.line(margin, y, pageWidth - margin, y);
+
+    y += 6;
+    doc.setFontSize(11);
+    doc.text("G.N No. 47 (contd.)", margin, y);
+    doc.setFont("Times", "bold");
+    doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
+
+    y += 12;
+
+    // ================= TITLE =================
+    doc.setFont("Times", "normal");
+    doc.setFontSize(13);
+    doc.text(
+      "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
+      pageWidth / 2,
+      y,
+      { align: "center", maxWidth: 170 }
+    );
+
+    y += 10;
+    doc.setFont("Times", "italic");
+    doc.setFontSize(11);
+    doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
+
+    y += 15;
+
+    // ================= FORM FIELDS =================
+    doc.setFont("Times", "normal");
+    doc.setFontSize(12);
+
+    const drawField = (label, value) => {
+      doc.text(`${label}:`, margin, y);
+      const lineStart = margin + 55;
+      doc.line(lineStart, y + 1, pageWidth - margin, y + 1);
+      doc.text(value, lineStart + 5, y);
+      y += 10;
+    };
+
+    drawField("EMPLOYEE'S NAME", form.employeeName);
+    drawField("EMPLOYEE NUMBER", form.employeeNumber);
+    drawField("EMPLOYER NAME", form.employerName);
+    drawField("TRADE UNION NAME", "FIBUCA");
+
+    // DUES CENTERED
+    const duesLabel = "INITIAL MONTHLY UNION DUES:";
+    const labelWidth =
+      (doc.getStringUnitWidth(duesLabel) *
+        doc.internal.getFontSize()) /
+      doc.internal.scaleFactor;
+
+    const duesStart = margin + labelWidth + 5;
+    doc.text(duesLabel, margin, y);
+    doc.line(duesStart, y + 1, pageWidth - margin, y + 1);
+    doc.text(form.dues, (duesStart + pageWidth - margin) / 2, y, { align: "center" });
+
+    y += 15;
+
+    // ================= CLAUSES =================
+    const clauses = [
+      "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
+      "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
+      "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
+    ];
+
+    clauses.forEach(text => {
+      const split = doc.splitTextToSize(text, pageWidth - margin * 2);
+      doc.text(split, margin, y);
+      y += split.length * 6 + 4;
     });
 
-    if (!confirmAgreement.isConfirmed) return;
+    y += 15;
 
-    setLoading(true);
+    // ================= SIGNATURE SECTION =================
+    const lineWidth = 65;
+    const dateWidth = 40;
+    const signHeight = 15;
+    const signWidth = 50;
 
-    try {
-      const doc = new jsPDF("p", "mm", "a4");
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
-      let y = 20;
+    // ---- EMPLOYEE ROW ----
+    const empSignStart = margin;
+    const empSignEnd = empSignStart + lineWidth;
 
-      // HEADER
-      doc.setFont("Times", "italic");
-      doc.setFontSize(12);
-      doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
+    const empDateEnd = pageWidth - margin;
+    const empDateStart = empDateEnd - dateWidth;
 
-      y += 2; // ✅ REDUCED SPACE - text closer to underline
-      doc.line(margin, y, pageWidth - margin, y);
+    doc.line(empSignStart, y, empSignEnd, y);
+    doc.line(empDateStart, y, empDateEnd, y);
 
-      y += 5;
+    const empImgX = empSignStart + (lineWidth - signWidth) / 2;
+    doc.addImage(employeeSignature, "PNG", empImgX, y - signHeight, signWidth, signHeight);
 
-      // G.N No and TUF placement
-      doc.setFont("Times", "italic");
-      doc.setFontSize(11);
-      doc.text("G.N No. 47 (contd.)", margin, y);
-      doc.setFont("Times", "bold");
-      doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
+    doc.setFontSize(11);
+    doc.text(form.employeeDate, empDateStart + dateWidth / 2, y - 1, { align: "center" });
 
-      y += 12;
+    y += 6;
 
-      // TITLE
-      doc.setFont("Times", "normal");
-      doc.setFontSize(13);
-      doc.text(
-        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
-        pageWidth / 2,
-        y,
-        { align: "center", maxWidth: 170 }
-      );
+    doc.setFontSize(10);
+    doc.text("Employee Signature", empSignStart + lineWidth / 2, y, { align: "center" });
+    doc.text("Date", empDateStart + dateWidth / 2, y, { align: "center" });
 
-      y += 10;
-      doc.setFont("Times", "italic");
-      doc.setFontSize(11);
-      doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
+    // ---- WITNESS ROW ----
+    y += 14;
 
-      y += 15;
+    const witSignStart = margin;
+    const witSignEnd = witSignStart + lineWidth;
 
-      doc.setFont("Times", "normal");
-      doc.setFontSize(12);
+    const witDateEnd = pageWidth - margin;
+    const witDateStart = witDateEnd - dateWidth;
 
-      // Regular fields - left-aligned with slight padding (looks like someone filled it)
-      const drawField = (label, value) => {
-        const fieldStart = margin + 55;
-        const fieldWidth = pageWidth - margin - fieldStart;
-        const fieldPos = fieldStart + fieldWidth * 0.15; // 15% offset from left (slight padding)
-        
-        doc.text(`${label}:`, margin, y);
-        doc.text(value, fieldPos, y); // ✅ LEFT-ALIGNED WITH PADDING
-        doc.line(fieldStart, y + 1, pageWidth - margin, y + 1);
-        y += 10;
-      };
+    doc.line(witSignStart, y, witSignEnd, y);
+    doc.line(witDateStart, y, witDateEnd, y);
 
-      // Dues field - centered (for fixed values like "1%")
-      const drawCenteredField = (label, value) => {
-        // ✅ FIXED: Line starts right after label text
-        const labelWidth = doc.getStringUnitWidth(label + ":") * doc.internal.getFontSize() / doc.internal.scaleFactor;
-        const fieldStart = margin + labelWidth + 5; // Start line after label + small gap
-        const fieldWidth = pageWidth - margin - fieldStart;
-        const fieldCenter = fieldStart + fieldWidth / 2;
-        
-        doc.text(`${label}:`, margin, y);
-        doc.text(value, fieldCenter, y, { align: "center" }); // ✅ CENTERED
-        doc.line(fieldStart, y + 1, pageWidth - margin, y + 1);
-        y += 10;
-      };
+    const witImgX = witSignStart + (lineWidth - signWidth) / 2;
+    doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
 
-      drawField("EMPLOYEE'S NAME", form.employeeName);
-      drawField("EMPLOYEE NUMBER", form.employeeNumber);
-      drawField("EMPLOYER NAME", form.employerName);
-      drawField("TRADE UNION NAME", "FIBUCA");
-      drawCenteredField("INITIAL MONTHLY UNION DUES", form.dues);
+    doc.setFontSize(11);
+    doc.text(form.witnessDate, witDateStart + dateWidth / 2, y - 1, { align: "center" });
 
-      y += 8;
+    y += 6;
 
-      const clauses = [
-        "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
-        "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
-        "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
-      ];
+    doc.setFontSize(10);
+    doc.text("Witness Name and Signature", witSignStart + lineWidth / 2, y, { align: "center" });
+    doc.text("Date", witDateStart + dateWidth / 2, y, { align: "center" });
 
-      clauses.forEach(text => {
-        const split = doc.splitTextToSize(text, pageWidth - margin * 2);
-        doc.text(split, margin, y);
-        y += split.length * 6 + 4;
-      });
+    // ================= SAVE & UPLOAD =================
+    const pdfBlob = doc.output("blob");
+    const formData = new FormData();
+    formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
+    formData.append("data", JSON.stringify(form));
 
-      y += 10;
+    await api.post("/submit-form", formData);
 
-      // ✅ SIGNATURES WITH LABELS BELOW
-      const signWidth = 50;
-      const signHeight = 15;
+    Swal.fire("Success", "Form submitted successfully.", "success");
+    navigate("/login");
 
-      // EMPLOYEE SIGNATURE SECTION
-      doc.setFont("Times", "normal");
-      doc.setFontSize(12);
-      
-      // Underline for signature
-      doc.line(margin, y, margin + 60, y);
-      const empX = margin + (60 - signWidth) / 2;
-      doc.addImage(employeeSignature, "PNG", empX, y - signHeight, signWidth, signHeight);
-      
-      // Date underline on right side
-      const dateLineStart = pageWidth - margin - 40;
-      doc.line(dateLineStart, y, pageWidth - margin, y);
-      doc.setFontSize(11);
-      doc.text(form.employeeDate, dateLineStart + 20, y);
-      
-      y += 6; // Space below underlines
-      
-      // Labels BELOW (centered under their specific underlines)
-      doc.setFont("Times", "normal");
-      doc.setFontSize(10);
-      doc.text("Employee Signature", margin, y, { align: "center", maxWidth: 60 });
-      doc.text("Date", dateLineStart + 20, y, { align: "center" });
+  } catch (err) {
+    Swal.fire("Error", "Submission failed.", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      y += 12;
-
-      // ✅ WITNESS NAME AND SIGNATURE + DATE - SAME ROW
-      doc.setFont("Times", "normal");
-      doc.setFontSize(12);
-      
-      const witnessNameStart = margin;
-      const witnessNameWidth = 35;
-      
-      // Name underline
-      doc.line(witnessNameStart, y, witnessNameStart + witnessNameWidth, y);
-      doc.text(form.witness, witnessNameStart + 5, y);
-      
-      // Signature underline - with proper spacing
-      const witnessSignStart = witnessNameStart + witnessNameWidth + 8;
-      const witnessDateLineStart = pageWidth - margin - 40;
-      const witnessSignWidth = witnessDateLineStart - witnessSignStart - 5;
-      doc.line(witnessSignStart, y, witnessSignStart + witnessSignWidth, y);
-      const witX = witnessSignStart + (witnessSignWidth - signWidth) / 2;
-      doc.addImage(witnessSignature, "PNG", witX, y - signHeight, signWidth, signHeight);
-      
-      // Witness Date underline on right side
-      doc.line(witnessDateLineStart, y, pageWidth - margin, y);
-      doc.setFontSize(11);
-      doc.text(form.witnessDate, witnessDateLineStart + 20, y);
-      
-      y += 6; // Space below underlines
-      
-      // LABELS BELOW (centered under their specific underlines)
-      doc.setFont("Times", "normal");
-      doc.setFontSize(9);
-      doc.text("Witness Name and Signature", witnessNameStart + (witnessSignWidth + witnessNameWidth + 8) / 2, y, { align: "center", maxWidth: 60 });
-      doc.text("Date", witnessDateLineStart + 20, y, { align: "center" });
-
-      const pdfBlob = doc.output("blob");
-      const formData = new FormData();
-      formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
-      formData.append("data", JSON.stringify(form));
-
-      const response = await api.post("/submit-form", formData);
-
-      if (response.data.loginCredentials) {
-        await Swal.fire({
-          title: "✅ Account Created Successfully!",
-          html: `
-            <div style="text-align: left; margin: 20px 0;">
-              <p><strong>Your form has been submitted and account created.</strong></p>
-              <p style="margin-top: 15px; padding: 12px; background-color: #f0f0f0; border-radius: 5px; border-left: 4px solid #1976d2;">
-                <strong>Login Credentials:</strong><br/><br/>
-                <span style="font-size: 14px;"><strong>Username:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.username}</code><br/><br/>
-                <span style="font-size: 14px;"><strong>Password:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.password}</code>
-              </p>
-              <p style="margin-top: 15px; color: #d32f2f; font-size: 13px;"><strong>⚠️ Save these credentials. You'll need them to log in and change your password.</strong></p>
-              <p style="margin-top: 10px; font-size: 12px; color: #666;">You will be redirected to the login page.</p>
-            </div>
-          `,
-          icon: "success",
-          confirmButtonText: "Go to Login",
-          confirmButtonColor: "#1976d2",
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        });
-      } else {
-        await Swal.fire({
-          title: "Form Submitted",
-          text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
-          icon: "success",
-          confirmButtonText: "Go to Login"
-        });
-      }
-
-      navigate("/login");
-
-    } catch (err) {
-      console.error("❌ Submission error:", err);
-      
-      let errorMessage = "Submission failed.";
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
-      } else if (!navigator.onLine) {
-        errorMessage = "No internet connection. Please check your connection and try again.";
-      }
-      
-      Swal.fire("Error", errorMessage, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ================= UI =================
   return (
