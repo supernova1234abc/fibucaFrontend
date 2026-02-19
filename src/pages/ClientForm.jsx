@@ -1,292 +1,327 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import SignatureCanvas from "react-signature-canvas";
+import jsPDF from "jspdf";
+import { api } from "../lib/api";
+import { useNavigate, Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import { FaSpinner } from "react-icons/fa";
 
 export default function ClientForm() {
   const navigate = useNavigate();
 
-  /* ===============================
-     STATE
-  ================================= */
-  const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
-    address: "",
+  const [form, setForm] = useState({
     employeeName: "",
-    witnessName: "",
-    dateClient: "",
-    dateEmployee: "",
-    dateWitness: "",
+    employeeNumber: "",
+    employerName: "",
+    dues: "1%",
+    witness: "",
+    employeeDate: "",
+    witnessDate: ""
   });
 
-  const [activeSignature, setActiveSignature] = useState(null);
-  const [signatures, setSignatures] = useState({
-    client: null,
-    employee: null,
-    witness: null,
-  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const [showAgreement, setShowAgreement] = useState(false);
-  const [showCredentials, setShowCredentials] = useState(false);
-  const [generatedCreds, setGeneratedCreds] = useState(null);
+  const [employeeSigOpen, setEmployeeSigOpen] = useState(false);
+  const [witnessSigOpen, setWitnessSigOpen] = useState(false);
 
-  const canvasRef = useRef(null);
-  const ctxRef = useRef(null);
-  const drawing = useRef(false);
+  const [employeeSignature, setEmployeeSignature] = useState(null);
+  const [witnessSignature, setWitnessSignature] = useState(null);
 
-  /* ===============================
-     RESPONSIVE FIX
-  ================================= */
+  const sigPadRef = useRef(null);
+  const witnessSigPadRef = useRef(null);
+
+  // Default dates
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const today = new Date().toISOString().split("T")[0];
+    setForm(f => ({ ...f, employeeDate: today, witnessDate: today }));
+  }, []);
 
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = 500 * ratio;
-    canvas.height = 200 * ratio;
-    canvas.style.width = "100%";
-    canvas.style.height = "200px";
-
-    const ctx = canvas.getContext("2d");
-    ctx.scale(ratio, ratio);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 2;
-    ctxRef.current = ctx;
-  }, [activeSignature]);
-
-  /* ===============================
-     SIGNATURE DRAWING (SMOOTH + PRESSURE)
-  ================================= */
-  const startDrawing = (e) => {
-    drawing.current = true;
-    draw(e);
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setErrors(prev => ({ ...prev, [e.target.name]: null }));
   };
 
-  const endDrawing = () => {
-    drawing.current = false;
-    ctxRef.current.beginPath();
+  const validate = () => {
+    const newErrors = {};
+
+    if (!form.employeeName.trim()) newErrors.employeeName = "Required";
+    if (!form.employeeNumber.trim()) newErrors.employeeNumber = "Required";
+    if (!form.employerName.trim()) newErrors.employerName = "Required";
+    if (!form.witness.trim()) newErrors.witness = "Required";
+    if (!employeeSignature) newErrors.employeeSignature = "Required";
+    if (!witnessSignature) newErrors.witnessSignature = "Required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const draw = (e) => {
-    if (!drawing.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const pressure = e.pressure || 0.5;
-    ctxRef.current.lineWidth = 1 + pressure * 3;
-
-    ctxRef.current.lineTo(x, y);
-    ctxRef.current.stroke();
-    ctxRef.current.beginPath();
-    ctxRef.current.moveTo(x, y);
-  };
-
-  const saveSignature = () => {
-    const image = canvasRef.current.toDataURL("image/png");
-    setSignatures((prev) => ({ ...prev, [activeSignature]: image }));
-    setActiveSignature(null);
-  };
-
-  /* ===============================
-     INPUT HANDLER
-  ================================= */
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  /* ===============================
-     SUBMIT
-  ================================= */
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!signatures.client || !signatures.employee || !signatures.witness) {
-      alert("All signatures required.");
+  // ================= PDF =================
+  const generatePDF = async () => {
+    if (!validate()) {
+      Swal.fire("Missing Information", "Please complete all fields.", "warning");
       return;
     }
 
-    const username = formData.phone;
-    const password = Math.random().toString(36).slice(-8);
+    setLoading(true);
 
-    setGeneratedCreds({ username, password });
-    setShowCredentials(true);
+    try {
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let y = 20;
 
-    setTimeout(() => {
-      navigate("/login");
-    }, 4000);
+      // HEADER
+      doc.setFont("Times", "italic");
+      doc.setFontSize(12);
+      doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
+
+      y += 6;
+      doc.line(margin, y, pageWidth - margin, y);
+
+      y += 5;
+
+      // G.N No and TUF placement
+      doc.setFont("Times", "normal");
+      doc.setFontSize(11);
+      doc.text("G.N No. 47 (contd.)", margin, y);
+      doc.setFont("Times", "bold");
+      doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
+
+      y += 12;
+
+      // TITLE
+      doc.setFont("Times", "bold");
+      doc.setFontSize(13);
+      doc.text(
+        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
+        pageWidth / 2,
+        y,
+        { align: "center", maxWidth: 170 }
+      );
+
+      y += 10;
+      doc.setFont("Times", "italic");
+      doc.setFontSize(11);
+      doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
+
+      y += 15;
+
+      doc.setFont("Times", "normal");
+      doc.setFontSize(12);
+
+      const drawField = (label, value) => {
+        doc.text(`${label}:`, margin, y);
+        doc.text(value, margin + 55, y);
+        doc.line(margin + 55, y + 1, pageWidth - margin, y + 1);
+        y += 10;
+      };
+
+      drawField("EMPLOYEE’S NAME", form.employeeName);
+      drawField("EMPLOYEE NUMBER", form.employeeNumber);
+      drawField("EMPLOYER NAME", form.employerName);
+      drawField("TRADE UNION NAME", "FIBUCA");
+      drawField("INITIAL MONTHLY UNION DUES", form.dues);
+
+      y += 8;
+
+      const clauses = [
+        "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
+        "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
+        "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
+      ];
+
+      clauses.forEach(text => {
+        const split = doc.splitTextToSize(text, pageWidth - margin * 2);
+        doc.text(split, margin, y);
+        y += split.length * 6 + 4;
+      });
+
+      y += 10;
+
+      // SIGNATURE CENTERING
+      const signWidth = 50;
+      const signHeight = 15;
+
+      // Employee signature line
+      doc.line(margin, y, margin + 60, y);
+      const empX = margin + (60 - signWidth) / 2;
+      doc.addImage(employeeSignature, "PNG", empX, y - signHeight, signWidth, signHeight);
+      doc.text(form.employeeDate, pageWidth - margin, y, { align: "right" });
+
+      y += 25;
+
+      // Witness signature line
+      doc.line(margin, y, margin + 60, y);
+      const witX = margin + (60 - signWidth) / 2;
+      doc.addImage(witnessSignature, "PNG", witX, y - signHeight, signWidth, signHeight);
+      doc.text(form.witnessDate, pageWidth - margin, y, { align: "right" });
+
+      const pdfBlob = doc.output("blob");
+      const formData = new FormData();
+      formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
+      formData.append("data", JSON.stringify(form));
+
+      await api.post("/submit-form", formData);
+
+      Swal.fire("Success", "Form submitted successfully.", "success")
+        .then(() => navigate("/client"));
+
+    } catch (err) {
+      Swal.fire("Error", "Submission failed.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  /* ===============================
-     UI
-  ================================= */
+  // ================= UI =================
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow"
-      >
-        {/* HEADER */}
-        <h2 className="text-center font-bold text-lg border-b pb-2">
-          CLIENT REGISTRATION FORM
-        </h2>
+    <div className="min-h-screen bg-gray-100 p-4 flex justify-center">
+      <div className="bg-white shadow-lg w-full max-w-4xl p-6">
 
-        <div className="flex justify-between text-sm mt-1">
-          <span className="italic text-gray-600">
-            G.N No. 47 (contd.)
-          </span>
+        {/* HEADER */}
+        <div className="text-center">
+          <h1 className="italic text-sm">Employment and Labour Relations (General)</h1>
+          <div className="border-b mt-2"></div>
+        </div>
+
+        <div className="flex justify-between text-sm mt-2">
+          <span>G.N No. 47 (contd.)</span>
           <span className="font-bold">TUF. 15</span>
         </div>
 
-        <p className="text-gray-500 text-sm mt-2">
-          1% (This rate is statutory and auto-applied)
-        </p>
+        {/* FORM GRID - responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
-        {/* INPUTS */}
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
-          <input
-            name="fullName"
-            placeholder="Full Name"
-            onChange={handleChange}
-            required
-            className="border p-2 rounded w-full"
-          />
-          <input
-            name="phone"
-            placeholder="Phone Number"
-            onChange={handleChange}
-            required
-            className="border p-2 rounded w-full"
-          />
-          <input
-            name="address"
-            placeholder="Address"
-            onChange={handleChange}
-            required
-            className="border p-2 rounded w-full md:col-span-2"
-          />
-        </div>
-
-        {/* SIGNATURE BLOCK */}
-        <div className="mt-8 space-y-6">
-          {["client", "employee", "witness"].map((role) => (
-            <div key={role}>
-              <p className="font-medium capitalize">
-                {role} Signature
-              </p>
-              <div
-                onClick={() => setActiveSignature(role)}
-                className="border-b border-black h-16 flex items-end justify-center cursor-pointer"
-              >
-                {signatures[role] ? (
-                  <img
-                    src={signatures[role]}
-                    alt="signature"
-                    className="h-12 object-contain"
-                  />
-                ) : (
-                  <span className="text-gray-400 text-sm">
-                    Tap to Sign
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="text-sm">Date</label>
-                <input
-                  type="date"
-                  name={`date${role.charAt(0).toUpperCase() + role.slice(1)}`}
-                  onChange={handleChange}
-                  required
-                  className="border-b border-black w-40 ml-2 outline-none"
-                />
-              </div>
+          {["employeeName","employeeNumber","employerName","witness"].map(field => (
+            <div key={field}>
+              <label className="block text-xs font-bold uppercase mb-1">
+                {field.replace(/([A-Z])/g," $1")}
+              </label>
+              <input
+                name={field}
+                value={form[field]}
+                onChange={handleChange}
+                className={`w-full border-b-2 p-2 ${errors[field] ? "border-red-500" : "border-gray-400"}`}
+              />
             </div>
           ))}
+
+          <div>
+            <label className="block text-xs font-bold uppercase mb-1">Trade Union Name</label>
+            <div className="border-b-2 p-2 border-gray-400">FIBUCA</div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase mb-1">Initial Monthly Union Dues</label>
+            <select
+              name="dues"
+              value={form.dues}
+              onChange={handleChange}
+              className="w-full border-b-2 p-2 border-gray-400"
+            >
+              <option>1%</option>
+              <option>1.5%</option>
+              <option>2%</option>
+            </select>
+          </div>
         </div>
 
-        {/* AGREEMENT */}
-        <div className="mt-8">
+        {/* SIGNATURE PREVIEW BOXES */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+
+          <SignatureBox
+            label="Employee Signature"
+            signature={employeeSignature}
+            openModal={() => setEmployeeSigOpen(true)}
+            error={errors.employeeSignature}
+          />
+
+          <SignatureBox
+            label="Witness Signature"
+            signature={witnessSignature}
+            openModal={() => setWitnessSigOpen(true)}
+            error={errors.witnessSignature}
+          />
+
+        </div>
+
+        {/* SUBMIT */}
+        <button
+          onClick={generatePDF}
+          disabled={loading}
+          className="mt-8 w-full bg-blue-700 text-white py-3 rounded"
+        >
+          {loading ? <FaSpinner className="animate-spin mx-auto" /> : "Generate & Submit PDF"}
+        </button>
+      </div>
+
+      {/* SIGNATURE MODALS */}
+      {employeeSigOpen && (
+        <SignatureModal
+          close={() => setEmployeeSigOpen(false)}
+          save={(img) => { setEmployeeSignature(img); setEmployeeSigOpen(false); }}
+          sigPadRef={sigPadRef}
+        />
+      )}
+
+      {witnessSigOpen && (
+        <SignatureModal
+          close={() => setWitnessSigOpen(false)}
+          save={(img) => { setWitnessSignature(img); setWitnessSigOpen(false); }}
+          sigPadRef={witnessSigPadRef}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ================= COMPONENTS ================= */
+
+function SignatureBox({ label, signature, openModal, error }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold uppercase mb-2">{label}</label>
+      <div
+        onClick={openModal}
+        className="border-2 border-gray-400 h-20 flex items-center justify-center cursor-pointer bg-white"
+      >
+        {signature ? <img src={signature} alt="signature" className="h-14" /> : "Tap to Sign"}
+      </div>
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
+
+function SignatureModal({ close, save, sigPadRef }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+      <div className="bg-white p-4 w-full max-w-lg rounded shadow-lg">
+        <h2 className="text-center font-bold mb-4">Sign Below</h2>
+
+        <SignatureCanvas
+          ref={sigPadRef}
+          penColor="black"
+          canvasProps={{
+            className: "border w-full h-60"
+          }}
+        />
+
+        <div className="flex justify-between mt-4">
+          <button onClick={() => sigPadRef.current.clear()} className="text-red-600">
+            Clear
+          </button>
           <button
-            type="button"
-            onClick={() => setShowAgreement(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={() => {
+              const img = sigPadRef.current.toDataURL();
+              save(img);
+            }}
+            className="bg-blue-700 text-white px-4 py-2 rounded"
           >
-            Review Agreement & Submit
+            Save Signature
           </button>
         </div>
-      </form>
-
-      {/* SIGNATURE MODAL */}
-      {activeSignature && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
-          <div className="bg-white p-4 rounded-lg w-full max-w-lg">
-            <canvas
-              ref={canvasRef}
-              onPointerDown={startDrawing}
-              onPointerUp={endDrawing}
-              onPointerMove={draw}
-              className="border w-full touch-none"
-            />
-            <div className="flex justify-between mt-3">
-              <button
-                onClick={() => ctxRef.current.clearRect(0, 0, 500, 200)}
-                className="text-red-600"
-              >
-                Clear
-              </button>
-              <button
-                onClick={saveSignature}
-                className="bg-green-600 text-white px-4 py-1 rounded"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AGREEMENT MODAL */}
-      {showAgreement && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
-          <div className="bg-white p-6 rounded max-w-lg">
-            <p className="mb-3">
-              1. Client agrees to comply with all statutory regulations.
-            </p>
-            <p className="mb-3">
-              2. Client acknowledges applicable tax obligations.
-            </p>
-            <p className="mb-3">
-              3. Client confirms information provided is accurate.
-            </p>
-            <button
-              onClick={() => {
-                setShowAgreement(false);
-                document.querySelector("form").requestSubmit();
-              }}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              Agree & Submit
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CREDENTIALS POPUP */}
-      {showCredentials && generatedCreds && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
-          <div className="bg-white p-6 rounded max-w-md text-center">
-            <h3 className="font-bold mb-3">Account Created</h3>
-            <p>Username: {generatedCreds.username}</p>
-            <p>Password: {generatedCreds.password}</p>
-            <p className="text-sm mt-3 text-gray-500">
-              Redirecting to login...
-            </p>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
