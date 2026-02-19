@@ -3,6 +3,7 @@ import axios from 'axios';
 export const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
+  timeout: 90000, // 90 seconds for file uploads
 });
 
 // In-memory token (optional, used if set manually)

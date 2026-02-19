@@ -220,7 +220,18 @@ export default function ClientForm() {
       navigate("/login");
 
     } catch (err) {
-      Swal.fire("Error", "Submission failed.", "error");
+      console.error("❌ Submission error:", err);
+      
+      let errorMessage = "Submission failed.";
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (!navigator.onLine) {
+        errorMessage = "No internet connection. Please check your connection and try again.";
+      }
+      
+      Swal.fire("Error", errorMessage, "error");
     } finally {
       setLoading(false);
     }
