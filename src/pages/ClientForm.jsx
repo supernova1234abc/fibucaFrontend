@@ -189,7 +189,7 @@ const generatePDF = async () => {
     doc.line(empDateStart, y, empDateEnd, y);
 
     const empImgX = empSignStart + (lineWidth - signWidth) / 2;
-doc.addImage(employeeSignature, "JPEG", empImgX, y - signHeight, signWidth, signHeight);
+doc.addImage(employeeSignature, "PNG", empImgX, y - signHeight, signWidth, signHeight);
     doc.setFontSize(11);
     doc.text(form.employeeDate, empDateStart + dateWidth / 2, y - 1, { align: "center" });
 
@@ -216,7 +216,7 @@ doc.addImage(employeeSignature, "JPEG", empImgX, y - signHeight, signWidth, sign
     doc.text(form.witness, witSignStart + 5, y);
 
     const witImgX = witSignStart + (lineWidth - signWidth) / 2;
-doc.addImage(witnessSignature, "JPEG", witImgX, y - signHeight, signWidth, signHeight);
+doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
     doc.setFontSize(11);
     doc.text(form.witnessDate, witDateStart + dateWidth / 2, y - 1, { align: "center" });
 
@@ -535,12 +535,21 @@ function SignatureModal({ close, save, sigPadRef }) {
               Cancel
             </button>
             <button
-              onClick={() => {
-                const img = sigPadRef.current
-  .getTrimmedCanvas()
-  .toDataURL("image/jpeg", 0.6); // compress to JPEG 60%
-                save(img);
-              }}
+
+onClick={() => {
+  if (sigPadRef.current.isEmpty()) {
+    Swal.fire("Error", "Please provide a signature.", "warning");
+    return;
+  }
+
+  const img = sigPadRef.current
+    .getTrimmedCanvas()
+    .toDataURL("image/png"); // ✅ back to PNG
+
+  save(img);
+}}
+
+
               className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800"
             >
               Save Signature
