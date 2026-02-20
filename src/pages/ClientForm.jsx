@@ -83,7 +83,12 @@ const generatePDF = async () => {
   setLoading(true);
 
   try {
-    const doc = new jsPDF("p", "mm", "a4");
+   const doc = new jsPDF({
+  orientation: "p",
+  unit: "mm",
+  format: "a4",
+  compress: true
+});
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     let y = 20;
@@ -224,7 +229,7 @@ const generatePDF = async () => {
     doc.text("Date", witDateStart + dateWidth / 2, y, { align: "center" });
 
     // ================= SAVE & UPLOAD =================
-    const pdfBlob = doc.output("blob");
+    const pdfBlob = doc.output("blob", { compress: true });
     const formData = new FormData();
     formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
     formData.append("data", JSON.stringify(form));
@@ -533,7 +538,9 @@ function SignatureModal({ close, save, sigPadRef }) {
             </button>
             <button
               onClick={() => {
-                const img = sigPadRef.current.toDataURL();
+                const img = sigPadRef.current
+  .getTrimmedCanvas()
+  .toDataURL("image/jpeg", 0.6); // compress to JPEG 60%
                 save(img);
               }}
               className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800"
