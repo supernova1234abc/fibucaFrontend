@@ -318,6 +318,15 @@ const generatePDF = async () => {
   } catch (err) {
     console.error("❌ Submission error:", err);
     console.error('submission response status:', err.response?.status, 'data:', err.response?.data);
+    // Provide clearer feedback for file size errors
+    if (err.response?.status === 413) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'File Too Large',
+        text: 'The generated PDF exceeds the maximum upload size allowed by the server. Try reducing the number of form pages or compressing the file before submitting again.',
+      });
+      return;
+    }
 
     let errorMessage = "Submission failed.";
     const status = err.response?.status;
