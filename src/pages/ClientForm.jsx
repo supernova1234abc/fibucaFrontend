@@ -288,7 +288,7 @@ doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHe
     Swal.close();
     if (response.data.loginCredentials) {
       await Swal.fire({
-        title: "✅ Account Created Successfully!",
+        title: "Account Created Successfully!",
         html: `
           <div style="text-align: left; margin: 20px 0;">
             <p><strong>Your form has been submitted and account created.</strong></p>

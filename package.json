@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@uploadcare/react-uploader": "^1.10.2",
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
     "framer-motion": "^12.33.0",

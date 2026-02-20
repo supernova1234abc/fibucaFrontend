@@ -7,8 +7,6 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import IDCard from '../components/IDCard';
-import { FileUploaderRegular } from '@uploadcare/react-uploader';
-import '@uploadcare/react-uploader/core.css';
 
 // Hook to generate object URL for previewing File objects
 function useObjectUrl(file) {
@@ -32,7 +30,6 @@ export default function ClientDashboard() {
   const [loadingSubmission, setLoadingSubmission] = useState(true);
   const [idCards, setIdCards] = useState([]);
   const [loadingCards, setLoadingCards] = useState(true);
-  const [uploadcareUrl, setUploadcareUrl] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [cleanProgress, setCleanProgress] = useState(0);
@@ -81,11 +78,9 @@ export default function ClientDashboard() {
       const { data } = await api.get(`/api/idcards/${user.id}`);
       const cards = Array.isArray(data) ? data : [];
       setIdCards(cards);
-      if (cards?.[0]?.cleanPhotoUrl) setUploadcareUrl(cards[0].cleanPhotoUrl);
     } catch (err) {
       console.warn('Fetch ID cards failed:', err);
       setIdCards([]);
-      setUploadcareUrl(null);
     } finally {
       setLoadingCards(false);
     }
@@ -169,84 +164,35 @@ export default function ClientDashboard() {
     }
   };
 
-  const resolveUploadcareRawUrl = (fileInfo) => {
-    if (!fileInfo) return null;
-    const cdnCandidates = [
-      fileInfo.cdnUrl, fileInfo.cdn_url, fileInfo.cdnURL,
-      fileInfo.originalUrl, fileInfo.original_url, fileInfo.fileUrl,
-      fileInfo.secure_url,
-      fileInfo.file && fileInfo.file.cdnUrl,
-      fileInfo.file && fileInfo.file.cdn_url,
-      fileInfo.file && fileInfo.file.originalUrl,
-      fileInfo.file && fileInfo.file.secure_url,
-    ];
-    for (const v of cdnCandidates) if (v && typeof v === 'string') return v;
 
-    const uuidCandidates = [
-      fileInfo.uuid, fileInfo.file && (fileInfo.file.uuid || fileInfo.file.id || fileInfo.file.file_id),
-      fileInfo.id, fileInfo.file_id, fileInfo.file && fileInfo.file_id,
-    ];
-    for (const u of uuidCandidates) if (u && typeof u === 'string') return `https://ucarecdn.com/${u.replace(/^\/+|\/+$/g, '')}/`;
-
-    return null;
-  };
-
-  const handleUploadcareDone = async (fileInfoOrResult) => {
-    const fileInfo = fileInfoOrResult?.fileInfo || fileInfoOrResult;
-    let rawUrl = resolveUploadcareRawUrl(fileInfo);
-    if (!rawUrl) {
-      toast.error('Uploadcare did not return a usable URL.');
-      return;
-    }
-
-    setUploadcareUrl(`${rawUrl}-/remove_bg/`);
+  // handle direct file selection from user
+  const handleFileUpload = async (file) => {
+    if (!file) return;
     const card = idCards[0];
     if (!card) return toast.error('No placeholder ID card found.');
 
     setUploadingPhoto(true);
     try {
-      await api.put(`/api/idcards/${card.id}/photo`, { rawPhotoUrl: rawUrl });
-      toast.success('Photo uploaded. Starting background removal…');
-      setIsCleaning(true);
-      setCleanProgress(0);
-
-      const cleanedBlob = await removeBackgroundInBrowser(rawUrl);
-      if (cleanedBlob) {
-        const fd = new FormData();
-        fd.append('cleanImage', cleanedBlob, `clean_${card.id}_${Date.now()}.png`);
-        const uploadResp = await api.post(`/api/idcards/${card.id}/upload-clean`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (ev) => {
-            if (ev.total) setCleanProgress(Math.round((ev.loaded / ev.total) * 100));
-          },
-        });
-
-        const updatedCard = uploadResp.data.card;
-        setIdCards([updatedCard]);
-        setUploadcareUrl(updatedCard.cleanPhotoUrl);
-        toast.success('✅ Background removed and saved.');
-      } else {
-        await api.put(`/api/idcards/${card.id}/clean-photo`);
-        await fetchIdCards();
-        toast.success('✅ Cleaned via server fallback.');
-      }
+      const fd = new FormData();
+      fd.append('photo', file, file.name);
+      const uploadResp = await api.put(`/api/idcards/${card.id}/photo`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (ev) => {
+          if (ev.total) setCleanProgress(Math.round((ev.loaded / ev.total) * 100));
+        },
+      });
+      const updated = uploadResp.data.card;
+      setIdCards([updated]);
+      toast.success('✅ Photo uploaded and background removed.');
     } catch (err) {
-      console.error('Error processing upload:', err);
+      console.error('Error uploading photo:', err);
       toast.error('Photo upload/clean failed.');
     } finally {
       setUploadingPhoto(false);
-      setIsCleaning(false);
       setCleanProgress(0);
     }
   };
 
-  const onUploadcareChange = (filePromiseOrInfo) => {
-    if (filePromiseOrInfo?.done) {
-      filePromiseOrInfo.done(handleUploadcareDone);
-    } else if (filePromiseOrInfo?.then) {
-      filePromiseOrInfo.then(handleUploadcareDone).catch((err) => toast.error('Upload failed.'));
-    } else handleUploadcareDone(filePromiseOrInfo);
-  };
 
   const handleReClean = async (cardId) => {
     setIsCleaning(true);
@@ -390,16 +336,17 @@ export default function ClientDashboard() {
               </div>
 
               <div className="mb-3">
-                <FileUploaderRegular
-                  pubkey={import.meta.env.VITE_UPLOADCARE_PUBLIC_KEY || "42db570f1392dabdf82b"}
-                  multiple={false}
-                  sourceList="local, camera, url"
-                  onChange={onUploadcareChange}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e.target.files[0])}
                   disabled={uploadingPhoto || isCleaning}
+                  className="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none"
                 />
               </div>
 
               {uploadingPhoto && <p className="text-blue-600 mt-2 font-semibold">Uploading / processing…</p>}
+
               {isCleaning && (
                 <div className="mt-2">
                   <p className="text-yellow-600 font-semibold">Cleaning photo… {cleanProgress}%</p>
@@ -409,10 +356,10 @@ export default function ClientDashboard() {
                 </div>
               )}
 
-              {uploadcareUrl && (
+              {idCards[0]?.cleanPhotoUrl && (
                 <div className="mt-4">
                   <p className="font-semibold">Latest Photo:</p>
-                  <img src={uploadcareUrl} alt="uploadcare-preview" className="w-48 h-48 object-cover rounded shadow" />
+                  <img src={idCards[0]?.cleanPhotoUrl} alt="photo-preview" className="w-48 h-48 object-cover rounded shadow" />
                 </div>
               )}
             </>
