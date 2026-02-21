@@ -242,7 +242,7 @@ export default function ClientForm() {
       formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
       formData.append("data", JSON.stringify(form));
 
-      // ✅ Retry logic for mobile networks
+      //  Retry logic for mobile networks
       let response;
       let lastError;
       const maxRetries = 3;
