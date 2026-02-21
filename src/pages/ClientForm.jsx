@@ -143,7 +143,7 @@ export default function ClientForm() {
         const lineStart = margin + labelWidth + 3;
 
         doc.line(lineStart, y + 1, pageWidth - margin, y + 1);
-        doc.text(value, lineStart + 3, y);
+        doc.text(value, lineStart + 8, y);
 
         y += 8; // slightly tighter spacing
       };
