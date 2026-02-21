@@ -57,15 +57,15 @@ export default function ClientForm() {
   };
 
   // ================= PDF =================
-const generatePDF = async () => {
-  if (!validate()) {
-    Swal.fire("Missing Information", "Please complete all fields.", "warning");
-    return;
-  }
+  const generatePDF = async () => {
+    if (!validate()) {
+      Swal.fire("Missing Information", "Please complete all fields.", "warning");
+      return;
+    }
 
-  const confirmAgreement = await Swal.fire({
-    title: "Confirm Agreement",
-    html: `
+    const confirmAgreement = await Swal.fire({
+      title: "Confirm Agreement",
+      html: `
       <div style="text-align:left">
         <p><strong>By submitting this form, you agree to:</strong></p>
         <p>1. Employer will deduct union dues monthly.</p>
@@ -73,223 +73,233 @@ const generatePDF = async () => {
         <p>3. You may cancel by one month written notice.</p>
       </div>
     `,
-    icon: "info",
-    showCancelButton: true,
-    confirmButtonText: "I Agree & Submit"
-  });
-
-  if (!confirmAgreement.isConfirmed) return;
-
-  setLoading(true);
-
-  try {
-   const doc = new jsPDF({
-  orientation: "p",
-  unit: "mm",
-  format: "a4",
-  compress: true
-});
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    let y = 20;
-
-    // ================= HEADER =================
-    doc.setFont("Times", "italic");
-    doc.setFontSize(12);
-    doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
-
-    y += 3;
-    doc.line(margin, y, pageWidth - margin, y);
-
-    y += 6;
-    doc.setFontSize(11);
-    doc.text("G.N No. 47 (contd.)", margin, y);
-    doc.setFont("Times", "bold");
-    doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
-
-    y += 12;
-
-    // ================= TITLE =================
-    doc.setFont("Times", "normal");
-    doc.setFontSize(11);
-    doc.text(
-      "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
-      pageWidth / 2,
-      y,
-      { align: "center", maxWidth: 170 }
-    );
-
-    y += 10;
-    doc.setFont("Times", "italic");
-    doc.setFontSize(11);
-    doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
-
-    y += 15;
-
-    // ================= FORM FIELDS =================
-    doc.setFont("Times", "normal");
-    doc.setFontSize(12);
-
-    const drawField = (label, value) => {
-      doc.text(`${label}:`, margin, y);
-      const lineStart = margin + 55;
-      doc.line(lineStart, y + 1, pageWidth - margin, y + 1);
-      doc.text(value, lineStart + 5, y);
-      y += 10;
-    };
-
-    drawField("EMPLOYEE'S NAME", form.employeeName);
-    drawField("EMPLOYEE NUMBER", form.employeeNumber);
-    drawField("EMPLOYER NAME", form.employerName);
-    drawField("TRADE UNION NAME", "FIBUCA");
-
-    // DUES CENTERED
-    const duesLabel = "INITIAL MONTHLY UNION DUES:";
-    const labelWidth =
-      (doc.getStringUnitWidth(duesLabel) *
-        doc.internal.getFontSize()) /
-      doc.internal.scaleFactor;
-
-    const duesStart = margin + labelWidth + 5;
-    doc.text(duesLabel, margin, y);
-    doc.line(duesStart, y + 1, pageWidth - margin, y + 1);
-    doc.text(form.dues, (duesStart + pageWidth - margin) / 2, y, { align: "center" });
-
-    y += 15;
-
-    // ================= CLAUSES =================
-    const clauses = [
-      "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
-      "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
-      "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
-    ];
-
-    clauses.forEach(text => {
-      const split = doc.splitTextToSize(text, pageWidth - margin * 2);
-      doc.text(split, margin, y);
-      y += split.length * 6 + 4;
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "I Agree & Submit"
     });
 
-    y += 15;
+    if (!confirmAgreement.isConfirmed) return;
 
-    // ================= SIGNATURE SECTION =================
-    const lineWidth = 65;
-    const dateWidth = 40;
-    const signHeight = 15;
-    const signWidth = 50;
+    setLoading(true);
 
-    // ---- EMPLOYEE ROW ----
-    const empSignStart = margin;
-    const empSignEnd = empSignStart + lineWidth;
-
-    const empDateEnd = pageWidth - margin;
-    const empDateStart = empDateEnd - dateWidth;
-
-    doc.line(empSignStart, y, empSignEnd, y);
-    doc.line(empDateStart, y, empDateEnd, y);
-
-    const empImgX = empSignStart + (lineWidth - signWidth) / 2;
-doc.addImage(employeeSignature, "PNG", empImgX, y - signHeight, signWidth, signHeight);
-    doc.setFontSize(11);
-    doc.text(form.employeeDate, empDateStart + dateWidth / 2, y - 1, { align: "center" });
-
-    y += 6;
-
-    doc.setFontSize(10);
-    doc.text("Employee Signature", empSignStart + lineWidth / 2, y, { align: "center" });
-    doc.text("Date", empDateStart + dateWidth / 2, y, { align: "center" });
-
-    // ---- WITNESS ROW ----
-    y += 14;
-
-    const witSignStart = margin;
-    const witSignEnd = witSignStart + lineWidth;
-
-    const witDateEnd = pageWidth - margin;
-    const witDateStart = witDateEnd - dateWidth;
-
-    doc.line(witSignStart, y, witSignEnd, y);
-    doc.line(witDateStart, y, witDateEnd, y);
-
-    // Add witness name text
-    doc.setFontSize(11);
-    doc.text(form.witness, witSignStart + 5, y);
-
-    const witImgX = witSignStart + (lineWidth - signWidth) / 2;
-doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
-    doc.setFontSize(11);
-    doc.text(form.witnessDate, witDateStart + dateWidth / 2, y - 1, { align: "center" });
-
-    y += 6;
-
-    doc.setFontSize(10);
-    doc.text("Witness Name and Signature", witSignStart + lineWidth / 2, y, { align: "center" });
-    doc.text("Date", witDateStart + dateWidth / 2, y, { align: "center" });
-
-    // ================= SAVE & UPLOAD =================
-    const pdfBlob = doc.output("blob", { compress: true });
-    const formData = new FormData();
-    formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
-    formData.append("data", JSON.stringify(form));
-
-    // ✅ Retry logic for mobile networks
-    let response;
-    let lastError;
-    const maxRetries = 3;
-    // Debug: log which backend we're submitting to and online status
     try {
-      console.log('Submitting to', api.defaults.baseURL || '(no baseURL)', 'online:', navigator.onLine);
-    } catch (e) {
-      console.log('Submitting (api not available)', e);
-    }
+      const doc = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4",
+        compress: true
+      });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let y = 20;
 
-    // Show an uploading modal so mobile users see progress
-    const uploadingModal = Swal.fire({
-      title: 'Uploading...',
-      html: 'Please wait while we generate and upload your form.',
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // ================= HEADER =================
+      doc.setFont("Times", "italic");
+      doc.setFontSize(12);
+      doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
+
+      y += 3;
+      doc.line(margin, y, pageWidth - margin, y);
+
+      y += 6;
+      doc.setFontSize(11);
+      doc.text("G.N No. 47 (contd.)", margin, y);
+      doc.setFont("Times", "bold");
+      doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
+
+      y += 12;
+
+      // ================= TITLE =================
+      doc.setFont("Times", "normal");
+      doc.setFontSize(11);
+      doc.text(
+        "EMPLOYEE INSTRUCTION TO EMPLOYER TO DEDUCT DUES OF A REGISTERED TRADE UNION FROM EMPLOYEE’S WAGES",
+        pageWidth / 2,
+        y,
+        { align: "center", maxWidth: 170 }
+      );
+
+      y += 10;
+      doc.setFont("Times", "italic");
+      doc.setFontSize(11);
+      doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
+
+      y += 15;
+
+      // ================= FORM FIELDS =================
+      doc.setFont("Times", "normal");
+      doc.setFontSize(12);
+
+      const drawField = (label, value) => {
+        const labelText = `${label}:`;
+        doc.text(labelText, margin, y);
+
+        // Calculate exact width of label
+        const labelWidth =
+          (doc.getStringUnitWidth(labelText) *
+            doc.internal.getFontSize()) /
+          doc.internal.scaleFactor;
+
+        const lineStart = margin + labelWidth + 3;
+
+        doc.line(lineStart, y + 1, pageWidth - margin, y + 1);
+        doc.text(value, lineStart + 3, y);
+
+        y += 8; // slightly tighter spacing
+      };
+
+      drawField("EMPLOYEE'S NAME", form.employeeName);
+      drawField("EMPLOYEE NUMBER", form.employeeNumber);
+      drawField("EMPLOYER NAME", form.employerName);
+      drawField("TRADE UNION NAME", "FIBUCA");
+
+      // DUES CENTERED
+      const duesLabel = "INITIAL MONTHLY UNION DUES:";
+      const labelWidth =
+        (doc.getStringUnitWidth(duesLabel) *
+          doc.internal.getFontSize()) /
+        doc.internal.scaleFactor;
+
+      const duesStart = margin + labelWidth + 5;
+      doc.text(duesLabel, margin, y);
+      doc.line(duesStart, y + 1, pageWidth - margin, y + 1);
+      doc.text(form.dues, (duesStart + pageWidth - margin) / 2, y, { align: "center" });
+
+      y += 15;
+
+      // ================= CLAUSES =================
+      const clauses = [
+        "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
+        "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
+        "3. I confirm my understanding that I am entitled at any stage to cancel this instruction by giving one month’s written notice to my trade union and my employer."
+      ];
+
+      clauses.forEach(text => {
+        const split = doc.splitTextToSize(text, pageWidth - margin * 2);
+        doc.text(split, margin, y);
+        y += split.length * 6 + 4;
+      });
+
+      y += 15;
+
+      // ================= SIGNATURE SECTION =================
+      const lineWidth = 55;
+      const dateWidth = 35;
+      const signHeight = 10;   // smaller height
+      const signWidth = 35;    // smaller width
+
+      // ---- EMPLOYEE ROW ----
+      const empSignStart = margin;
+      const empSignEnd = empSignStart + lineWidth;
+
+      const empDateEnd = pageWidth - margin;
+      const empDateStart = empDateEnd - dateWidth;
+
+      doc.line(empSignStart, y, empSignEnd, y);
+      doc.line(empDateStart, y, empDateEnd, y);
+
+      const empImgX = empSignStart + (lineWidth - signWidth) / 2;
+      doc.addImage(employeeSignature, "PNG", empImgX, y - signHeight, signWidth, signHeight);
+      doc.setFontSize(11);
+      doc.text(form.employeeDate, empDateStart + dateWidth / 2, y - 1, { align: "center" });
+
+      y += 6;
+
+      doc.setFontSize(10);
+      doc.text("Employee Signature", empSignStart + lineWidth / 2, y, { align: "center" });
+      doc.text("Date", empDateStart + dateWidth / 2, y, { align: "center" });
+
+      // ---- WITNESS ROW ----
+      y += 14;
+
+      const witSignStart = margin;
+      const witSignEnd = witSignStart + lineWidth;
+
+      const witDateEnd = pageWidth - margin;
+      const witDateStart = witDateEnd - dateWidth;
+
+      doc.line(witSignStart, y, witSignEnd, y);
+      doc.line(witDateStart, y, witDateEnd, y);
+
+      // Add witness name text
+      doc.setFontSize(11);
+      doc.text(form.witness, witSignStart + 5, y);
+
+      const witImgX = witSignStart + (lineWidth - signWidth) / 2;
+      doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
+      doc.setFontSize(11);
+      doc.text(form.witnessDate, witDateStart + dateWidth / 2, y - 1, { align: "center" });
+
+      y += 6;
+
+      doc.setFontSize(10);
+      doc.text("Witness Name and Signature", witSignStart + lineWidth / 2, y, { align: "center" });
+      doc.text("Date", witDateStart + dateWidth / 2, y, { align: "center" });
+
+      // ================= SAVE & UPLOAD =================
+      const pdfBlob = doc.output("blob", { compress: true });
+      const formData = new FormData();
+      formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
+      formData.append("data", JSON.stringify(form));
+
+      // ✅ Retry logic for mobile networks
+      let response;
+      let lastError;
+      const maxRetries = 3;
+      // Debug: log which backend we're submitting to and online status
       try {
-        // Show progress on retries
-        if (attempt > 1) {
-          console.log(`🔄 Retry attempt ${attempt}/${maxRetries}...`);
+        console.log('Submitting to', api.defaults.baseURL || '(no baseURL)', 'online:', navigator.onLine);
+      } catch (e) {
+        console.log('Submitting (api not available)', e);
+      }
+
+      // Show an uploading modal so mobile users see progress
+      const uploadingModal = Swal.fire({
+        title: 'Uploading...',
+        html: 'Please wait while we generate and upload your form.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
         }
-        
-        response = await api.post("/submit-form", formData, {
-          timeout: 120000, // 120 seconds for mobile
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        });
-        break; // Success, exit loop
-      } catch (err) {
-        lastError = err;
-        console.error(`❌ Attempt ${attempt} failed:`, err.message);
-        
-        if (attempt < maxRetries) {
-          // Wait before retry (exponential backoff)
-          const waitTime = 1000 * Math.pow(2, attempt - 1);
-          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+      });
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Show progress on retries
+          if (attempt > 1) {
+            console.log(`🔄 Retry attempt ${attempt}/${maxRetries}...`);
+          }
+
+          response = await api.post("/submit-form", formData, {
+            timeout: 120000, // 120 seconds for mobile
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+          });
+          break; // Success, exit loop
+        } catch (err) {
+          lastError = err;
+          console.error(`❌ Attempt ${attempt} failed:`, err.message);
+
+          if (attempt < maxRetries) {
+            // Wait before retry (exponential backoff)
+            const waitTime = 1000 * Math.pow(2, attempt - 1);
+            console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
         }
       }
-    }
 
-    if (!response) {
+      if (!response) {
+        Swal.close();
+        throw lastError || new Error("Form submission failed after retries");
+      }
+
       Swal.close();
-      throw lastError || new Error("Form submission failed after retries");
-    }
-
-    Swal.close();
-    if (response.data.loginCredentials) {
-      await Swal.fire({
-        title: "Account Created Successfully!",
-        html: `
+      if (response.data.loginCredentials) {
+        await Swal.fire({
+          title: "Account Created Successfully!",
+          html: `
           <div style="text-align: left; margin: 20px 0;">
             <p><strong>Your form has been submitted and account created.</strong></p>
             <p style="margin-top: 15px; padding: 12px; background-color: #f0f0f0; border-radius: 5px; border-left: 4px solid #1976d2;">
@@ -301,67 +311,67 @@ doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHe
             <p style="margin-top: 10px; font-size: 12px; color: #666;">You will be redirected to the login page.</p>
           </div>
         `,
-        icon: "success",
-        confirmButtonText: "Go to Login",
-        confirmButtonColor: "#1976d2",
-        allowOutsideClick: false,
-        allowEscapeKey: false
+          icon: "success",
+          confirmButtonText: "Go to Login",
+          confirmButtonColor: "#1976d2",
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+      } else {
+        await Swal.fire({
+          title: "Form Submitted",
+          text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
+          icon: "success",
+          confirmButtonText: "Go to Login"
+        });
+      }
+
+      navigate("/login");
+
+    } catch (err) {
+      console.error("❌ Submission error:", err);
+      console.error('submission response status:', err.response?.status, 'data:', err.response?.data);
+      // Provide clearer feedback for file size errors
+      if (err.response?.status === 413) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'File Too Large',
+          text: 'The generated PDF exceeds the maximum upload size allowed by the server. Try reducing the number of form pages or compressing the file before submitting again.',
+        });
+        return;
+      }
+
+      let errorMessage = "Submission failed.";
+      const status = err.response?.status;
+
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (status === 408) {
+        errorMessage = "Request timeout. The server timed out while processing your upload.";
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage = "Request timeout. The network is slow. Please try again.";
+      } else if (err.message === 'Network Error' || !navigator.onLine) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (status >= 400 && status < 500) {
+        errorMessage = `Request failed (${status}). ${err.response?.data?.error || ''}`;
+      } else if (status >= 500) {
+        errorMessage = `Server error (${status}). Please try again later.`;
+      } else if (err.message?.includes('413')) {
+        errorMessage = "File too large. Try compressing the PDF.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      // Show detailed hint and a copyable console message for debugging
+      Swal.fire({
+        title: 'Error',
+        html: `<div>${errorMessage}</div><div style="margin-top:8px;font-size:12px;color:#666">(Open browser console for full details)</div>`,
+        icon: 'error'
       });
-    } else {
-      await Swal.fire({
-        title: "Form Submitted",
-        text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
-        icon: "success",
-        confirmButtonText: "Go to Login"
-      });
+    } finally {
+      setLoading(false);
     }
-
-    navigate("/login");
-
-  } catch (err) {
-    console.error("❌ Submission error:", err);
-    console.error('submission response status:', err.response?.status, 'data:', err.response?.data);
-    // Provide clearer feedback for file size errors
-    if (err.response?.status === 413) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'File Too Large',
-        text: 'The generated PDF exceeds the maximum upload size allowed by the server. Try reducing the number of form pages or compressing the file before submitting again.',
-      });
-      return;
-    }
-
-    let errorMessage = "Submission failed.";
-    const status = err.response?.status;
-
-    if (err.response?.data?.error) {
-      errorMessage = err.response.data.error;
-    } else if (status === 408) {
-      errorMessage = "Request timeout. The server timed out while processing your upload.";
-    } else if (err.code === 'ECONNABORTED') {
-      errorMessage = "Request timeout. The network is slow. Please try again.";
-    } else if (err.message === 'Network Error' || !navigator.onLine) {
-      errorMessage = "Network error. Please check your internet connection and try again.";
-    } else if (status >= 400 && status < 500) {
-      errorMessage = `Request failed (${status}). ${err.response?.data?.error || ''}`;
-    } else if (status >= 500) {
-      errorMessage = `Server error (${status}). Please try again later.`;
-    } else if (err.message?.includes('413')) {
-      errorMessage = "File too large. Try compressing the PDF.";
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-
-    // Show detailed hint and a copyable console message for debugging
-    Swal.fire({
-      title: 'Error',
-      html: `<div>${errorMessage}</div><div style="margin-top:8px;font-size:12px;color:#666">(Open browser console for full details)</div>`,
-      icon: 'error'
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   // ================= UI =================
@@ -383,10 +393,10 @@ doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHe
         {/* FORM GRID - responsive */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
-          {["employeeName","employeeNumber","employerName","witness"].map(field => (
+          {["employeeName", "employeeNumber", "employerName", "witness"].map(field => (
             <div key={field}>
               <label className="block text-xs font-bold uppercase mb-1">
-                {field.replace(/([A-Z])/g," $1")}
+                {field.replace(/([A-Z])/g, " $1")}
               </label>
               <input
                 name={field}
@@ -402,20 +412,20 @@ doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHe
             <div className="border-b-2 p-2 border-gray-400">FIBUCA</div>
           </div>
 
-<div>
-  <label className="block text-xs font-bold uppercase mb-1">
-    Initial Monthly Union Dues
-  </label>
-  <select
-    name="dues"
-    value="1%"
-    onChange={() => {}}
-    className="w-full border-b-2 p-2 border-gray-400 bg-gray-100 text-gray-500 cursor-not-allowed"
-    disabled
-  >
-    <option>1%</option>
-  </select>
-</div>
+          <div>
+            <label className="block text-xs font-bold uppercase mb-1">
+              Initial Monthly Union Dues
+            </label>
+            <select
+              name="dues"
+              value="1%"
+              onChange={() => { }}
+              className="w-full border-b-2 p-2 border-gray-400 bg-gray-100 text-gray-500 cursor-not-allowed"
+              disabled
+            >
+              <option>1%</option>
+            </select>
+          </div>
 
         </div>
 
@@ -536,18 +546,18 @@ function SignatureModal({ close, save, sigPadRef }) {
             </button>
             <button
 
-onClick={() => {
-  if (sigPadRef.current.isEmpty()) {
-    Swal.fire("Error", "Please provide a signature.", "warning");
-    return;
-  }
+              onClick={() => {
+                if (sigPadRef.current.isEmpty()) {
+                  Swal.fire("Error", "Please provide a signature.", "warning");
+                  return;
+                }
 
-  const img = sigPadRef.current
-    .getTrimmedCanvas()
-    .toDataURL("image/png"); // ✅ back to PNG
+                const img = sigPadRef.current
+                  .getTrimmedCanvas()
+                  .toDataURL("image/png"); // ✅ back to PNG
 
-  save(img);
-}}
+                save(img);
+              }}
 
 
               className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800"
