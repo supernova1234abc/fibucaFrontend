@@ -376,8 +376,8 @@ export default function ClientForm() {
 
   // ================= UI =================
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex justify-center">
-      <div className="bg-white shadow-lg w-full max-w-4xl p-6">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4">
+      <div className="bg-white shadow-xl rounded-lg w-full max-w-4xl p-8">
 
         {/* HEADER */}
         <div className="text-center">
