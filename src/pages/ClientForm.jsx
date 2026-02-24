@@ -91,7 +91,7 @@ export default function ClientForm() {
 
       // ================= HEADER =================
       doc.setFont("Times", "italic");
-      doc.setFontSize(12);
+      doc.setFontSize(12); 
       doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
       y += 3;
       doc.line(margin, y, pageWidth - margin, y);
@@ -118,6 +118,7 @@ export default function ClientForm() {
       y += 15;
 
       // ================= FORM FIELDS =================
+      doc.setFont("Times", "normal");
       const drawField = (label, value) => {
         const labelText = `${label}:`;
         doc.text(labelText, margin, y);
@@ -159,7 +160,7 @@ export default function ClientForm() {
       const lineWidth = 55;
       const dateWidth = 35;
       const signHeight = 10;
-      const signWidth = 35;
+      const signWidth = 30;
 
       // EMPLOYEE
       const empSignStart = margin;
@@ -171,6 +172,7 @@ export default function ClientForm() {
       const empImgX = empSignStart + (lineWidth - signWidth) / 2;
       doc.addImage(employeeSignature, "PNG", empImgX, y - signHeight, signWidth, signHeight);
       doc.setFontSize(11);
+      doc.setFont("Times", "normal");
       doc.text(form.employeeDate, empDateStart + dateWidth / 2, y - 1, { align: "center" });
       y += 6;
       doc.setFontSize(10);
@@ -186,6 +188,7 @@ export default function ClientForm() {
       doc.line(witSignStart, y, witSignEnd, y);
       doc.line(witDateStart, y, witDateEnd, y);
       doc.setFontSize(11);
+      doc.setFont("Times", "normal");
       doc.text(form.witness, witSignStart + 5, y);
       const witImgX = witSignStart + (lineWidth - signWidth) / 2;
       doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
