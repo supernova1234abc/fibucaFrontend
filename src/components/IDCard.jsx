@@ -5,6 +5,8 @@ import { QRCodeSVG as QRCode } from "qrcode.react";
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
 const IDCard = forwardRef(({ card }, ref) => {
+  const [photoLoaded, setPhotoLoaded] = React.useState(false);
+
   const formattedDate = card?.issuedAt
     ? new Date(card.issuedAt).toLocaleDateString("en-GB", {
         day: "2-digit",
@@ -80,6 +82,23 @@ const IDCard = forwardRef(({ card }, ref) => {
   // Compute once per card for rendering
   const photoSrc = useMemo(() => getPhotoSrc(card), [card]);
 
+  // reset loading state when the source changes
+  React.useEffect(() => {
+    setPhotoLoaded(false);
+  }, [photoSrc]);
+
+  const handlePrint = () => {
+    if (photoSrc && !photoLoaded) {
+      // wait for the image to load before printing to avoid blank output
+      const img = new Image();
+      img.src = photoSrc;
+      img.onload = () => window.print();
+      img.onerror = () => window.print();
+    } else {
+      window.print();
+    }
+  };
+
   const cardStyle =
     "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
     "rounded-lg shadow-md border overflow-hidden print:bg-gradient-to-br " +
@@ -89,8 +108,7 @@ const IDCard = forwardRef(({ card }, ref) => {
     <div className="flex flex-col items-center space-y-4 p-4">
       {/* Print button */}
       <button
-        onClick={() => window.print()}
-        className="px-3 py-1 bg-blue-600 text-white text-xs rounded shadow hover:bg-blue-700 print:hidden"
+        onClick={handlePrint}
       >
         Print ID
       </button>
@@ -129,10 +147,12 @@ const IDCard = forwardRef(({ card }, ref) => {
                   src={photoSrc}
                   alt="ID Photo"
                   className="object-cover w-full h-full rounded-md shadow"
+                  onLoad={() => setPhotoLoaded(true)}
                   onError={(e) => {
                     // fallback when the resolved URL fails to load
                     e.currentTarget.onerror = null;
                     e.currentTarget.src = "/fallback-avatar.png";
+                    setPhotoLoaded(true);
                   }}
                 />
               ) : ( (card?.photoStatus || card?.photo_status) && /process|clean/i.test(String(card?.photoStatus || card?.photo_status || "")) ? (
