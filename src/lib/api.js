@@ -2,21 +2,17 @@ import axios from 'axios';
 
 // Determine backend URL with fallback for network issues
 const getBackendURL = () => {
-  const productionURL = import.meta.env.VITE_BACKEND_URL;
-  // If on localhost, use local backend for development
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:3000';
-  }
-  if (productionURL) return productionURL;
-
-  // If running locally, use localhost backend. Otherwise default to same origin.
-  // Returning window.location.origin ensures deployed frontends post to their
-  // own origin (useful when backend is hosted under same domain) instead of
-  // incorrectly targeting port 3000 on remote devices.
+  // Use localhost for dev
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:3000';
   }
 
+  // Use production env variable if set
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL.replace(/\/$/, ''); // remove trailing slash
+  }
+
+  // Fallback: same origin
   console.warn('[api] VITE_BACKEND_URL not set — defaulting to same origin:', window.location.origin);
   return window.location.origin;
 };
