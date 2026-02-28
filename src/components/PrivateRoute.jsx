@@ -1,8 +1,9 @@
-// src/context/AuthContext.jsx
+// src/context/PrivateRoute.jsx
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 
-export default function PrivateRoute({ role }) {
+export default function PrivateRoute({ role, allowNewClient = false }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -13,9 +14,23 @@ export default function PrivateRoute({ role }) {
     );
   }
 
-  if (!user || user.role !== role) {
-    return <Navigate to="/login" replace />;
+  // 1️⃣ Logged-in user with correct role
+  if (user?.role === role) {
+    return <Outlet />;
   }
 
-  return <Outlet />;
+  // 2️⃣ New client with staff link
+  if (allowNewClient && localStorage.getItem("CLIENT_FORM_ACCESS") === "true") {
+    return <Outlet />;
+  }
+
+  // 3️⃣ Default: deny access
+  Swal.fire({
+    title: "Access Denied",
+    text: "You do not have permission to view this page.",
+    icon: "warning",
+    confirmButtonText: "Go Home"
+  }).then(() => window.location.replace("/"));
+
+  return null;
 }

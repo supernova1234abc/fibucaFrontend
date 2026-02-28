@@ -1,6 +1,8 @@
+// frontend/src/pages/Landing.jsx
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -58,16 +60,33 @@ export default function Landing() {
     },
   };
 
+  // Check if client form is allowed for new clients
+  const isClientFormAccessible = () => {
+    // existing clients can always access
+    const existingClient = localStorage.getItem("USER_ROLE") === "CLIENT";
+    // new clients require staff link
+    const newClientAllowed = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
+    return existingClient || newClientAllowed;
+  };
+
+  const handleClientFormClick = (e) => {
+    if (!isClientFormAccessible()) {
+      e.preventDefault();
+      Swal.fire({
+        title: "Access Restricted",
+        text: "You need a staff link to submit the union form. Please contact your union office.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50">
       {/* NAVBAR */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md h-16 px-6 flex items-center justify-between z-50">
         <div className="flex items-center gap-2">
-          <img
-            src="/images/newFibucaLogo.png"
-            alt="Fibuca Logo"
-            className="h-10 w-10"
-          />
+          <img src="/images/newFibucaLogo.png" alt="Fibuca Logo" className="h-10 w-10" />
           <h1 className="text-xl font-bold text-blue-700">FIBUCA</h1>
         </div>
 
@@ -146,17 +165,21 @@ export default function Landing() {
         <h2 className="text-4xl md:text-5xl font-bold text-blue-800 mb-4">
           {content[lang].title}
         </h2>
-        <p className="text-lg text-gray-700 mb-8">
-          {content[lang].subtitle}
-        </p>
+        <p className="text-lg text-gray-700 mb-8">{content[lang].subtitle}</p>
 
         <div className="flex flex-col md:flex-row gap-4 justify-center">
           <Link
             to="/client-form"
-            className="bg-blue-600 text-white px-6 py-3 rounded-md shadow hover:bg-blue-700 transition"
+            onClick={handleClientFormClick}
+            className={`px-6 py-3 rounded-md shadow transition ${
+              isClientFormAccessible()
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
             {content[lang].btnForm}
           </Link>
+
           <Link
             to="/login"
             className="border border-blue-600 text-blue-600 px-6 py-3 rounded-md hover:bg-blue-50 transition"
@@ -169,9 +192,7 @@ export default function Landing() {
       {/* ABOUT */}
       <section id="about" className="py-16 px-6 bg-white">
         <h3 className="text-2xl font-bold text-center mb-6">About FIBUCA</h3>
-        <p className="max-w-3xl mx-auto text-center text-gray-600">
-          {content[lang].about}
-        </p>
+        <p className="max-w-3xl mx-auto text-center text-gray-600">{content[lang].about}</p>
       </section>
 
       {/* BENEFITS */}
@@ -194,7 +215,16 @@ export default function Landing() {
         <h3 className="text-xl font-bold mb-2">{content[lang].contact}</h3>
         <p>📧 info@fibuca.com</p>
         <p>📞 +255 712 345 678</p>
-        <p>developed by <a href="yehoshaphatij@gmail.com" target="_blank" rel="noopener noreferrer">YEHOSHAPHATI</a></p>
+        <p>
+          developed by{" "}
+          <a
+            href="yehoshaphatij@gmail.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            YEHOSHAPHATI
+          </a>
+        </p>
       </section>
 
       {/* FOOTER */}

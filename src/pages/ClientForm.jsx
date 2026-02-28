@@ -1,14 +1,29 @@
+// src/pages/ClientForm.jsx
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SignatureCanvas from "react-signature-canvas";
 import jsPDF from "jspdf";
-import { api } from "../lib/api";
-import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { FaSpinner } from "react-icons/fa";
+import { api } from "../lib/api";
 
 export default function ClientForm() {
   const navigate = useNavigate();
 
+  // ======= ACCESS CONTROL =======
+  useEffect(() => {
+    const hasAccess = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
+    if (!hasAccess) {
+      Swal.fire({
+        title: "Access Denied",
+        text: "You need a staff link to access this form.",
+        icon: "warning",
+        confirmButtonText: "Go Back",
+      }).then(() => navigate("/"));
+    }
+  }, [navigate]);
+
+  // ======= FORM STATE =======
   const [form, setForm] = useState({
     employeeName: "",
     employeeNumber: "",
@@ -16,15 +31,14 @@ export default function ClientForm() {
     dues: "1%",
     witness: "",
     employeeDate: "",
-    witnessDate: ""
+    witnessDate: "",
   });
-
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // ======= SIGNATURE STATE =======
   const [employeeSigOpen, setEmployeeSigOpen] = useState(false);
   const [witnessSigOpen, setWitnessSigOpen] = useState(false);
-
   const [employeeSignature, setEmployeeSignature] = useState(null);
   const [witnessSignature, setWitnessSignature] = useState(null);
 
@@ -34,17 +48,16 @@ export default function ClientForm() {
   // Default dates
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
-    setForm(f => ({ ...f, employeeDate: today, witnessDate: today }));
+    setForm((f) => ({ ...f, employeeDate: today, witnessDate: today }));
   }, []);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setErrors(prev => ({ ...prev, [e.target.name]: null }));
+    setErrors((prev) => ({ ...prev, [e.target.name]: null }));
   };
 
   const validate = () => {
     const newErrors = {};
-
     if (!form.employeeName.trim()) newErrors.employeeName = "Required";
     if (!form.employeeNumber.trim()) newErrors.employeeNumber = "Required";
     if (!form.employerName.trim()) newErrors.employerName = "Required";
@@ -56,27 +69,26 @@ export default function ClientForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ================= PDF & SUBMIT =================
+  // ======= PDF GENERATION & SUBMIT =======
   const generatePDF = async () => {
     if (!validate()) {
       Swal.fire("Missing Information", "Please complete all fields.", "warning");
       return;
     }
 
-    // Confirm agreement
     const confirmAgreement = await Swal.fire({
       title: "Confirm Agreement",
       html: `
-      <div style="text-align:left">
-        <p><strong>By submitting this form, you agree to:</strong></p>
-        <p>1. Employer will deduct union dues monthly.</p>
-        <p>2. Deductions may be adjusted with written notice.</p>
-        <p>3. You may cancel by one month written notice.</p>
-      </div>
-    `,
+        <div style="text-align:left">
+          <p><strong>By submitting this form, you agree to:</strong></p>
+          <p>1. Employer will deduct union dues monthly.</p>
+          <p>2. Deductions may be adjusted with written notice.</p>
+          <p>3. You may cancel by one month written notice.</p>
+        </div>
+      `,
       icon: "info",
       showCancelButton: true,
-      confirmButtonText: "I Agree & Submit"
+      confirmButtonText: "I Agree & Submit",
     });
 
     if (!confirmAgreement.isConfirmed) return;
@@ -89,9 +101,9 @@ export default function ClientForm() {
       const margin = 20;
       let y = 20;
 
-      // ================= HEADER =================
+      // ======= HEADER =======
       doc.setFont("Times", "italic");
-      doc.setFontSize(12); 
+      doc.setFontSize(12);
       doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, { align: "center" });
       y += 3;
       doc.line(margin, y, pageWidth - margin, y);
@@ -102,7 +114,7 @@ export default function ClientForm() {
       doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
       y += 12;
 
-      // ================= TITLE =================
+      // ======= TITLE =======
       doc.setFont("Times", "normal");
       doc.setFontSize(11);
       doc.text(
@@ -117,7 +129,7 @@ export default function ClientForm() {
       doc.text("(Made under Regulation 34(1))", pageWidth / 2, y, { align: "center" });
       y += 15;
 
-      // ================= FORM FIELDS =================
+      // ======= FORM FIELDS =======
       doc.setFont("Times", "normal");
       const drawField = (label, value) => {
         const labelText = `${label}:`;
@@ -134,7 +146,6 @@ export default function ClientForm() {
       drawField("EMPLOYER NAME", form.employerName);
       drawField("TRADE UNION NAME", "FIBUCA");
 
-      // DUES CENTERED
       const duesLabel = "INITIAL MONTHLY UNION DUES:";
       const labelWidth = (doc.getStringUnitWidth(duesLabel) * doc.internal.getFontSize()) / doc.internal.scaleFactor;
       const duesStart = margin + labelWidth + 5;
@@ -143,7 +154,7 @@ export default function ClientForm() {
       doc.text(form.dues, (duesStart + pageWidth - margin) / 2, y, { align: "center" });
       y += 15;
 
-      // ================= CLAUSES =================
+      // ======= CLAUSES =======
       const clauses = [
         "1. I the above mentioned employee hereby instruct my employer to deduct monthly from my wages, trade union dues owing to my union.",
         "2. I agree that the amount deducted may from time to time be increased, provided that I am given written notification of this in advance.",
@@ -156,7 +167,7 @@ export default function ClientForm() {
       });
       y += 15;
 
-      // ================= SIGNATURE SECTION =================
+      // ======= SIGNATURE SECTION =======
       const lineWidth = 55;
       const dateWidth = 35;
       const signHeight = 10;
@@ -198,23 +209,22 @@ export default function ClientForm() {
       doc.text("Witness Name and Signature", witSignStart + lineWidth / 2, y, { align: "center" });
       doc.text("Date", witDateStart + dateWidth / 2, y, { align: "center" });
 
-      // ================= UPLOAD =================
+      // ======= UPLOAD WITH RETRY =======
       const pdfBlob = doc.output("blob", { compress: true });
       const formData = new FormData();
       formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
       formData.append("data", JSON.stringify(form));
 
-      // Retry logic
       let response;
       let lastError;
       const maxRetries = 3;
 
-      const uploadingModal = Swal.fire({
-        title: 'Uploading...',
-        html: 'Please wait while we generate and upload your form.',
+      Swal.fire({
+        title: "Uploading...",
+        html: "Please wait while we generate and upload your form.",
         allowOutsideClick: false,
         allowEscapeKey: false,
-        didOpen: () => Swal.showLoading()
+        didOpen: () => Swal.showLoading(),
       });
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -223,19 +233,20 @@ export default function ClientForm() {
           response = await api.post("/submit-form", formData, {
             timeout: 120000,
             maxContentLength: Infinity,
-            maxBodyLength: Infinity
+            maxBodyLength: Infinity,
           });
           break;
         } catch (err) {
           lastError = err;
           console.error(`❌ Attempt ${attempt} failed:`, err.message);
-          if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+          if (attempt < maxRetries) await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
         }
       }
 
       Swal.close();
       if (!response) throw lastError || new Error("Form submission failed after retries");
 
+      // ======= SUCCESS ALERT =======
       if (response.data.loginCredentials) {
         await Swal.fire({
           title: "Account Created Successfully!",
@@ -253,14 +264,14 @@ export default function ClientForm() {
           confirmButtonText: "Go to Login",
           confirmButtonColor: "#1976d2",
           allowOutsideClick: false,
-          allowEscapeKey: false
+          allowEscapeKey: false,
         });
       } else {
         await Swal.fire({
           title: "Form Submitted",
           text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
           icon: "success",
-          confirmButtonText: "Go to Login"
+          confirmButtonText: "Go to Login",
         });
       }
 
@@ -283,11 +294,9 @@ export default function ClientForm() {
     }
   };
 
-  // ================= UI =================
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4">
       <div className="bg-white shadow-xl rounded-lg w-full max-w-4xl p-8">
-        {/* HEADER */}
         <div className="text-center">
           <h1 className="italic text-sm">Employment and Labour Relations (General)</h1>
           <div className="border-b mt-2"></div>
@@ -299,10 +308,15 @@ export default function ClientForm() {
 
         {/* FORM GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {["employeeName", "employeeNumber", "employerName", "witness"].map(field => (
+          {["employeeName", "employeeNumber", "employerName", "witness"].map((field) => (
             <div key={field}>
               <label className="block text-xs font-bold uppercase mb-1">{field.replace(/([A-Z])/g, " $1")}</label>
-              <input name={field} value={form[field]} onChange={handleChange} className={`w-full border-b-2 p-2 ${errors[field] ? "border-red-500" : "border-gray-400"}`} />
+              <input
+                name={field}
+                value={form[field]}
+                onChange={handleChange}
+                className={`w-full border-b-2 p-2 ${errors[field] ? "border-red-500" : "border-gray-400"}`}
+              />
             </div>
           ))}
           <div>
@@ -311,7 +325,11 @@ export default function ClientForm() {
           </div>
           <div>
             <label className="block text-xs font-bold uppercase mb-1">Initial Monthly Union Dues</label>
-            <select value="1%" disabled className="w-full border-b-2 p-2 border-gray-400 bg-gray-100 text-gray-500 cursor-not-allowed">
+            <select
+              value="1%"
+              disabled
+              className="w-full border-b-2 p-2 border-gray-400 bg-gray-100 text-gray-500 cursor-not-allowed"
+            >
               <option>1%</option>
             </select>
           </div>
@@ -324,19 +342,23 @@ export default function ClientForm() {
         </div>
 
         {/* SUBMIT */}
-        <button onClick={generatePDF} disabled={loading} className="mt-8 w-full bg-blue-700 text-white py-3 rounded">
+        <button
+          onClick={generatePDF}
+          disabled={loading}
+          className="mt-8 w-full bg-blue-700 text-white py-3 rounded"
+        >
           {loading ? <FaSpinner className="animate-spin mx-auto" /> : "Generate & Submit PDF"}
         </button>
       </div>
 
       {/* SIGNATURE MODALS */}
-      {employeeSigOpen && <SignatureModal close={() => setEmployeeSigOpen(false)} save={img => { setEmployeeSignature(img); setEmployeeSigOpen(false); }} sigPadRef={sigPadRef} />}
-      {witnessSigOpen && <SignatureModal close={() => setWitnessSigOpen(false)} save={img => { setWitnessSignature(img); setWitnessSigOpen(false); }} sigPadRef={witnessSigPadRef} />}
+      {employeeSigOpen && <SignatureModal close={() => setEmployeeSigOpen(false)} save={(img) => { setEmployeeSignature(img); setEmployeeSigOpen(false); }} sigPadRef={sigPadRef} />}
+      {witnessSigOpen && <SignatureModal close={() => setWitnessSigOpen(false)} save={(img) => { setWitnessSignature(img); setWitnessSigOpen(false); }} sigPadRef={witnessSigPadRef} />}
     </div>
   );
 }
 
-// ================= SIGNATURE COMPONENTS =================
+// ======= SIGNATURE COMPONENTS =======
 function SignatureBox({ label, signature, openModal, error }) {
   return (
     <div>
@@ -356,64 +378,24 @@ function SignatureModal({ close, save, sigPadRef }) {
       text: "Your signature will be lost.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, close",
-      cancelButtonText: "Keep signing"
-    }).then(result => {
-      if (result.isConfirmed) close();
-    });
+    }).then((res) => { if (res.isConfirmed) close(); });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-      <div className="bg-white p-4 w-full max-w-lg rounded shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-center font-bold flex-1">Sign Below</h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-700 text-2xl leading-none" title="Close">✕</button>
-        </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded p-4 w-96">
+        <h2 className="text-center font-bold mb-2">Sign Below</h2>
         <SignatureCanvas
           ref={sigPadRef}
           penColor="black"
-          canvasProps={{
-            className: "border w-full h-60"
-          }}
+          canvasProps={{ className: "border border-gray-400 w-full h-48" }}
         />
-
         <div className="flex justify-between mt-4">
-          <button
-            onClick={() => sigPadRef.current.clear()}
-            className="text-red-600 px-4 py-2"
-          >
-            Clear
-          </button>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleClose}
-              className="border border-gray-400 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-
-            <button
-              onClick={() => {
-                if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
-                  Swal.fire("Error", "Please provide a signature.", "warning");
-                  return;
-                }
-
-                const img = sigPadRef.current
-                  .getTrimmedCanvas()
-                  .toDataURL("image/png");
-
-                save(img);
-              }}
-              className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800"
-            >
-              Save Signature
-            </button>
-          </div>
+          <button onClick={() => sigPadRef.current.clear()} className="px-4 py-2 border rounded">Clear</button>
+          <button onClick={() => save(sigPadRef.current.toDataURL("image/png"))} className="px-4 py-2 bg-blue-700 text-white rounded">Save</button>
+          <button onClick={handleClose} className="px-4 py-2 border rounded">Cancel</button>
         </div>
       </div>
     </div>
   );
-};
+}

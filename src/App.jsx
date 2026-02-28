@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -15,7 +16,7 @@ import AdminReports from './pages/AdminReports';
 import ClientDashboard from './pages/ClientDashboard';
 
 import PrivateRoute from './components/PrivateRoute';
-import DashboardLayout from './components/DashboardLayout'; // ✅ restored
+import DashboardLayout from './components/DashboardLayout';
 import { useAuth } from './context/AuthContext';
 import './index.css';
 
@@ -58,7 +59,17 @@ export default function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
-          <Route path="/client-form" element={<ClientForm />} />
+          
+          {/* Updated Client Form Route: allowNewClient controlled by staff link */}
+          <Route
+            path="/client-form"
+            element={
+              <PrivateRoute role="CLIENT" allowNewClient={true}>
+                <ClientForm />
+              </PrivateRoute>
+            }
+          />
+
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/change-password" element={<ChangePassword />} />
