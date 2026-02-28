@@ -123,7 +123,8 @@ export default function AdminDashboard() {
       employeeNumber: user.employeeNumber || '',
       employerName: user.employerName || '',
       dues: user.dues || '',
-      witness: user.witness || ''
+      witness: user.witness || '',
+      role: user.role || 'CLIENT'
     });
   };
 
@@ -250,116 +251,67 @@ export default function AdminDashboard() {
       )
     }
   ];
+{/* EDIT MODAL */}
+{editingUser && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
+      <h2 className="text-xl font-bold mb-4">
+        Edit User
+      </h2>
 
-  /* ================= UI ================= */
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between gap-4">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Admin Dashboard
-          </h1>
-
-          <div className="relative w-full md:w-72">
-            <FaSearch className="absolute top-3 left-3 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              onChange={e => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3">
-          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
-            <FaUpload className="inline mr-2" />
-            {uploading ? 'Uploading...' : 'Upload Excel'}
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              hidden
-              onChange={handleUploadExcel}
-            />
-          </label>
-
-          <button
-            onClick={exportToExcel}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-          >
-            <FaDownload className="inline mr-2" />
-            Excel
-          </button>
-
-          <button
-            onClick={exportToPDF}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-          >
-            <FaFilePdf className="inline mr-2" />
-            PDF
-          </button>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <DataTable
-            columns={columns}
-            data={filteredUsers}
-            pagination
-            progressPending={loading}
-            highlightOnHover
-            responsive
-            striped
-          />
-        </div>
-      </div>
-
-      {/* EDIT MODAL */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
-            <h2 className="text-xl font-bold mb-4">
-              Edit User
-            </h2>
-
-            {Object.keys(editForm).map(field => (
-              <div key={field} className="mb-3">
-                <label className="block text-sm font-medium mb-1 capitalize">
-                  {field}
-                </label>
-                <input
-                  value={editForm[field]}
-                  onChange={e =>
-                    setEditForm({
-                      ...editForm,
-                      [field]: e.target.value
-                    })
-                  }
-                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-            ))}
-
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setEditingUser(null)}
-                className="px-4 py-2 bg-gray-300 rounded-lg"
+      {Object.keys(editForm).map((field) => {
+        // Render a select for the role field
+        if (field === 'role') {
+          return (
+            <div key={field} className="mb-3">
+              <label className="block text-sm font-medium mb-1 capitalize">{field}</label>
+              <select
+                value={editForm[field]}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, [field]: e.target.value })
+                }
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdate}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-              >
-                Save
-              </button>
+                <option value="CLIENT">Client</option>
+                <option value="STAFF">Staff</option>
+                <option value="ADMIN">Admin</option>
+                <option value="SUPERADMIN">Super Admin</option>
+              </select>
             </div>
+          );
+        }
+
+        // Default: render text input for all other fields
+        return (
+          <div key={field} className="mb-3">
+            <label className="block text-sm font-medium mb-1 capitalize">
+              {field}
+            </label>
+            <input
+              value={editForm[field]}
+              onChange={(e) =>
+                setEditForm({ ...editForm, [field]: e.target.value })
+              }
+              className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
           </div>
-        </div>
-      )}
+        );
+      })}
+
+      <div className="flex justify-end gap-3 mt-4">
+        <button
+          onClick={() => setEditingUser(null)}
+          className="px-4 py-2 bg-gray-300 rounded-lg"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleUpdate}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        >
+          Save
+        </button>
+      </div>
     </div>
-  );
-}
+  </div>
+)}}
