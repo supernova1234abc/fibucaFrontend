@@ -14,6 +14,7 @@ import UserManagement from './pages/UserManagement';
 import AdminUpload from './pages/AdminUpload';
 import AdminReports from './pages/AdminReports';
 import ClientDashboard from './pages/ClientDashboard';
+import StaffDashboard from './pages/staffDashboard';
 
 import PrivateRoute from './components/PrivateRoute';
 import DashboardLayout from './components/DashboardLayout';
@@ -34,6 +35,10 @@ const adminMenus = [
   { href: '/admin/upload', label: 'Upload Data' },
   { href: '/admin/reports', label: 'Reports' },
   { href: '/admin/users', label: 'Users' },
+];
+
+const staffMenus = [
+  { href: '/staff', label: 'Dashboard' },
 ];
 
 const superMenus = [
@@ -91,6 +96,13 @@ export default function App() {
               <Route path="/admin/upload" element={<AdminUpload />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/users" element={<UserManagement />} />
+            </Route>
+          </Route>
+
+          {/* Staff */}
+          <Route element={<PrivateRoute role="STAFF" />}>
+            <Route element={<DashboardLayout user={user} menus={staffMenus} />}>
+              <Route path="/staff" element={<StaffDashboard />} />
             </Route>
           </Route>
 

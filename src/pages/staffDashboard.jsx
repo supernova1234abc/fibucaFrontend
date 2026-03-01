@@ -1,6 +1,7 @@
 // src/pages/StaffDashboard.jsx
 import { useEffect, useState, useCallback } from 'react';
-import { api, setAuthToken } from '../lib/api';
+import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import DataTable from 'react-data-table-component';
 import {
   FaDownload,
@@ -11,11 +12,10 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 export default function StaffDashboard() {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState([]);
   const [filteredSubs, setFilteredSubs] = useState([]);
   const [links, setLinks] = useState([]);
@@ -28,24 +28,9 @@ export default function StaffDashboard() {
 
   /* ================= AUTH & FETCH ================= */
   useEffect(() => {
-    const user =
-      JSON.parse(localStorage.getItem('fibuca_user')) ||
-      JSON.parse(sessionStorage.getItem('fibuca_user'));
-
-    const token =
-      localStorage.getItem('fibuca_token') ||
-      sessionStorage.getItem('fibuca_token');
-
-    if (!user || (user.role !== 'STAFF' && user.role !== 'ADMIN')) {
-      navigate('/login');
-      return;
-    }
-
-    if (token) setAuthToken(token);
-
     fetchSubmissions();
     fetchLinks();
-  }, [navigate]);
+  }, [user]);
 
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
