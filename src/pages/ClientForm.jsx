@@ -372,24 +372,46 @@ useEffect(() => {
           <SignatureBox label="Witness Signature" signature={witnessSignature} openModal={() => setWitnessSigOpen(true)} error={errors.witnessSignature} />
         </div>
 
-        {/* SUBMIT */}
-        {!tokenValid && (
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-center">
-            <p className="font-semibold">⚠️ Invalid or Missing Token</p>
-            <p className="text-sm">Please use a valid staff link to access this form.</p>
-          </div>
-        )}
-        <button
-          onClick={generatePDF}
-          disabled={loading || !tokenValid}
-          className={`mt-8 w-full py-3 rounded font-semibold transition ${
-            tokenValid && !loading
-              ? "bg-blue-700 text-white hover:bg-blue-800 cursor-pointer"
-              : "bg-gray-400 text-gray-200 cursor-not-allowed"
-          }`}
-        >
-          {loading ? <FaSpinner className="animate-spin mx-auto" /> : "Generate & Submit PDF"}
-        </button>
+{/* SUBMIT */}
+{!tokenValid && (
+  <div className="mt-8 p-4 bg-yellow-50 border border-yellow-300 rounded text-yellow-800 text-center">
+    <p className="font-semibold">🔒 Staff Authorization Required</p>
+    <p className="text-sm">
+      This form can only be submitted using a valid staff link.
+    </p>
+  </div>
+)}
+
+<button
+  onClick={() => {
+    if (!tokenValid) {
+      Swal.fire({
+        title: "Restricted Access",
+        text: "You need a valid staff link to submit this form.",
+        icon: "warning",
+        confirmButtonText: "Login Instead",
+        confirmButtonColor: "#2563eb",
+      }).then(() => navigate("/login"));
+      return;
+    }
+
+    generatePDF();
+  }}
+  disabled={loading}
+  className={`mt-8 w-full py-3 rounded font-semibold transition ${
+    tokenValid
+      ? "bg-blue-700 text-white hover:bg-blue-800 cursor-pointer"
+      : "bg-gray-300 text-gray-600 hover:bg-gray-400 cursor-pointer"
+  }`}
+>
+  {loading ? (
+    <FaSpinner className="animate-spin mx-auto" />
+  ) : tokenValid ? (
+    "Generate & Submit PDF"
+  ) : (
+    "Staff Link Required"
+  )}
+</button>
       </div>
 
       {/* SIGNATURE MODALS */}

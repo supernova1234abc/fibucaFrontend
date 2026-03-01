@@ -251,6 +251,34 @@ export default function AdminDashboard() {
     }
   ];
 
+  /* ================= STAFF LEADERBOARD ================= */
+  const StaffLeaderboard = ({ users }) => {
+    const ranked = [...users].sort((a, b) => (b.dues || 0) - (a.dues || 0)).slice(0, 10);
+    return (
+      <div className="bg-white rounded-xl shadow p-4 mt-6">
+        <h2 className="text-xl font-bold mb-3">Staff Leaderboard</h2>
+        <table className="w-full text-left table-auto">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2">Rank</th>
+              <th className="p-2">Employee</th>
+              <th className="p-2">Dues</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map((u, index) => (
+              <tr key={u.id} className="border-b last:border-0">
+                <td className="p-2 font-bold">{index + 1}</td>
+                <td className="p-2">{u.employeeName}</td>
+                <td className="p-2">{u.dues}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8">
@@ -303,8 +331,8 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* Table for Desktop */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mt-6 hidden sm:block">
           <DataTable
             columns={columns}
             data={filteredUsers}
@@ -315,6 +343,26 @@ export default function AdminDashboard() {
             striped
           />
         </div>
+
+        {/* Mobile Cards */}
+        <div className="sm:hidden flex flex-col gap-4 mt-4">
+          {filteredUsers.map(u => (
+            <div key={u.id} className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
+              <div className="font-bold">{u.employeeName}</div>
+              <div className="text-gray-500">Number: {u.employeeNumber}</div>
+              <div className="text-gray-500">Employer: {u.employerName}</div>
+              <div className="text-gray-500">Dues: {u.dues}</div>
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => handleEdit(u)} className="text-blue-600"><FaEdit /></button>
+                <button onClick={() => handleDelete(u.id)} className="text-red-600"><FaTrash /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Staff Leaderboard */}
+        <StaffLeaderboard users={filteredUsers} />
+
       </div>
 
       {/* EDIT MODAL */}

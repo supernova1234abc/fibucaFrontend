@@ -1,15 +1,15 @@
 // src/pages/UserManagement.jsx
-import { useEffect, useState } from 'react'
-import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa'
-import Swal from 'sweetalert2'
-import { api } from '../lib/api' // your Axios instance
+import { useEffect, useState } from 'react';
+import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import Swal from 'sweetalert2';
+import { api } from '../lib/api'; // your Axios instance
 
 export default function UserManagement() {
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Modal & form state
-  const [showModal, setShowModal] = useState(false)
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     id: null,
     name: '',
@@ -18,26 +18,26 @@ export default function UserManagement() {
     role: 'CLIENT',
     employeeNumber: '',
     password: ''
-  })
-  const [isEditing, setIsEditing] = useState(false)
+  });
+  const [isEditing, setIsEditing] = useState(false);
 
   // -------------------- FETCH USERS --------------------
   const fetchUsers = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await api.get('/api/admin/users')
-      setUsers(res.data || [])
+      const res = await api.get('/api/admin/users');
+      setUsers(res.data || []);
     } catch (err) {
-      console.error('Failed to fetch users:', err)
-      setUsers([])
+      console.error('Failed to fetch users:', err);
+      setUsers([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers();
+  }, []);
 
   // -------------------- OPEN/CLOSE MODAL --------------------
   const openModal = (user = null) => {
@@ -50,8 +50,8 @@ export default function UserManagement() {
         role: user.role,
         employeeNumber: user.employeeNumber,
         password: ''
-      })
-      setIsEditing(true)
+      });
+      setIsEditing(true);
     } else {
       setFormData({
         id: null,
@@ -61,22 +61,22 @@ export default function UserManagement() {
         role: 'CLIENT',
         employeeNumber: '',
         password: ''
-      })
-      setIsEditing(false)
+      });
+      setIsEditing(false);
     }
-    setShowModal(true)
-  }
+    setShowModal(true);
+  };
 
-  const closeModal = () => setShowModal(false)
+  const closeModal = () => setShowModal(false);
 
   // -------------------- HANDLE FORM CHANGE --------------------
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  const handleChange = e => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   // -------------------- CREATE / UPDATE USER --------------------
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async e => {
+    e.preventDefault();
     try {
       if (isEditing) {
         // Update user
@@ -85,50 +85,104 @@ export default function UserManagement() {
           email: formData.email,
           role: formData.role,
           employeeNumber: formData.employeeNumber
-        })
-        setUsers(users.map(u => (u.id === formData.id ? res.data : u)))
-        Swal.fire('Updated!', 'User updated successfully', 'success')
+        });
+        setUsers(users.map(u => (u.id === formData.id ? res.data : u)));
+        Swal.fire('Updated!', 'User updated successfully', 'success');
       } else {
         // Create user
-        const res = await api.post('/api/admin/users', formData)
-        setUsers([res.data, ...users])
-        Swal.fire('Created!', 'User created successfully', 'success')
+        const res = await api.post('/api/admin/users', formData);
+        setUsers([res.data, ...users]);
+        Swal.fire('Created!', 'User created successfully', 'success');
       }
-      closeModal()
+      closeModal();
     } catch (err) {
-      console.error(err)
-      Swal.fire('Error', err.response?.data?.error || 'Failed to save user', 'error')
+      console.error(err);
+      Swal.fire('Error', err.response?.data?.error || 'Failed to save user', 'error');
     }
-  }
+  };
 
   // -------------------- DELETE USER --------------------
-  const deleteUser = (id) => {
+  const deleteUser = id => {
     Swal.fire({
       title: 'Confirm Delete?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, delete',
-    }).then(async (result) => {
+    }).then(async result => {
       if (result.isConfirmed) {
         try {
-          await api.delete(`/api/admin/users/${id}`)
-          setUsers(users.filter(u => u.id !== id))
-          Swal.fire('Deleted!', 'User deleted successfully', 'success')
+          await api.delete(`/api/admin/users/${id}`);
+          setUsers(users.filter(u => u.id !== id));
+          Swal.fire('Deleted!', 'User deleted successfully', 'success');
         } catch (err) {
-          console.error(err)
-          Swal.fire('Error', 'Failed to delete user', 'error')
+          console.error(err);
+          Swal.fire('Error', 'Failed to delete user', 'error');
         }
       }
-    })
-  }
+    });
+  };
+
+  // -------------------- MOBILE CARD VIEW --------------------
+  const renderMobileCards = () => {
+    return (
+      <div className="sm:hidden flex flex-col gap-4">
+        {users.map(u => (
+          <div key={u.id} className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
+            <div className="font-bold">{u.name}</div>
+            <div className="text-gray-500">Username: {u.username}</div>
+            <div className="text-gray-500">Email: {u.email}</div>
+            <div className="text-gray-500">Role: {u.role}</div>
+            <div className="text-gray-500">Employee #: {u.employeeNumber}</div>
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => openModal(u)} className="text-blue-600"><FaEdit /></button>
+              <button onClick={() => deleteUser(u.id)} className="text-red-600"><FaTrash /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // -------------------- TABLE VIEW --------------------
+  const renderTable = () => (
+    <div className="hidden sm:block overflow-x-auto bg-white rounded shadow mt-4">
+      <table className="min-w-full">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="p-2 text-left">Name</th>
+            <th className="p-2 text-left">Username</th>
+            <th className="p-2 text-left">Email</th>
+            <th className="p-2 text-left">Role</th>
+            <th className="p-2 text-left">Employee #</th>
+            <th className="p-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(u => (
+            <tr key={u.id} className="border-b last:border-0">
+              <td className="p-2">{u.name}</td>
+              <td className="p-2">{u.username}</td>
+              <td className="p-2">{u.email}</td>
+              <td className="p-2">{u.role}</td>
+              <td className="p-2">{u.employeeNumber}</td>
+              <td className="p-2 space-x-2">
+                <button onClick={() => openModal(u)} className="text-blue-600"><FaEdit /></button>
+                <button onClick={() => deleteUser(u.id)} className="text-red-600"><FaTrash /></button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   // -------------------- RENDER --------------------
-  if (loading) return <div>Loading users…</div>
-  if (!users.length) return <div>No users found.</div>
+  if (loading) return <div>Loading users…</div>;
+  if (!users.length) return <div>No users found.</div>;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-6 min-h-screen bg-gray-100">
+      <div className="flex justify-between items-center mb-4 flex-col sm:flex-row gap-3">
         <h1 className="text-2xl font-bold">User Management</h1>
         <button
           onClick={() => openModal()}
@@ -138,37 +192,9 @@ export default function UserManagement() {
         </button>
       </div>
 
-      <table className="min-w-full bg-white shadow rounded">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2">Name</th>
-            <th className="p-2">Username</th>
-            <th className="p-2">Email</th>
-            <th className="p-2">Role</th>
-            <th className="p-2">Employee #</th>
-            <th className="p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.id} className="border-b last:border-0">
-              <td className="p-2">{u.name}</td>
-              <td className="p-2">{u.username}</td>
-              <td className="p-2">{u.email}</td>
-              <td className="p-2">{u.role}</td>
-              <td className="p-2">{u.employeeNumber}</td>
-              <td className="p-2 space-x-2">
-                <button onClick={() => openModal(u)} className="text-blue-600">
-                  <FaEdit />
-                </button>
-                <button onClick={() => deleteUser(u.id)} className="text-red-600">
-                  <FaTrash />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Table & Mobile Cards */}
+      {renderTable()}
+      {renderMobileCards()}
 
       {/* -------------------- MODAL -------------------- */}
       {showModal && (
@@ -252,5 +278,5 @@ export default function UserManagement() {
         </div>
       )}
     </div>
-  )
+  );
 }
