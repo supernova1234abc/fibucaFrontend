@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import DataTable from 'react-data-table-component';
+import BottomNavbar from '../components/BottomNavbar';
 import {
   FaDownload,
   FaFilePdf,
@@ -272,9 +273,15 @@ export default function StaffDashboard() {
 
   /* ================= UI ================= */
 
+  const navbarTabs = [
+    { id: 'links', label: 'Links', icon: FaLink },
+    { id: 'clients', label: 'Clients', icon: FaUsers },
+    { id: 'profile', label: 'Profile', icon: FaChartLine }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-100 pb-28">
+      <div className="max-w-7xl mx-auto space-y-6 p-6">
 
         <h1 className="text-3xl font-bold">Staff Dashboard</h1>
 
@@ -284,23 +291,6 @@ export default function StaffDashboard() {
           <StatCard icon={<FaLink />} label="Total Links" value={stats.totalLinks} />
           <StatCard icon={<FaChartLine />} label="Active Links" value={stats.activeLinks} />
           <StatCard icon={<FaClock />} label="Expired Links" value={stats.expiredLinks} />
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-6 border-b">
-          {['links', 'clients', 'profile'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-2 capitalize ${
-                activeTab === tab
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-500'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
         </div>
 
         {/* LINKS TAB */}
@@ -361,6 +351,9 @@ export default function StaffDashboard() {
         )}
 
       </div>
+
+      {/* Bottom Navbar */}
+      <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} tabs={navbarTabs} />
     </div>
   );
 }

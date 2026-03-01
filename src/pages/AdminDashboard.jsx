@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, setAuthToken } from '../lib/api';
 import DataTable from 'react-data-table-component';
+import BottomNavbar from '../components/BottomNavbar';
 import {
   FaDownload,
   FaFilePdf,
@@ -10,7 +11,9 @@ import {
   FaUpload,
   FaSearch,
   FaPlus,
-  FaTrophy
+  FaTrophy,
+  FaFileAlt,
+  FaUsers
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -388,47 +391,19 @@ export default function AdminDashboard() {
   ];
 
   // ================= UI =================
+  const navbarTabs = [
+    { id: 'submissions', label: 'Submissions', icon: FaFileAlt },
+    { id: 'users', label: 'Users', icon: FaUsers },
+    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-100 pb-28">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage submissions, users, and staff performance</p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-6 bg-white rounded-lg shadow-md p-2">
-          <button
-            onClick={() => setActiveTab('submissions')}
-            className={`px-6 py-2 rounded-lg font-semibold transition ${
-              activeTab === 'submissions'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            📋 Submissions
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-6 py-2 rounded-lg font-semibold transition ${
-              activeTab === 'users'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            👥 User Management
-          </button>
-          <button
-            onClick={() => setActiveTab('leaderboard')}
-            className={`px-6 py-2 rounded-lg font-semibold transition ${
-              activeTab === 'leaderboard'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <FaTrophy className="inline mr-2" />Staff Leaderboard
-          </button>
         </div>
 
         {/* ==================== SUBMISSIONS TAB ==================== */}
@@ -729,6 +704,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Bottom Navbar */}
+      <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} tabs={navbarTabs} />
     </div>
   );
 }

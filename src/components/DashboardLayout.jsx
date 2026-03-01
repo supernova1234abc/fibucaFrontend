@@ -4,6 +4,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { FaBars, FaTimes, FaKey } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import ChangePasswordPage from '../pages/ChangePassword';
+import BottomNavbar from './BottomNavbar';
 
 // Context to allow children to open change password modal
 export const ChangePwModalContext = createContext(null);
@@ -153,7 +154,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 p-4 overflow-y-auto">
+          <main className="flex-1 p-4 overflow-y-auto pb-28 md:pb-4">
             {children || <Outlet />}
           </main>
         </div>
