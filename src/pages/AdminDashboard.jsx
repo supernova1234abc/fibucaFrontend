@@ -8,7 +8,9 @@ import {
   FaEdit,
   FaTrash,
   FaUpload,
-  FaSearch
+  FaSearch,
+  FaPlus,
+  FaTrophy
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -18,6 +20,9 @@ import Swal from 'sweetalert2';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('submissions');
+  
+  // Submissions state
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
@@ -26,11 +31,30 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [leaderboard, setLeaderboard] = useState([]);
 
+  // User Management state
+  const [systemUsers, setSystemUsers] = useState([]);
+  const [filteredSystemUsers, setFilteredSystemUsers] = useState([]);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingSystemUser, setEditingSystemUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(false);
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    employeeNumber: '',
+    role: 'CLIENT',
+    password: ''
+  });
+
+  // Staff Leaderboard state
+  const [staffLeaderboard, setStaffLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL ||
     'https://fibuca-backend.vercel.app';
 
-  // ================= FETCH USERS / SUBMISSIONS =================
+  // ================= INITIALIZE =================
   useEffect(() => {
     const user =
       JSON.parse(localStorage.getItem('fibuca_user')) ||
@@ -47,6 +71,8 @@ export default function AdminDashboard() {
 
     if (token) setAuthToken(token);
     fetchSubmissions();
+    fetchSystemUsers();
+    fetchStaffLeaderboard();
   }, [navigate]);
 
   const fetchSubmissions = useCallback(() => {
@@ -60,6 +86,124 @@ export default function AdminDashboard() {
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
+
+  // ================= FETCH SYSTEM USERS =================
+  const fetchSystemUsers = useCallback(() => {
+    setUserLoading(true);
+    api.get('/api/admin/users')
+      .then(res => {
+        setSystemUsers(res.data || []);
+        setFilteredSystemUsers(res.data || []);
+      })
+      .catch(err => console.error('Failed to fetch users:', err))
+      .finally(() => setUserLoading(false));
+  }, []);
+
+  // ================= FETCH STAFF LEADERBOARD =================
+  const fetchStaffLeaderboard = useCallback(() => {
+    setLeaderboardLoading(true);
+    api.get('/api/staff/leaderboard')
+      .then(res => {
+        setStaffLeaderboard(res.data || []);
+      })
+      .catch(err => console.error('Failed to fetch leaderboard:', err))
+      .finally(() => setLeaderboardLoading(false));
+  }, []);
+
+  // ================= USER MANAGEMENT HANDLERS =================
+  const handleOpenUserModal = (user = null) => {
+    if (user) {
+      setEditingSystemUser(user);
+      setUserFormData({
+        name: user.name,
+        username: user.username,
+        email: user.email || '',
+        employeeNumber: user.employeeNumber || '',
+        role: user.role,
+        password: ''
+      });
+    } else {
+      setEditingSystemUser(null);
+      setUserFormData({
+        name: '',
+        username: '',
+        email: '',
+        employeeNumber: '',
+        role: 'CLIENT',
+        password: ''
+      });
+    }
+    setShowUserModal(true);
+  };
+
+  const handleCloseUserModal = () => {
+    setShowUserModal(false);
+    setEditingSystemUser(null);
+  };
+
+  const handleUserFormChange = (e) => {
+    const { name, value } = e.target;
+    setUserFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveUser = async () => {
+    try {
+      if (!userFormData.name || !userFormData.username) {
+        return Swal.fire('Error', 'Name and Username are required', 'error');
+      }
+
+      if (editingSystemUser) {
+        // Update user
+        await api.put(`/api/admin/users/${editingSystemUser.id}`, {
+          name: userFormData.name,
+          email: userFormData.email,
+          role: userFormData.role,
+          employeeNumber: userFormData.employeeNumber
+        });
+        Swal.fire('Success!', 'User updated successfully', 'success');
+      } else {
+        // Create user
+        if (!userFormData.password || userFormData.password.length < 6) {
+          return Swal.fire('Error', 'Password must be at least 6 characters', 'error');
+        }
+        await api.post('/api/admin/users', userFormData);
+        Swal.fire('Success!', 'User created successfully', 'success');
+      }
+      handleCloseUserModal();
+      fetchSystemUsers();
+    } catch (err) {
+      Swal.fire('Error', err.response?.data?.error || 'Failed to save user', 'error');
+    }
+  };
+
+  const handleDeleteUser = (userId) => {
+    Swal.fire({
+      title: 'Delete User?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48'
+    }).then(result => {
+      if (result.isConfirmed) {
+        api.delete(`/api/admin/users/${userId}`)
+          .then(() => {
+            Swal.fire('Deleted!', 'User deleted successfully', 'success');
+            fetchSystemUsers();
+          })
+          .catch(err => Swal.fire('Error', err.response?.data?.error || 'Failed to delete user', 'error'));
+      }
+    });
+  };
+
+  const handleSearchUsers = (value) => {
+    if (!value) return setFilteredSystemUsers(systemUsers);
+    const results = systemUsers.filter(u =>
+      (u.name || '').toLowerCase().includes(value.toLowerCase()) ||
+      (u.username || '').toLowerCase().includes(value.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredSystemUsers(results);
+  };
 
   // ================= GENERATE STAFF LEADERBOARD =================
   const generateLeaderboard = (submissions) => {
@@ -200,7 +344,7 @@ export default function AdminDashboard() {
   };
 
   // ================= TABLE COLUMNS =================
-  const columns = [
+  const submissionColumns = [
     { name: '#', selector: (row, index) => index + 1, width: '60px' },
     { name: 'Employee', selector: row => row.employeeName, sortable: true, wrap: true },
     { name: 'Number', selector: row => row.employeeNumber, wrap: true },
@@ -225,68 +369,247 @@ export default function AdminDashboard() {
     }
   ];
 
+  const userColumns = [
+    { name: '#', selector: (row, index) => index + 1, width: '60px' },
+    { name: 'Name', selector: row => row.name, sortable: true, wrap: true },
+    { name: 'Username', selector: row => row.username, wrap: true },
+    { name: 'Email', selector: row => row.email || '-', wrap: true },
+    { name: 'Role', selector: row => row.role, sortable: true },
+    { name: 'Employee #', selector: row => row.employeeNumber || '-' },
+    {
+      name: 'Actions',
+      cell: row => (
+        <div className="flex gap-2">
+          <button onClick={() => handleOpenUserModal(row)} className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"><FaEdit/></button>
+          <button onClick={() => handleDeleteUser(row.id)} className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"><FaTrash/></button>
+        </div>
+      )
+    }
+  ];
+
   // ================= UI =================
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col md:flex-row gap-6">
-      
-      {/* Sidebar Leaderboard */}
-      <div className="md:w-72 bg-white rounded-xl shadow-lg p-4 flex-shrink-0">
-        <h2 className="text-xl font-bold mb-4">Top Staff</h2>
-        {leaderboard.length ? leaderboard.map((staff, idx) => (
-          <div key={staff.name} className="flex justify-between mb-2 p-2 bg-gray-50 rounded">
-            <span>{idx + 1}. {staff.name}</span>
-            <span className="font-bold">{staff.submissions}</span>
-          </div>
-        )) : <div>No staff data</div>}
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 space-y-6">
-
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between gap-4">
-          <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-          <div className="relative w-full md:w-72">
-            <FaSearch className="absolute top-3 left-3 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              onChange={e => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage submissions, users, and staff performance</p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-2 mb-6 bg-white rounded-lg shadow-md p-2">
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              activeTab === 'submissions'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            📋 Submissions
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              activeTab === 'users'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            👥 User Management
+          </button>
+          <button
+            onClick={() => setActiveTab('leaderboard')}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              activeTab === 'leaderboard'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <FaTrophy className="inline mr-2" />Staff Leaderboard
+          </button>
+        </div>
+
+        {/* ==================== SUBMISSIONS TAB ==================== */}
+        {activeTab === 'submissions' && (
+          <div className="space-y-6">
+            {/* Search & Actions */}
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <h2 className="text-2xl font-bold">Client Submissions</h2>
+                <div className="relative w-full md:w-80">
+                  <FaSearch className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search submissions..."
+                    onChange={e => handleSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+                  <FaUpload className="inline mr-2" />
+                  {uploading ? 'Uploading...' : 'Upload Excel'}
+                  <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
+                </label>
+                <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                  <FaDownload className="inline mr-2" /> Excel
+                </button>
+                <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                  <FaFilePdf className="inline mr-2" /> PDF
+                </button>
+              </div>
+            </div>
+
+            {/* Submissions Table */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <DataTable
+                columns={submissionColumns}
+                data={filteredUsers}
+                pagination
+                progressPending={loading}
+                highlightOnHover
+                responsive
+                striped
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3">
-          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
-            <FaUpload className="inline mr-2" />
-            {uploading ? 'Uploading...' : 'Upload Excel'}
-            <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
-          </label>
-          <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-            <FaDownload className="inline mr-2" /> Excel
-          </button>
-          <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
-            <FaFilePdf className="inline mr-2" /> PDF
-          </button>
-        </div>
+        {/* ==================== USER MANAGEMENT TAB ==================== */}
+        {activeTab === 'users' && (
+          <div className="space-y-6">
+            {/* Search & Add Button */}
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <h2 className="text-2xl font-bold">System Users</h2>
+                <div className="flex gap-3 flex-wrap">
+                  <div className="relative w-full md:w-80">
+                    <FaSearch className="absolute top-3 left-3 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      onChange={e => handleSearchUsers(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleOpenUserModal()}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <FaPlus /> Add User
+                  </button>
+                </div>
+              </div>
+            </div>
 
-        {/* Submissions Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <DataTable
-            columns={columns}
-            data={filteredUsers}
-            pagination
-            progressPending={loading}
-            highlightOnHover
-            responsive
-            striped
-          />
-        </div>
+            {/* Users Table */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <DataTable
+                columns={userColumns}
+                data={filteredSystemUsers}
+                pagination
+                progressPending={userLoading}
+                highlightOnHover
+                responsive
+                striped
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ==================== STAFF LEADERBOARD TAB ==================== */}
+        {activeTab === 'leaderboard' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
+              <p className="text-gray-600 mb-4">Ranked by number of active distribution links</p>
+
+              {leaderboardLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading leaderboard...</div>
+              ) : staffLeaderboard.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {staffLeaderboard.map((staff, idx) => (
+                    <div
+                      key={staff.id}
+                      className={`p-6 rounded-lg border-2 ${
+                        idx === 0
+                          ? 'border-yellow-400 bg-yellow-50'
+                          : idx === 1
+                          ? 'border-gray-400 bg-gray-50'
+                          : idx === 2
+                          ? 'border-orange-400 bg-orange-50'
+                          : 'border-blue-200 bg-blue-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-600 mb-1">
+                            {idx === 0 && '🥇 '}
+                            {idx === 1 && '🥈 '}
+                            {idx === 2 && '🥉 '}
+                            Rank #{idx + 1}
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
+                          <p className="text-sm text-gray-600">{staff.username}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{staff.activeLinks}</div>
+                          <div className="text-xs text-gray-600">Active Links</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{staff.totalLinks}</div>
+                          <div className="text-xs text-gray-600">Total Links</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">{staff.totalClients}</div>
+                          <div className="text-xs text-gray-600">Clients</div>
+                        </div>
+                      </div>
+
+                      {staff.email && (
+                        <p className="text-xs text-gray-600 mt-3 truncate">📧 {staff.email}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  No staff members found
+                </div>
+              )}
+            </div>
+
+            {/* Top Staff Sidebar */}
+            {leaderboard.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
+                <div className="space-y-2">
+                  {leaderboard.map((staff, idx) => (
+                    <div key={staff.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">
+                        {idx === 0 && '🥇 '}
+                        {idx === 1 && '🥈 '}
+                        {idx === 2 && '🥉 '}
+                        {staff.name}
+                      </span>
+                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">{staff.submissions}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* EDIT MODAL */}
+      {/* SUBMISSION EDIT MODAL */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
@@ -309,6 +632,103 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* USER MANAGEMENT MODAL */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-96 overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">
+              {editingSystemUser ? 'Edit User' : 'Create New User'}
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={userFormData.name}
+                  onChange={handleUserFormChange}
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Username *</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={userFormData.username}
+                  onChange={handleUserFormChange}
+                  disabled={!!editingSystemUser}
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                  placeholder="Unique username"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={userFormData.email}
+                  onChange={handleUserFormChange}
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Employee Number</label>
+                <input
+                  type="text"
+                  name="employeeNumber"
+                  value={userFormData.employeeNumber}
+                  onChange={handleUserFormChange}
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Role</label>
+                <select
+                  name="role"
+                  value={userFormData.role}
+                  onChange={handleUserFormChange}
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="CLIENT">Client</option>
+                  <option value="STAFF">Staff</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              {!editingSystemUser && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Password *</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={userFormData.password}
+                    onChange={handleUserFormChange}
+                    className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Min. 6 characters"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={handleCloseUserModal}
+                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveUser}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                {editingSystemUser ? 'Update' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
