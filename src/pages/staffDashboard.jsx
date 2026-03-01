@@ -150,14 +150,34 @@ export default function StaffDashboard() {
   ];
 
   /* ================= LINKS TABLE ================= */
-  const linkColumns = [
-    { name: '#', selector: (row, i) => i + 1, width: '60px' },
-    { name: 'Link', selector: row => row.token, wrap: true, cell: row => <a href={`${process.env.FRONTEND_URL}/submission/${row.token}`} target="_blank" className="text-blue-600 hover:underline">{row.token}</a> },
-    { name: 'Max Uses', selector: row => row.maxUses || 'Unlimited' },
-    { name: 'Used', selector: row => row.usedCount },
-    { name: 'Expires At', selector: row => new Date(row.expiresAt).toLocaleString() },
-    { name: 'Active', selector: row => row.isActive ? 'Yes' : 'No' }
-  ];
+const VITE_FRONTEND_URL =
+  import.meta.env.VITE_FRONTEND_URL ||
+  window.location.origin;
+
+const linkColumns = [
+  { name: '#', selector: (row, i) => i + 1, width: '60px' },
+  {
+    name: 'Link',
+    selector: row => row.token,
+    wrap: true,
+    cell: row => (
+      <a
+        href={`${VITE_FRONTEND_URL}/submission/${row.token}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        {VITE_FRONTEND_URL}/submission/{row.token}
+      </a>
+    )
+  },
+  { name: 'Max Uses', selector: row => row.maxUses || 'Unlimited' },
+  { name: 'Used', selector: row => row.usedCount },
+  { name: 'Expires At', selector: row =>
+      row.expiresAt ? new Date(row.expiresAt).toLocaleString() : 'N/A'
+  },
+  { name: 'Active', selector: row => row.isActive ? 'Yes' : 'No' }
+];
 
   /* ================= UI ================= */
   return (
