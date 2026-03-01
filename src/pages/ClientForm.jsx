@@ -10,19 +10,6 @@ import { api } from "../lib/api";
 export default function ClientForm() {
   const navigate = useNavigate();
 
-  // ======= ACCESS CONTROL =======
-  useEffect(() => {
-    const hasAccess = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
-    if (!hasAccess) {
-      Swal.fire({
-        title: "Access Denied",
-        text: "You need a staff link to access this form.",
-        icon: "warning",
-        confirmButtonText: "Go Back",
-      }).then(() => navigate("/"));
-    }
-  }, [navigate]);
-
   // ======= FORM STATE =======
   const [form, setForm] = useState({
     employeeName: "",
@@ -215,6 +202,12 @@ export default function ClientForm() {
       formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
       formData.append("data", JSON.stringify(form));
 
+      // Get the token from localStorage (set during SubmissionValidator)
+      const token = localStorage.getItem("STAFF_LINK_TOKEN");
+      if (!token) {
+        throw new Error("Staff link token missing. Please use a valid staff link to submit.");
+      }
+
       let response;
       let lastError;
       const maxRetries = 3;
@@ -230,7 +223,7 @@ export default function ClientForm() {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           if (attempt > 1) console.log(`🔄 Retry attempt ${attempt}/${maxRetries}...`);
-          response = await api.post("/submit-form", formData, {
+          response = await api.post(`/submit-form/${token}`, formData, {
             timeout: 120000,
             maxContentLength: Infinity,
             maxBodyLength: Infinity,
@@ -291,6 +284,9 @@ export default function ClientForm() {
       Swal.fire({ title: "Error", html: `<div>${errorMessage}</div>`, icon: "error" });
     } finally {
       setLoading(false);
+      // Clear access token after submission attempt
+      localStorage.removeItem("CLIENT_FORM_ACCESS");
+      localStorage.removeItem("STAFF_LINK_TOKEN");
     }
   };
 

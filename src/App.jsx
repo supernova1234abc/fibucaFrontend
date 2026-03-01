@@ -7,6 +7,7 @@ import ClientForm from './pages/ClientForm';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
+import SubmissionValidator from './pages/SubmissionValidator';
 
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -64,6 +65,9 @@ export default function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
+          
+          {/* Submission validation via staff link */}
+          <Route path="/submission/:token" element={<SubmissionValidator />} />
           
           {/* Updated Client Form Route: allowNewClient controlled by staff link */}
           <Route
