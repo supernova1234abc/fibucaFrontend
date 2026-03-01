@@ -121,7 +121,7 @@ export default function StaffDashboard() {
 
       if (!formValues) return;
 
-      const res = await api.post('/staff/generate-link', formValues);
+      const res = await api.post('/api/staff/generate-link', formValues);
       Swal.fire('Link Generated', `<a href="${res.data.link}" target="_blank">${res.data.link}</a>`, 'success');
       fetchLinks();
     } catch (err) {
