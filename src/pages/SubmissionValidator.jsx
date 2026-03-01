@@ -37,7 +37,7 @@ export default function SubmissionValidator() {
             showConfirmButton: false,
           }).then(() => {
             console.log("➡️ Redirecting to /client-form");
-            navigate('/client-form');
+            navigate(`/client-form/${token}`);
           });
         }
       } catch (err) {

@@ -70,14 +70,7 @@ export default function App() {
           <Route path="/submission/:token" element={<SubmissionValidator />} />
           
           {/* Updated Client Form Route: allowNewClient controlled by staff link */}
-          <Route
-            path="/client-form"
-            element={
-              <PrivateRoute role="CLIENT" allowNewClient={true}>
-                <ClientForm />
-              </PrivateRoute>
-            }
-          />
+   <Route path="/client-form/:token" element={<ClientForm />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

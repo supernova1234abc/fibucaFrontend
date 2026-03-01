@@ -6,9 +6,12 @@ import jsPDF from "jspdf";
 import Swal from "sweetalert2";
 import { FaSpinner } from "react-icons/fa";
 import { api } from "../lib/api";
+import { useParams } from "react-router-dom"; 
+
 
 export default function ClientForm() {
   const navigate = useNavigate();
+  const { token } = useParams();
 
   // ======= FORM STATE =======
   const [form, setForm] = useState({
@@ -24,6 +27,7 @@ export default function ClientForm() {
   const [loading, setLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
 
+
   // ======= SIGNATURE STATE =======
   const [employeeSigOpen, setEmployeeSigOpen] = useState(false);
   const [witnessSigOpen, setWitnessSigOpen] = useState(false);
@@ -34,34 +38,30 @@ export default function ClientForm() {
   const witnessSigPadRef = useRef(null);
 
   // Verify token on mount
-  useEffect(() => {
-    const token = localStorage.getItem("STAFF_LINK_TOKEN");
-    const hasAccess = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
-    
-    console.log("🔍 ClientForm mounted:", { token: !!token, hasAccess });
-    
-    if (token && hasAccess) {
-      console.log("✅ Token valid, enabling form");
-      setTokenValid(true);
-    } else {
-      console.warn("❌ Missing token or access flag:", { hasToken: !!token, hasAccess });
-      setTokenValid(false);
-    }
-  }, []);
 
-  // Re-check token validity when window regains focus
-  useEffect(() => {
-    const handleFocus = () => {
-      const token = localStorage.getItem("STAFF_LINK_TOKEN");
-      const hasAccess = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
-      if (token && hasAccess) {
-        setTokenValid(true);
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+// Verify token from URL
+useEffect(() => {
+  if (!token) {
+    console.warn("❌ No token in URL");
+    setTokenValid(false);
+    return;
+  }
+
+  console.log("🔍 Validating token from URL:", token);
+
+  api.get(`/api/staff/validate/${token}`)
+    .then(() => {
+      console.log("✅ Token validated from server");
+      setTokenValid(true);
+    })
+    .catch((err) => {
+      console.error("❌ Token validation failed:", err.response?.data);
+      setTokenValid(false);
+    });
+
+}, [token]);
+
+  
 
   // Default dates
   useEffect(() => {
@@ -234,7 +234,7 @@ export default function ClientForm() {
       formData.append("data", JSON.stringify(form));
 
       // Get the token from localStorage (set during SubmissionValidator)
-      const token = localStorage.getItem("STAFF_LINK_TOKEN");
+      
       console.log("🔍 Token check during submit:", { token: !!token, full: token });
       
       if (!token) {
@@ -321,8 +321,7 @@ export default function ClientForm() {
     } finally {
       setLoading(false);
       // Clear access token after submission attempt
-      localStorage.removeItem("CLIENT_FORM_ACCESS");
-      localStorage.removeItem("STAFF_LINK_TOKEN");
+
     }
   };
 
