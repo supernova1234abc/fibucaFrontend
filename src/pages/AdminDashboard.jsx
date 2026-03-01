@@ -50,7 +50,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = useCallback(() => {
     setLoading(true);
-    api.get('/api/submissions')
+    api.get('/submissions')
       .then(res => {
         setUsers(res.data);
         setFilteredUsers(res.data);
