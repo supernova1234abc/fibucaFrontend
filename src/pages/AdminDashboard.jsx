@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     import.meta.env.VITE_BACKEND_URL ||
     'https://fibuca-backend.vercel.app';
 
-  /* ================= FETCH USERS ================= */
+  // ================= FETCH USERS / SUBMISSIONS =================
   useEffect(() => {
     const user =
       JSON.parse(localStorage.getItem('fibuca_user')) ||
@@ -46,10 +46,10 @@ export default function AdminDashboard() {
     }
 
     if (token) setAuthToken(token);
-    fetchUsers();
+    fetchSubmissions();
   }, [navigate]);
 
-  const fetchUsers = useCallback(() => {
+  const fetchSubmissions = useCallback(() => {
     setLoading(true);
     api.get('/submissions')
       .then(res => {
@@ -61,17 +61,28 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ================= GENERATE LEADERBOARD ================= */
-  const generateLeaderboard = (usersData) => {
-    // Example: top staff by number of submissions
-    const leaderboardData = [...usersData]
-      .filter(u => u.employeeName)
-      .sort((a, b) => (b.dues || 0) - (a.dues || 0))
-      .slice(0, 5); // top 5
+  // ================= GENERATE STAFF LEADERBOARD =================
+  const generateLeaderboard = (submissions) => {
+    const staffMap = {};
+    submissions.forEach(sub => {
+      if (sub.employeeName) {
+        if (!staffMap[sub.employeeName]) {
+          staffMap[sub.employeeName] = {
+            name: sub.employeeName,
+            employeeNumber: sub.employeeNumber || '',
+            submissions: 0
+          };
+        }
+        staffMap[sub.employeeName].submissions += 1;
+      }
+    });
+    const leaderboardData = Object.values(staffMap)
+      .sort((a, b) => b.submissions - a.submissions)
+      .slice(0, 5);
     setLeaderboard(leaderboardData);
   };
 
-  /* ================= SEARCH ================= */
+  // ================= SEARCH =================
   const handleSearch = value => {
     if (!value) return setFilteredUsers(users);
 
@@ -80,11 +91,10 @@ export default function AdminDashboard() {
       (u.employeeNumber || '').toLowerCase().includes(value.toLowerCase()) ||
       (u.employerName || '').toLowerCase().includes(value.toLowerCase())
     );
-
     setFilteredUsers(results);
   };
 
-  /* ================= EXPORT ================= */
+  // ================= EXPORT =================
   const exportToExcel = () => {
     if (!filteredUsers.length)
       return Swal.fire('No Data', 'No records found.', 'info');
@@ -127,7 +137,7 @@ export default function AdminDashboard() {
     doc.save('fibuca_clients.pdf');
   };
 
-  /* ================= EDIT ================= */
+  // ================= EDIT =================
   const handleEdit = user => {
     setEditingUser(user);
     setEditForm({
@@ -143,7 +153,7 @@ export default function AdminDashboard() {
     api.put(`/submissions/${editingUser.id}`, editForm)
       .then(() => {
         setEditingUser(null);
-        fetchUsers();
+        fetchSubmissions();
         Swal.fire('Updated!', 'Record updated successfully.', 'success');
       })
       .catch(err => console.error(err));
@@ -160,7 +170,7 @@ export default function AdminDashboard() {
       if (result.isConfirmed) {
         api.delete(`/submissions/${id}`)
           .then(() => {
-            fetchUsers();
+            fetchSubmissions();
             Swal.fire('Deleted!', '', 'success');
           })
           .catch(err => console.error(err));
@@ -168,22 +178,19 @@ export default function AdminDashboard() {
     });
   };
 
-  /* ================= EXCEL UPLOAD ================= */
+  // ================= EXCEL UPLOAD =================
   const handleUploadExcel = async e => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploading(true);
-
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const records = XLSX.utils.sheet_to_json(worksheet);
-
       await api.post('/bulk-upload', { records });
-      fetchUsers();
-
+      fetchSubmissions();
       Swal.fire('Success', 'Users uploaded!', 'success');
     } catch (err) {
       Swal.fire('Error', 'Upload failed.', 'error');
@@ -192,7 +199,7 @@ export default function AdminDashboard() {
     }
   };
 
-  /* ================= TABLE ================= */
+  // ================= TABLE COLUMNS =================
   const columns = [
     { name: '#', selector: (row, index) => index + 1, width: '60px' },
     { name: 'Employee', selector: row => row.employeeName, sortable: true, wrap: true },
@@ -203,99 +210,79 @@ export default function AdminDashboard() {
       name: 'PDF',
       cell: row => {
         if (!row.pdfPath) return <span className="text-gray-400">None</span>;
-        const pdfUrl = row.pdfPath.startsWith('http')
-          ? row.pdfPath
-          : `${BACKEND_URL}/${row.pdfPath}`;
-        return (
-          <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:underline">
-            <FaFilePdf />
-          </a>
-        );
+        const pdfUrl = row.pdfPath.startsWith('http') ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
+        return <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:underline"><FaFilePdf/></a>;
       }
     },
     {
       name: 'Actions',
       cell: row => (
         <div className="flex gap-2">
-          <button onClick={() => handleEdit(row)} className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
-            <FaEdit />
-          </button>
-          <button onClick={() => handleDelete(row.id)} className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition">
-            <FaTrash />
-          </button>
+          <button onClick={() => handleEdit(row)} className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"><FaEdit/></button>
+          <button onClick={() => handleDelete(row.id)} className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"><FaTrash/></button>
         </div>
       )
     }
   ];
 
-  /* ================= UI ================= */
+  // ================= UI =================
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
-
-        {/* Main Content */}
-        <div className="flex-1 space-y-6">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-            <div className="relative w-full md:w-72">
-              <FaSearch className="absolute top-3 left-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                onChange={e => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col md:flex-row gap-6">
+      
+      {/* Sidebar Leaderboard */}
+      <div className="md:w-72 bg-white rounded-xl shadow-lg p-4 flex-shrink-0">
+        <h2 className="text-xl font-bold mb-4">Top Staff</h2>
+        {leaderboard.length ? leaderboard.map((staff, idx) => (
+          <div key={staff.name} className="flex justify-between mb-2 p-2 bg-gray-50 rounded">
+            <span>{idx + 1}. {staff.name}</span>
+            <span className="font-bold">{staff.submissions}</span>
           </div>
+        )) : <div>No staff data</div>}
+      </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3">
-            <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
-              <FaUpload className="inline mr-2" />
-              {uploading ? 'Uploading...' : 'Upload Excel'}
-              <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
-            </label>
-            <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-              <FaDownload className="inline mr-2" /> Excel
-            </button>
-            <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
-              <FaFilePdf className="inline mr-2" /> PDF
-            </button>
-          </div>
+      {/* Main Content */}
+      <div className="flex-1 space-y-6">
 
-          {/* Submissions Table */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={filteredUsers}
-              pagination
-              progressPending={loading}
-              highlightOnHover
-              responsive
-              striped
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between gap-4">
+          <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+          <div className="relative w-full md:w-72">
+            <FaSearch className="absolute top-3 left-3 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              onChange={e => handleSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
         </div>
 
-        {/* Sidebar: Staff Leaderboard */}
-        <div className="w-full md:w-72 space-y-4">
-          <h2 className="text-xl font-bold mb-2">Staff Leaderboard</h2>
-          <div className="bg-white p-4 rounded-xl shadow space-y-3">
-            {leaderboard.length ? (
-              leaderboard.map((u, idx) => (
-                <div key={u.id} className="flex justify-between items-center">
-                  <div>
-                    <span className="font-bold">{idx + 1}. {u.employeeName}</span>
-                    <div className="text-gray-500 text-sm">Employee #: {u.employeeNumber}</div>
-                  </div>
-                  <div className="font-semibold">{u.dues}</div>
-                </div>
-              ))
-            ) : (
-              <div>No staff data</div>
-            )}
-          </div>
+        {/* Actions */}
+        <div className="flex flex-wrap gap-3">
+          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+            <FaUpload className="inline mr-2" />
+            {uploading ? 'Uploading...' : 'Upload Excel'}
+            <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
+          </label>
+          <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+            <FaDownload className="inline mr-2" /> Excel
+          </button>
+          <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+            <FaFilePdf className="inline mr-2" /> PDF
+          </button>
+        </div>
+
+        {/* Submissions Table */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <DataTable
+            columns={columns}
+            data={filteredUsers}
+            pagination
+            progressPending={loading}
+            highlightOnHover
+            responsive
+            striped
+          />
         </div>
       </div>
 
@@ -303,7 +290,7 @@ export default function AdminDashboard() {
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Edit User</h2>
+            <h2 className="text-xl font-bold mb-4">Edit Submission</h2>
             {Object.keys(editForm).map(field => (
               <div key={field} className="mb-3">
                 <label className="block text-sm font-medium mb-1 capitalize">{field}</label>
@@ -321,6 +308,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
