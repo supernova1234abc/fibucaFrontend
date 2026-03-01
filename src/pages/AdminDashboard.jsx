@@ -73,10 +73,11 @@ export default function AdminDashboard() {
     }
 
     if (token) setAuthToken(token);
+    console.log('🚀 AdminDashboard initialized - fetching data...');
     fetchSubmissions();
     fetchSystemUsers();
     fetchStaffLeaderboard();
-  }, [navigate]);
+  }, [navigate, fetchSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
 
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
@@ -95,23 +96,31 @@ export default function AdminDashboard() {
     setUserLoading(true);
     api.get('/api/admin/users')
       .then(res => {
+        console.log('✅ Users fetched:', res.data);
         setSystemUsers(res.data || []);
         setFilteredSystemUsers(res.data || []);
       })
-      .catch(err => console.error('Failed to fetch users:', err))
+      .catch(err => {
+        console.error('❌ Failed to fetch users:', err);
+        Swal.fire('Error', 'Failed to fetch users', 'error');
+      })
       .finally(() => setUserLoading(false));
-  }, []);
+  }, [])
 
   // ================= FETCH STAFF LEADERBOARD =================
   const fetchStaffLeaderboard = useCallback(() => {
     setLeaderboardLoading(true);
     api.get('/api/staff/leaderboard')
       .then(res => {
+        console.log('✅ Staff leaderboard fetched:', res.data);
         setStaffLeaderboard(res.data || []);
       })
-      .catch(err => console.error('Failed to fetch leaderboard:', err))
+      .catch(err => {
+        console.error('❌ Failed to fetch leaderboard:', err);
+        Swal.fire('Error', 'Failed to fetch staff leaderboard', 'error');
+      })
       .finally(() => setLeaderboardLoading(false));
-  }, []);
+  }, [])
 
   // ================= USER MANAGEMENT HANDLERS =================
   const handleOpenUserModal = (user = null) => {

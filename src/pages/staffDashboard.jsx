@@ -181,38 +181,23 @@ export default function StaffDashboard() {
     const confirm = await Swal.fire({
       title: 'Delete Link?',
       icon: 'warning',
-      showCancelButton: true
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48'
     });
 
     if (!confirm.isConfirmed) return;
 
-    await api.delete(`/api/staff/link/${id}`);
-    fetchLinks();
+    try {
+      await api.delete(`/api/staff/link/${id}`);
+      Swal.fire('Deleted!', 'Link deleted successfully', 'success');
+      fetchLinks();
+    } catch (err) {
+      console.error('Delete link error:', err);
+      Swal.fire('Error', err.response?.data?.error || 'Failed to delete link', 'error');
+    }
   };
 
-  async function refreshLinkStatus(link) {
-  const now = new Date();
-
-  let shouldDeactivate = false;
-
-  if (link.expiresAt && link.expiresAt < now) {
-    shouldDeactivate = true;
-  }
-
-  if (link.maxUses && link.usedCount >= link.maxUses) {
-    shouldDeactivate = true;
-  }
-
-  if (shouldDeactivate && link.isActive) {
-    await prisma.staffLink.update({
-      where: { id: link.id },
-      data: { isActive: false }
-    });
-    link.isActive = false;
-  }
-
-  return link;
-}
+  /* Link status is handled by backend - no frontend refresh needed */
 
   /* ================= TABLES ================= */
 
@@ -260,8 +245,8 @@ export default function StaffDashboard() {
       cell: row =>
         row.usedCount === 0 ? (
           <button
-            onClick={() => handleDeleteLink(row._id, row.usedCount)}
-            className="text-red-600 hover:underline"
+            onClick={() => handleDeleteLink(row.id, row.usedCount)}
+            className="text-red-600 hover:underline font-semibold"
           >
             Delete
           </button>
