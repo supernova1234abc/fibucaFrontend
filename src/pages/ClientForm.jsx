@@ -22,6 +22,7 @@ export default function ClientForm() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [tokenValid, setTokenValid] = useState(false);
 
   // ======= SIGNATURE STATE =======
   const [employeeSigOpen, setEmployeeSigOpen] = useState(false);
@@ -31,6 +32,36 @@ export default function ClientForm() {
 
   const sigPadRef = useRef(null);
   const witnessSigPadRef = useRef(null);
+
+  // Verify token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("STAFF_LINK_TOKEN");
+    const hasAccess = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
+    
+    console.log("🔍 ClientForm mounted:", { token: !!token, hasAccess });
+    
+    if (token && hasAccess) {
+      console.log("✅ Token valid, enabling form");
+      setTokenValid(true);
+    } else {
+      console.warn("❌ Missing token or access flag:", { hasToken: !!token, hasAccess });
+      setTokenValid(false);
+    }
+  }, []);
+
+  // Re-check token validity when window regains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      const token = localStorage.getItem("STAFF_LINK_TOKEN");
+      const hasAccess = localStorage.getItem("CLIENT_FORM_ACCESS") === "true";
+      if (token && hasAccess) {
+        setTokenValid(true);
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   // Default dates
   useEffect(() => {
@@ -204,13 +235,18 @@ export default function ClientForm() {
 
       // Get the token from localStorage (set during SubmissionValidator)
       const token = localStorage.getItem("STAFF_LINK_TOKEN");
+      console.log("🔍 Token check during submit:", { token: !!token, full: token });
+      
       if (!token) {
-        throw new Error("Staff link token missing. Please use a valid staff link to submit.");
+        Swal.close();
+        throw new Error("❌ Staff link token missing. Please use a valid staff link to submit. Reload the page or click the staff link again.");
       }
 
       let response;
       let lastError;
       const maxRetries = 3;
+
+      console.log("✅ Token found, starting upload to /submit-form/" + token.substring(0, 8) + "...");
 
       Swal.fire({
         title: "Uploading...",
@@ -338,10 +374,20 @@ export default function ClientForm() {
         </div>
 
         {/* SUBMIT */}
+        {!tokenValid && (
+          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-center">
+            <p className="font-semibold">⚠️ Invalid or Missing Token</p>
+            <p className="text-sm">Please use a valid staff link to access this form.</p>
+          </div>
+        )}
         <button
           onClick={generatePDF}
-          disabled={loading}
-          className="mt-8 w-full bg-blue-700 text-white py-3 rounded"
+          disabled={loading || !tokenValid}
+          className={`mt-8 w-full py-3 rounded font-semibold transition ${
+            tokenValid && !loading
+              ? "bg-blue-700 text-white hover:bg-blue-800 cursor-pointer"
+              : "bg-gray-400 text-gray-200 cursor-not-allowed"
+          }`}
         >
           {loading ? <FaSpinner className="animate-spin mx-auto" /> : "Generate & Submit PDF"}
         </button>

@@ -11,13 +11,23 @@ export default function SubmissionValidator() {
   useEffect(() => {
     const validateAndRedirect = async () => {
       try {
+        console.log("🔍 Validating token:", token);
+        
         // Validate the token with backend
         const res = await api.get(`/api/staff/validate/${token}`);
 
         if (res.data.valid) {
+          console.log("✅ Token valid, setting flags and redirecting...");
+          
           // ✅ Token is valid, set access flag and redirect
           localStorage.setItem('CLIENT_FORM_ACCESS', 'true');
           localStorage.setItem('STAFF_LINK_TOKEN', token); // Store token for reference
+          
+          // Verify flags were set
+          console.log("🔐 Flags set:", {
+            ACCESS: localStorage.getItem('CLIENT_FORM_ACCESS'),
+            TOKEN: !!localStorage.getItem('STAFF_LINK_TOKEN')
+          });
           
           Swal.fire({
             title: 'Access Granted',
@@ -26,6 +36,7 @@ export default function SubmissionValidator() {
             timer: 1500,
             showConfirmButton: false,
           }).then(() => {
+            console.log("➡️ Redirecting to /client-form");
             navigate('/client-form');
           });
         }
@@ -48,6 +59,7 @@ export default function SubmissionValidator() {
     if (token) {
       validateAndRedirect();
     } else {
+      console.error("❌ No token in URL");
       navigate('/');
     }
   }, [token, navigate]);
