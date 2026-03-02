@@ -101,24 +101,48 @@ const IDCard = forwardRef(({ card }, ref) => {
 
   const cardStyle =
     "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
-    "rounded-lg shadow-md border overflow-hidden print:bg-gradient-to-br " +
-    "px-3 pt-8 pb-1 text-[10px] leading-tight";
+    "rounded-lg shadow-md border overflow-visible print:overflow-visible print:bg-gradient-to-br print:shadow-none " +
+    "px-3 pt-8 pb-1 text-[10px] leading-tight print:rounded-none print:border-gray-400";
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-4">
-      {/* Print button */}
-      <button
-        onClick={handlePrint}
-      >
-        Print ID
-      </button>
+    <>
+      <style>{`
+        @media print {
+          body { margin: 0; padding: 0; }
+          html { margin: 0; padding: 0; }
+          .flex.flex-col.items-center.space-y-4 { padding: 0 !important; }
+          .flex.flex-col.items-center.space-y-4 button { display: none !important; }
+          .bg-gradient-to-br { background-color: white !important; background-image: linear-gradient(to bottom right, rgba(219, 234, 254, 1), white, rgba(219, 234, 254, 1)) !important; }
+          img { display: block !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          .print\\:overflow-visible { overflow: visible !important; }
+          .print\\:shadow-none { box-shadow: none !important; }
+          .text-gray-400 { color: #666 !important; }
+          .text-gray-500 { color: #777 !important; }
+          .text-gray-700 { color: #555 !important; }
+          .text-black { color: black !important; }
+          .border-gray-500 { border-color: #666 !important; }
+          .text-white { color: white !important; }
+          .bg-blue-800 { background-color: #1e3a8a !important; }
+        }
+      `}</style>
+      <div className="flex flex-col items-center space-y-4 p-4">
+        {/* Print button */}
+        <button
+          onClick={handlePrint}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-md print:hidden"
+        >
+          Print ID
+        </button>
 
       <div
         ref={ref}
-        className="flex flex-col md:flex-row gap-4"
+        className="flex flex-col md:flex-row gap-4 print:gap-0 print:m-0 print:p-0"
         style={{
           WebkitPrintColorAdjust: "exact",
           printColorAdjust: "exact",
+          color: "black",
+          WebkitTextFillColor: "black",
         }}
       >
         {/* FRONT SIDE */}
@@ -193,7 +217,8 @@ const IDCard = forwardRef(({ card }, ref) => {
           <p className="font-semibold text-center mb-1">
             This Staff Identity is the Property of
           </p>
-          <p className="text-center font-bold text-[9px] uppercase mb-2">
+      </div>
+    </ <p className="text-center font-bold text-[9px] uppercase mb-2">
             THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING
             INDUSTRIES TRADE UNION
           </p>
