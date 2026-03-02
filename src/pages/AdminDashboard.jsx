@@ -57,6 +57,48 @@ export default function AdminDashboard() {
     import.meta.env.VITE_BACKEND_URL ||
     'https://fibuca-backend.vercel.app';
 
+  // ================= FETCH CALLBACKS =================
+  const fetchSubmissions = useCallback(() => {
+    setLoading(true);
+    api.get('/submissions')
+      .then(res => {
+        setUsers(res.data);
+        setFilteredUsers(res.data);
+        generateLeaderboard(res.data);
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fetchSystemUsers = useCallback(() => {
+    setUserLoading(true);
+    api.get('/api/admin/users')
+      .then(res => {
+        console.log('✅ Users fetched:', res.data);
+        setSystemUsers(res.data || []);
+        setFilteredSystemUsers(res.data || []);
+      })
+      .catch(err => {
+        console.error('❌ Failed to fetch users:', err);
+        Swal.fire('Error', 'Failed to fetch users', 'error');
+      })
+      .finally(() => setUserLoading(false));
+  }, []);
+
+  const fetchStaffLeaderboard = useCallback(() => {
+    setLeaderboardLoading(true);
+    api.get('/api/staff/leaderboard')
+      .then(res => {
+        console.log('✅ Staff leaderboard fetched:', res.data);
+        setStaffLeaderboard(res.data || []);
+      })
+      .catch(err => {
+        console.error('❌ Failed to fetch leaderboard:', err);
+        Swal.fire('Error', 'Failed to fetch staff leaderboard', 'error');
+      })
+      .finally(() => setLeaderboardLoading(false));
+  }, []);
+
   // ================= INITIALIZE =================
   useEffect(() => {
     const user =
@@ -78,49 +120,6 @@ export default function AdminDashboard() {
     fetchSystemUsers();
     fetchStaffLeaderboard();
   }, [navigate, fetchSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
-
-  const fetchSubmissions = useCallback(() => {
-    setLoading(true);
-    api.get('/submissions')
-      .then(res => {
-        setUsers(res.data);
-        setFilteredUsers(res.data);
-        generateLeaderboard(res.data);
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // ================= FETCH SYSTEM USERS =================
-  const fetchSystemUsers = useCallback(() => {
-    setUserLoading(true);
-    api.get('/api/admin/users')
-      .then(res => {
-        console.log('✅ Users fetched:', res.data);
-        setSystemUsers(res.data || []);
-        setFilteredSystemUsers(res.data || []);
-      })
-      .catch(err => {
-        console.error('❌ Failed to fetch users:', err);
-        Swal.fire('Error', 'Failed to fetch users', 'error');
-      })
-      .finally(() => setUserLoading(false));
-  }, [])
-
-  // ================= FETCH STAFF LEADERBOARD =================
-  const fetchStaffLeaderboard = useCallback(() => {
-    setLeaderboardLoading(true);
-    api.get('/api/staff/leaderboard')
-      .then(res => {
-        console.log('✅ Staff leaderboard fetched:', res.data);
-        setStaffLeaderboard(res.data || []);
-      })
-      .catch(err => {
-        console.error('❌ Failed to fetch leaderboard:', err);
-        Swal.fire('Error', 'Failed to fetch staff leaderboard', 'error');
-      })
-      .finally(() => setLeaderboardLoading(false));
-  }, [])
 
   // ================= USER MANAGEMENT HANDLERS =================
   const handleOpenUserModal = (user = null) => {
