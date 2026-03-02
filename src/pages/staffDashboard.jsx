@@ -197,7 +197,52 @@ export default function StaffDashboard() {
     }
   };
 
-  /* Link status is handled by backend - no frontend refresh needed */
+ async function refreshLinkStatus(link) {
+  if (!link) return null;
+
+  const now = new Date();
+
+  // Defensive defaults for old records
+  const usedCount = link.usedCount ?? 0;
+  const maxUses = link.maxUses ?? null;
+  const isActive = link.isActive ?? true;
+
+  let shouldDeactivate = false;
+
+  // Expired by time
+  if (link.expiresAt && new Date(link.expiresAt) < now) {
+    shouldDeactivate = true;
+  }
+
+  // Expired by usage
+  if (maxUses && usedCount >= maxUses) {
+    shouldDeactivate = true;
+  }
+
+  // Already inactive
+  if (!isActive) {
+    shouldDeactivate = true;
+  }
+
+  if (shouldDeactivate && isActive) {
+    try {
+      return await prisma.staffLink.update({
+        where: { id: link.id },
+        data: { isActive: false }
+      });
+    } catch (err) {
+      console.error("❌ Failed to auto-deactivate link:", err.message);
+      return link; // return original instead of crashing
+    }
+  }
+
+  return {
+    ...link,
+    usedCount,
+    maxUses,
+    isActive
+  };
+}
 
   /* ================= TABLES ================= */
 
