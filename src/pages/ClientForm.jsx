@@ -39,23 +39,30 @@ export default function ClientForm() {
 
   // Verify token on mount
 
-// Verify token from URL
+  // Verify token from URL
 useEffect(() => {
   if (!token) {
-    console.warn("❌ No token in URL");
+    console.warn("❌ ClientForm: No token in URL");
     setTokenValid(false);
     return;
   }
 
-  console.log("🔍 Validating token from URL:", token);
+  console.log("🔍 ClientForm: Validating token:", token);
 
   api.get(`/api/staff/validate/${token}`)
-    .then(() => {
-      console.log("✅ Token validated from server");
+    .then((res) => {
+      console.log("✅ ClientForm: Token validated successfully", res.data);
       setTokenValid(true);
     })
     .catch((err) => {
-      console.error("❌ Token validation failed:", err.response?.data);
+      console.error("❌ ClientForm: Token validation failed");
+      console.error("Error details:", {
+        message: err.message,
+        status: err.response?.status,
+        error: err.response?.data?.error,
+        details: err.response?.data?.details,
+        data: err.response?.data
+      });
       setTokenValid(false);
     });
 

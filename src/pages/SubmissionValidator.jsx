@@ -11,23 +11,19 @@ export default function SubmissionValidator() {
   useEffect(() => {
     const validateAndRedirect = async () => {
       try {
-        console.log("🔍 Validating token:", token);
+        console.log("🔍 SubmissionValidator: Validating token:", token);
         
         // Validate the token with backend
         const res = await api.get(`/api/staff/validate/${token}`);
 
         if (res.data.valid) {
-          console.log("✅ Token valid, setting flags and redirecting...");
+          console.log("✅ SubmissionValidator: Token valid, setting flags and redirecting...");
           
           // ✅ Token is valid, set access flag and redirect
           localStorage.setItem('CLIENT_FORM_ACCESS', 'true');
-          localStorage.setItem('STAFF_LINK_TOKEN', token); // Store token for reference
+          localStorage.setItem('STAFF_LINK_TOKEN', token);
           
-          // Verify flags were set
-          console.log("🔐 Flags set:", {
-            ACCESS: localStorage.getItem('CLIENT_FORM_ACCESS'),
-            TOKEN: !!localStorage.getItem('STAFF_LINK_TOKEN')
-          });
+          console.log("🔐 SubmissionValidator: Flags set successfully");
           
           Swal.fire({
             title: 'Access Granted',
@@ -36,14 +32,20 @@ export default function SubmissionValidator() {
             timer: 1500,
             showConfirmButton: false,
           }).then(() => {
-            console.log("➡️ Redirecting to /client-form");
+            console.log("➡️ SubmissionValidator: Redirecting to /client-form/" + token);
             navigate(`/client-form/${token}`);
           });
         }
       } catch (err) {
-        console.error('❌ Token validation failed:', err);
+        console.error('❌ SubmissionValidator: Token validation failed');
+        console.error('Error details:', {
+          message: err.message,
+          status: err.response?.status,
+          data: err.response?.data,
+          url: err.response?.config?.url
+        });
         
-        const errorMsg = err.response?.data?.error || 'Invalid or expired link.';
+        const errorMsg = err.response?.data?.error || err.response?.data?.details || 'Invalid or expired link.';
         
         Swal.fire({
           title: 'Access Denied',
@@ -59,7 +61,7 @@ export default function SubmissionValidator() {
     if (token) {
       validateAndRedirect();
     } else {
-      console.error("❌ No token in URL");
+      console.error("❌ SubmissionValidator: No token in URL");
       navigate('/');
     }
   }, [token, navigate]);
