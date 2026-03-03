@@ -1,13 +1,15 @@
 // src/components/IDCard.jsx
-import React, { useRef, useMemo, useState, useEffect } from "react";
+import React, { forwardRef, useMemo, useState, useEffect, useRef } from "react";
 import { QRCodeSVG as QRCode } from "qrcode.react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
-const IDCard = ({ card }) => {
+const IDCard = forwardRef(({ card }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
+
+  // refs for front and back, used only for PDF capture
   const frontRef = useRef(null);
   const backRef = useRef(null);
 
@@ -34,6 +36,7 @@ const IDCard = ({ card }) => {
 
   const getPhotoSrc = (c) => {
     if (!c) return null;
+
     const cleanedCandidates = [
       c.cleanPhotoUrl,
       c.cleanedPhotoUrl,
@@ -41,11 +44,13 @@ const IDCard = ({ card }) => {
       c.photo?.cdnUrl,
       c.photo?.url,
     ];
+
     for (const candidate of cleanedCandidates) {
       if (!candidate) continue;
       if (isUrl(candidate)) return candidate;
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
+
     const rawCandidates = [c.rawPhotoUrl, c.photoUrl, c.photo?.originalUrl];
     for (const candidate of rawCandidates) {
       if (!candidate) continue;
@@ -53,16 +58,20 @@ const IDCard = ({ card }) => {
       if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
+
     return null;
   };
 
   const photoSrc = useMemo(() => getPhotoSrc(card), [card]);
-  useEffect(() => setPhotoLoaded(false), [photoSrc]);
 
-  // ---------------------- PDF Generation ----------------------
+  useEffect(() => {
+    setPhotoLoaded(false);
+  }, [photoSrc]);
+
+  // ---------------- PDF PRINT ----------------
   const handlePrint = async () => {
     if (!frontRef.current || !backRef.current) {
-      alert("Card elements not ready.");
+      alert("Card elements not ready for printing.");
       return;
     }
 
@@ -73,6 +82,7 @@ const IDCard = ({ card }) => {
         format: [85.6, 54], // ID card size
       });
 
+      // helper: capture each side as canvas
       const renderSide = async (element) => {
         const canvas = await html2canvas(element, {
           scale: 3,
@@ -82,17 +92,15 @@ const IDCard = ({ card }) => {
         return canvas.toDataURL("image/png");
       };
 
-      // FRONT
       const frontImg = await renderSide(frontRef.current);
       pdf.addImage(frontImg, "PNG", 0, 0, 85.6, 54);
 
-      // BACK - new page
-      pdf.addPage([85.6, 54], "landscape");
       const backImg = await renderSide(backRef.current);
+      pdf.addPage([85.6, 54], "landscape");
       pdf.addImage(backImg, "PNG", 0, 0, 85.6, 54);
 
       pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
-      alert("✅ ID Card PDF downloaded!");
+      alert("✅ ID Card PDF downloaded successfully!");
     } catch (err) {
       console.error("PDF generation failed:", err);
       alert("Failed to generate PDF.");
@@ -100,8 +108,9 @@ const IDCard = ({ card }) => {
   };
 
   const cardStyle =
-    "relative w-80 h-48 bg-white border border-gray-200 px-3 pt-8 pb-1 text-[10px] leading-tight " +
-    "shadow-lg rounded-lg overflow-hidden";
+    "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
+    "rounded-lg shadow-md border px-3 pt-8 pb-1 text-[10px] leading-tight " +
+    "print:shadow-none print:rounded-none print:border-gray-400";
 
   return (
     <>
@@ -110,11 +119,6 @@ const IDCard = ({ card }) => {
           body { margin:0; padding:0; }
           button { display:none !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-        .card-front, .card-back {
-          background: linear-gradient(135deg, #dbeafe 0%, white 50%, #dbeafe 100%);
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
         }
       `}</style>
 
@@ -126,9 +130,9 @@ const IDCard = ({ card }) => {
           Print ID
         </button>
 
-        <div className="flex flex-col md:flex-row gap-4 print:gap-0">
+        <div ref={ref} className="flex flex-col md:flex-row gap-4 print:gap-0">
           {/* FRONT */}
-          <div ref={frontRef} className={`${cardStyle} card-front`}>
+          <div ref={frontRef} className={cardStyle}>
             <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 rounded-t-lg flex items-center justify-center">
               <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
             </div>
@@ -165,7 +169,7 @@ const IDCard = ({ card }) => {
           </div>
 
           {/* BACK */}
-          <div ref={backRef} className={`${cardStyle} card-back`}>
+          <div ref={backRef} className={cardStyle}>
             <p className="font-semibold text-center mb-1">This Staff Identity is the Property of</p>
             <p className="text-center font-bold text-[9px] uppercase mb-2">
               THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
@@ -182,6 +186,6 @@ const IDCard = ({ card }) => {
       </div>
     </>
   );
-};
+});
 
 export default IDCard;
