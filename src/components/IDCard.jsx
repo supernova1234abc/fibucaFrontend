@@ -79,18 +79,57 @@ const IDCard = forwardRef(({ card }, ref) => {
   }, [photoSrc]);
 
 const handlePrint = async () => {
-  if (!ref?.current) return;
+  console.log("🖨️ Starting ID card PDF generation...");
+  
+  if (!ref?.current) {
+    console.error("❌ ref.current is null");
+    alert("Error: Card element not ready");
+    return;
+  }
 
   const element = ref.current;
 
   try {
+    console.log("1️⃣ Preparing element for capture...");
+    
+    // Ensure all images are loaded
+    const images = element.querySelectorAll("img");
+    console.log(`2️⃣ Found ${images.length} images to load`);
+    
+    await Promise.all(
+      Array.from(images).map(
+        (img) =>
+          new Promise((resolve) => {
+            if (img.complete) {
+              resolve();
+            } else {
+              img.onload = resolve;
+              img.onerror = resolve; // resolve even on error
+            }
+          })
+      )
+    );
+
+    console.log("3️⃣ All images loaded, converting to canvas...");
+    
     const canvas = await html2canvas(element, {
-      scale: 3, // higher quality
+      scale: 2,
       useCORS: true,
-      backgroundColor: null,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: true,
+      windowWidth: 700,
+      windowHeight: 300,
     });
 
+    console.log("4️⃣ Canvas created, dimensions:", canvas.width, "x", canvas.height);
+
     const imgData = canvas.toDataURL("image/png");
+    console.log("5️⃣ Image data generated, size:", imgData.length, "bytes");
+
+    if (!imgData || imgData.length < 100) {
+      throw new Error("Generated image data is invalid or empty");
+    }
 
     const pdf = new jsPDF({
       orientation: "landscape",
@@ -98,24 +137,26 @@ const handlePrint = async () => {
       format: [85.6, 54], // ID card size in mm
     });
 
-    pdf.addImage(
-      imgData,
-      "PNG",
-      0,
-      0,
-      85.6,
-      54
-    );
+    console.log("6️⃣ PDF created, adding image...");
+    
+    pdf.addImage(imgData, "PNG", 0, 0, 85.6, 54);
 
+    console.log("7️⃣ Image added to PDF, saving...");
+    
     pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
+    
+    console.log("✅ PDF saved successfully!");
+    alert("✅ ID Card PDF downloaded successfully!");
+    
   } catch (error) {
-    console.error("PDF generation failed:", error);
+    console.error("❌ PDF generation failed:", error);
+    console.error("Stack:", error.stack);
+    alert(`❌ Failed to generate PDF: ${error.message}`);
   }
 };
   const cardStyle =
-    "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
-    "rounded-lg shadow-md border px-3 pt-8 pb-1 text-[10px] leading-tight " +
-    "print:shadow-none print:rounded-none print:border-gray-400";
+    "relative w-80 h-48 bg-white border border-gray-200 px-3 pt-8 pb-1 text-[10px] leading-tight "
+    + "shadow-lg rounded-lg overflow-hidden";
 
   return (
     <>
@@ -124,6 +165,11 @@ const handlePrint = async () => {
           body { margin:0; padding:0; }
           button { display:none !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+        .card-front, .card-back {
+          background: linear-gradient(135deg, #dbeafe 0%, white 50%, #dbeafe 100%);
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
       `}</style>
 
@@ -140,7 +186,7 @@ const handlePrint = async () => {
           className="flex flex-col md:flex-row gap-4 print:gap-0"
         >
           {/* FRONT */}
-          <div className={cardStyle}>
+          <div className={`${cardStyle} card-front`}>
             <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 rounded-t-lg flex items-center justify-center">
               <span className="text-white font-semibold text-sm">
                 IDENTIFICATION
@@ -199,7 +245,7 @@ const handlePrint = async () => {
           </div>
 
           {/* BACK */}
-          <div className={cardStyle}>
+          <div className={`${cardStyle} card-back`}>
             <p className="font-semibold text-center mb-1">
               This Staff Identity is the Property of
             </p>
