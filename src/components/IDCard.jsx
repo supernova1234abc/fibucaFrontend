@@ -1,13 +1,14 @@
 // src/components/IDCard.jsx
-import React, { forwardRef, useMemo, useState, useEffect } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
 import { QRCodeSVG as QRCode } from "qrcode.react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
-const IDCard = forwardRef(({ card }, ref) => {
+const IDCard = ({ card }) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
+  const cardRef = useRef(null);
 
   const formattedDate = card?.issuedAt
     ? new Date(card.issuedAt).toLocaleDateString("en-GB", {
@@ -21,18 +22,15 @@ const IDCard = forwardRef(({ card }, ref) => {
     if (!fullName) return "Name";
     const parts = fullName.trim().split(/\s+/);
     const first = parts[0].toUpperCase();
-    const last =
-      parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+    const last = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
     return last ? `${first} ${last}` : first;
   };
 
-  const isUrl = (s) =>
-    typeof s === "string" && /^https?:\/\//i.test(s);
+  const isUrl = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
 
   const isLikelyUuid = (s) =>
     typeof s === "string" &&
-    (/^[0-9a-fA-F-]{36}$/.test(s) ||
-      /^[0-9a-fA-F]{24,}$/.test(s));
+    (/^[0-9a-fA-F-]{36}$/.test(s) || /^[0-9a-fA-F]{24,}$/.test(s));
 
   const getPhotoSrc = (c) => {
     if (!c) return null;
@@ -48,25 +46,16 @@ const IDCard = forwardRef(({ card }, ref) => {
     for (const candidate of cleanedCandidates) {
       if (!candidate) continue;
       if (isUrl(candidate)) return candidate;
-      return `${baseURL?.replace(/\/$/, "")}/${String(
-        candidate
-      ).replace(/^\/+/, "")}`;
+      return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
 
-    const rawCandidates = [
-      c.rawPhotoUrl,
-      c.photoUrl,
-      c.photo?.originalUrl,
-    ];
+    const rawCandidates = [c.rawPhotoUrl, c.photoUrl, c.photo?.originalUrl];
 
     for (const candidate of rawCandidates) {
       if (!candidate) continue;
       if (isUrl(candidate)) return candidate;
-      if (isLikelyUuid(candidate))
-        return `https://ucarecdn.com/${candidate}/`;
-      return `${baseURL?.replace(/\/$/, "")}/${String(
-        candidate
-      ).replace(/^\/+/, "")}`;
+      if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
+      return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
 
     return null;
@@ -78,85 +67,39 @@ const IDCard = forwardRef(({ card }, ref) => {
     setPhotoLoaded(false);
   }, [photoSrc]);
 
-const handlePrint = async () => {
-  console.log("🖨️ Starting ID card PDF generation...");
-  
-  if (!ref?.current) {
-    console.error("❌ ref.current is null");
-    alert("Error: Card element not ready");
-    return;
-  }
-
-  const element = ref.current;
-
-  try {
-    console.log("1️⃣ Preparing element for capture...");
-    
-    // Ensure all images are loaded
-    const images = element.querySelectorAll("img");
-    console.log(`2️⃣ Found ${images.length} images to load`);
-    
-    await Promise.all(
-      Array.from(images).map(
-        (img) =>
-          new Promise((resolve) => {
-            if (img.complete) {
-              resolve();
-            } else {
-              img.onload = resolve;
-              img.onerror = resolve; // resolve even on error
-            }
-          })
-      )
-    );
-
-    console.log("3️⃣ All images loaded, converting to canvas...");
-    
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#ffffff",
-      logging: true,
-      windowWidth: 700,
-      windowHeight: 300,
-    });
-
-    console.log("4️⃣ Canvas created, dimensions:", canvas.width, "x", canvas.height);
-
-    const imgData = canvas.toDataURL("image/png");
-    console.log("5️⃣ Image data generated, size:", imgData.length, "bytes");
-
-    if (!imgData || imgData.length < 100) {
-      throw new Error("Generated image data is invalid or empty");
+  const handlePrint = async () => {
+    if (!cardRef.current) {
+      alert("Card not ready yet.");
+      return;
     }
 
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: [85.6, 54], // ID card size in mm
-    });
+    try {
+      const element = cardRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
 
-    console.log("6️⃣ PDF created, adding image...");
-    
-    pdf.addImage(imgData, "PNG", 0, 0, 85.6, 54);
+      const imgData = canvas.toDataURL("image/png");
 
-    console.log("7️⃣ Image added to PDF, saving...");
-    
-    pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
-    
-    console.log("✅ PDF saved successfully!");
-    alert("✅ ID Card PDF downloaded successfully!");
-    
-  } catch (error) {
-    console.error("❌ PDF generation failed:", error);
-    console.error("Stack:", error.stack);
-    alert(`❌ Failed to generate PDF: ${error.message}`);
-  }
-};
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: [85.6, 54],
+      });
+
+      pdf.addImage(imgData, "PNG", 0, 0, 85.6, 54);
+      pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      alert("Failed to generate PDF.");
+    }
+  };
+
   const cardStyle =
-    "relative w-80 h-48 bg-white border border-gray-200 px-3 pt-8 pb-1 text-[10px] leading-tight "
-    + "shadow-lg rounded-lg overflow-hidden";
+    "relative w-80 h-48 bg-white border border-gray-200 px-3 pt-8 pb-1 text-[10px] leading-tight " +
+    "shadow-lg rounded-lg overflow-hidden";
 
   return (
     <>
@@ -181,26 +124,20 @@ const handlePrint = async () => {
           Print ID
         </button>
 
-        <div
-          ref={ref}
-          className="flex flex-col md:flex-row gap-4 print:gap-0"
-        >
+        <div ref={cardRef} className="flex flex-col md:flex-row gap-4 print:gap-0">
           {/* FRONT */}
           <div className={`${cardStyle} card-front`}>
+            {/* Banner */}
             <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 rounded-t-lg flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                IDENTIFICATION
-              </span>
+              <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
             </div>
 
+            {/* Watermark */}
             <div className="absolute inset-0 flex items-center justify-center opacity-20">
-              <img
-                src="/images/newFibucaLogo.png"
-                alt="Watermark"
-                className="w-1/2 object-contain"
-              />
+              <img src="/images/newFibucaLogo.png" alt="Watermark" className="w-1/2 object-contain" />
             </div>
 
+            {/* Photo + Name + Role */}
             <div className="absolute top-12 left-3 flex flex-col items-center w-1/3">
               <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center">
                 {photoSrc ? (
@@ -210,15 +147,12 @@ const handlePrint = async () => {
                     className="object-cover w-full h-full"
                     onLoad={() => setPhotoLoaded(true)}
                     onError={(e) => {
-                      e.currentTarget.src =
-                        "/fallback-avatar.png";
+                      e.currentTarget.src = "/fallback-avatar.png";
                       setPhotoLoaded(true);
                     }}
                   />
                 ) : (
-                  <span className="text-gray-400 text-xs">
-                    No Photo
-                  </span>
+                  <span className="text-gray-400 text-xs">No Photo</span>
                 )}
               </div>
 
@@ -226,18 +160,15 @@ const handlePrint = async () => {
                 {getFirstAndLastName(card?.fullName)}
               </p>
 
-              <p className="text-xs text-gray-700 text-center">
-                {card?.role || "Position"}
-              </p>
+              <p className="text-xs text-gray-700 text-center">{card?.role || "Position"}</p>
             </div>
 
+            {/* QR Code */}
             <div className="absolute top-20 right-4">
-              <QRCode
-                value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
-                size={64}
-              />
+              <QRCode value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`} size={64} />
             </div>
 
+            {/* ID # + Date */}
             <div className="absolute bottom-2 right-3 text-xs text-center">
               <p>ID: {card?.cardNumber || "N/A"}</p>
               <p>Issued: {formattedDate}</p>
@@ -246,38 +177,24 @@ const handlePrint = async () => {
 
           {/* BACK */}
           <div className={`${cardStyle} card-back`}>
-            <p className="font-semibold text-center mb-1">
-              This Staff Identity is the Property of
-            </p>
-
+            <p className="font-semibold text-center mb-1">This Staff Identity is the Property of</p>
             <p className="text-center font-bold text-[9px] uppercase mb-2">
-              THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES,
-              COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
+              THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
             </p>
+            <p className="text-center text-xs">5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.</p>
+            <p className="text-center text-xs">Tel: +255732999782</p>
+            <p className="text-center text-xs">fibucatradeunion@gmail.com</p>
 
-            <p className="text-center text-xs">
-              5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.
-            </p>
-
-            <p className="text-center text-xs">
-              Tel: +255732999782
-            </p>
-
-            <p className="text-center text-xs">
-              fibucatradeunion@gmail.com
-            </p>
-
+            {/* Signature */}
             <div className="absolute bottom-3 left-0 right-0 text-center">
               <hr className="w-1/2 mx-auto border-dotted border-gray-500 mb-1" />
-              <p className="italic text-gray-500 text-xs">
-                General Secretary Signature
-              </p>
+              <p className="italic text-gray-500 text-xs">General Secretary Signature</p>
             </div>
           </div>
         </div>
       </div>
     </>
   );
-});
+};
 
 export default IDCard;
