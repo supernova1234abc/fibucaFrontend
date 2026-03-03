@@ -1,6 +1,8 @@
 // src/components/IDCard.jsx
 import React, { forwardRef, useMemo, useState, useEffect } from "react";
 import { QRCodeSVG as QRCode } from "qrcode.react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -76,10 +78,40 @@ const IDCard = forwardRef(({ card }, ref) => {
     setPhotoLoaded(false);
   }, [photoSrc]);
 
-  const handlePrint = () => {
-    window.print();
-  };
+const handlePrint = async () => {
+  if (!ref?.current) return;
 
+  const element = ref.current;
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 3, // higher quality
+      useCORS: true,
+      backgroundColor: null,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: [85.6, 54], // ID card size in mm
+    });
+
+    pdf.addImage(
+      imgData,
+      "PNG",
+      0,
+      0,
+      85.6,
+      54
+    );
+
+    pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
+  } catch (error) {
+    console.error("PDF generation failed:", error);
+  }
+};
   const cardStyle =
     "relative w-80 h-48 bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
     "rounded-lg shadow-md border px-3 pt-8 pb-1 text-[10px] leading-tight " +
