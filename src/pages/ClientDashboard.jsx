@@ -1,24 +1,12 @@
 // src/pages/ClientDashboard.jsx
-import React, { useEffect, useState, useRef, useCallback, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { ChangePwModalContext } from '../components/DashboardLayout';
-import { FaFilePdf, FaIdCard, FaRedo, FaLock } from 'react-icons/fa';
-import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
-import { api } from '../lib/api';
-import IDCard from '../components/IDCard';
-
-// Hook to generate object URL for previewing File objects
-function useObjectUrl(file) {
-  const [url, setUrl] = useState(null);
-  useEffect(() => {
-    if (!file) return setUrl(null);
-    const objectUrl = URL.createObjectURL(file);
-    setUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
-  return url;
-}
+import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ChangePwModalContext } from "../components/DashboardLayout";
+import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt } from "react-icons/fa";
+import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
+import { api } from "../lib/api";
+import IDCard from "../components/IDCard";
 
 export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
@@ -30,16 +18,31 @@ export default function ClientDashboard() {
   const [loadingSubmission, setLoadingSubmission] = useState(true);
   const [idCards, setIdCards] = useState([]);
   const [loadingCards, setLoadingCards] = useState(true);
+
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [cleanProgress, setCleanProgress] = useState(0);
+
+  // ✅ complaints
+  const [complaints, setComplaints] = useState([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(false);
+
+  const [complaintSubject, setComplaintSubject] = useState("");
+  const [complaintMessage, setComplaintMessage] = useState("");
+  const [sendingComplaint, setSendingComplaint] = useState(false);
+
+  // ✅ transfer request (client-side request)
+  const [transferEmployer, setTransferEmployer] = useState("");
+  const [transferNewEmpNo, setTransferNewEmpNo] = useState("");
+  const [transferNote, setTransferNote] = useState("");
+  const [sendingTransfer, setSendingTransfer] = useState(false);
 
   // ---------------------- FETCH FUNCTIONS ----------------------
   const fetchSubmissions = useCallback(async () => {
     if (!user) return;
     setLoadingSubmission(true);
     try {
-      const res = await api.get('/submissions');
+      const res = await api.get("/submissions");
       const data = Array.isArray(res.data) ? res.data : [];
       const mine = data
         .filter((s) => s.employeeNumber === user.employeeNumber)
@@ -48,11 +51,11 @@ export default function ClientDashboard() {
       let latest = mine[0] || null;
 
       // Handle pdfPath URL
-      if (latest?.pdfPath && !latest.pdfPath.startsWith('http')) {
+      if (latest?.pdfPath && !latest.pdfPath.startsWith("http")) {
         const backendUrl = import.meta.env.VITE_BACKEND_URL;
-        latest.pdfPath = `${backendUrl.replace(/\/$/, '')}/${latest.pdfPath.replace(/^\/+/, '')}`;
+        latest.pdfPath = `${backendUrl.replace(/\/$/, "")}/${latest.pdfPath.replace(/^\/+/, "")}`;
       } else {
-        const cached = localStorage.getItem('latestSubmission');
+        const cached = localStorage.getItem("latestSubmission");
         if (cached) {
           const cachedData = JSON.parse(cached);
           if (cachedData?.employeeNumber === user?.employeeNumber) {
@@ -62,9 +65,9 @@ export default function ClientDashboard() {
       }
 
       setSubmission(latest);
-      if (latest) localStorage.setItem('latestSubmission', JSON.stringify(latest));
+      if (latest) localStorage.setItem("latestSubmission", JSON.stringify(latest));
     } catch (err) {
-      console.error('Error fetching submission:', err);
+      console.error("Error fetching submission:", err);
       setSubmission(null);
     } finally {
       setLoadingSubmission(false);
@@ -79,132 +82,82 @@ export default function ClientDashboard() {
       const cards = Array.isArray(data) ? data : [];
       setIdCards(cards);
     } catch (err) {
-      console.warn('Fetch ID cards failed:', err);
+      console.warn("Fetch ID cards failed:", err);
       setIdCards([]);
     } finally {
       setLoadingCards(false);
     }
   }, [user]);
 
+  const fetchMyComplaints = useCallback(async () => {
+    if (!user) return;
+    setLoadingComplaints(true);
+    try {
+      const { data } = await api.get("/api/complaints/mine");
+      setComplaints(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn("Fetch complaints failed:", err);
+      setComplaints([]);
+    } finally {
+      setLoadingComplaints(false);
+    }
+  }, [user]);
+
   useEffect(() => {
-    if (user && user.role !== 'CLIENT') navigate('/login');
+    if (user && user.role !== "CLIENT") navigate("/login");
     fetchSubmissions();
     fetchIdCards();
-  }, [user, navigate]);
+    fetchMyComplaints();
+  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints]);
 
-  // ---------------------- EXTERNAL SCRIPTS ----------------------
-  const loadScript = (src) =>
-    new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) return resolve();
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-
-  useEffect(() => {
-    const preloadScripts = async () => {
-      try {
-        await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js');
-        await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js');
-        console.log('✅ TensorFlow & BodyPix preloaded');
-      } catch (err) {
-        console.warn('Failed to preload ML libraries:', err);
-      }
-    };
-    preloadScripts();
-  }, []);
-
-  // ---------------------- IMAGE PROCESSING ----------------------
-  const removeBackgroundInBrowser = async (imageUrl) => {
-    try {
-      const img = await new Promise((resolve, reject) => {
-        const i = new Image();
-        i.crossOrigin = 'anonymous';
-        i.onload = () => resolve(i);
-        i.onerror = reject;
-        i.src = imageUrl;
-      });
-
-      const w = img.naturalWidth || img.width;
-      const h = img.naturalHeight || img.height;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-
-      const net = await window.bodyPix.load({
-        architecture: 'MobileNetV1',
-        outputStride: 16,
-        multiplier: 0.75,
-        quantBytes: 2,
-      });
-
-      const segmentation = await net.segmentPerson(img, {
-        internalResolution: 'medium',
-        segmentationThreshold: 0.7,
-      });
-
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const data = imgData.data;
-      const segData = segmentation.data;
-
-      for (let i = 0, p = 0; i < segData.length; i++, p += 4) {
-        if (!segData[i]) data[p + 3] = 0;
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-
-      return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/png', 0.92));
-    } catch (err) {
-      console.warn('Browser bg removal failed:', err);
-      return null;
-    }
-  };
-
-
-  // handle direct file selection from user
+  // ---------------------- IMAGE UPLOAD ----------------------
   const handleFileUpload = async (file) => {
     if (!file) return;
     const card = idCards[0];
-    if (!card) return toast.error('No placeholder ID card found.');
+    if (!card) return toast.error("No placeholder ID card found.");
 
     setUploadingPhoto(true);
     try {
       const fd = new FormData();
-      fd.append('photo', file, file.name);
+      fd.append("photo", file, file.name);
+
       const uploadResp = await api.put(`/api/idcards/${card.id}/photo`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (ev) => {
           if (ev.total) setCleanProgress(Math.round((ev.loaded / ev.total) * 100));
         },
       });
+
       const updated = uploadResp.data.card;
       setIdCards([updated]);
-      toast.success('✅ Photo uploaded and background removed.');
+      toast.success("✅ Photo uploaded and background removed.");
     } catch (err) {
-      console.error('Error uploading photo:', err);
-      toast.error('Photo upload/clean failed.');
+      console.error("Error uploading photo:", err);
+      toast.error("Photo upload/clean failed.");
     } finally {
       setUploadingPhoto(false);
       setCleanProgress(0);
     }
   };
 
-
   const handleReClean = async (cardId) => {
     setIsCleaning(true);
     setCleanProgress(0);
     try {
-      const interval = setInterval(() => setCleanProgress((p) => (p >= 100 ? (clearInterval(interval), 100) : p + 20)), 300);
+      const interval = setInterval(
+        () =>
+          setCleanProgress((p) =>
+            p >= 100 ? (clearInterval(interval), 100) : p + 20
+          ),
+        300
+      );
+
       await api.put(`/api/idcards/${cardId}/clean-photo`);
       await fetchIdCards();
-      toast.success('Photo re-cleaned!');
+      toast.success("Photo re-cleaned!");
     } catch (err) {
       console.error(err);
-      toast.error('Re-clean failed.');
+      toast.error("Re-clean failed.");
     } finally {
       setIsCleaning(false);
       setCleanProgress(0);
@@ -214,66 +167,155 @@ export default function ClientDashboard() {
   // ---------------------- PDF DOWNLOAD ----------------------
   const downloadPdf = async (url, filenameFallback) => {
     try {
-      const res = await fetch(url, { mode: 'cors' });
+      const res = await fetch(url, { mode: "cors" });
       if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
       const blob = await res.blob();
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = filenameFallback || 'form.pdf';
+      a.download = filenameFallback || "form.pdf";
       document.body.appendChild(a);
       a.click();
       a.remove();
     } catch (err) {
-      console.error('PDF download failed:', err);
-      toast.error('Download failed — opening in a new tab');
-      window.open(url, '_blank', 'noopener');
+      console.error("PDF download failed:", err);
+      toast.error("Download failed — opening in a new tab");
+      window.open(url, "_blank", "noopener");
+    }
+  };
+
+  // ---------------------- SUPPORT ACTIONS ----------------------
+  const submitComplaint = async () => {
+    const subject = complaintSubject.trim();
+    const message = complaintMessage.trim();
+
+    if (!subject || !message) return toast.error("Subject and message are required.");
+
+    setSendingComplaint(true);
+    try {
+      await api.post("/api/complaints", { subject, message });
+      toast.success("✅ Complaint sent");
+      setComplaintSubject("");
+      setComplaintMessage("");
+      fetchMyComplaints();
+    } catch (err) {
+      console.error("Complaint submit failed:", err);
+      toast.error("Failed to send complaint");
+    } finally {
+      setSendingComplaint(false);
+    }
+  };
+
+  // Client-side transfer request (stored as a complaint)
+  const submitTransferRequest = async () => {
+    const newEmpNo = transferNewEmpNo.trim();
+    const newEmployer = transferEmployer.trim();
+    const note = transferNote.trim();
+
+    if (!newEmpNo || !newEmployer) {
+      return toast.error("New employer name and new employee number are required.");
+    }
+
+    setSendingTransfer(true);
+    try {
+      const subject = "TRANSFER REQUEST";
+      const message =
+        `Client requests transfer/update details:\n` +
+        `Old Employee Number: ${user.employeeNumber}\n` +
+        `New Employee Number: ${newEmpNo}\n` +
+        `New Employer/Bank: ${newEmployer}\n` +
+        (note ? `Reason/Note: ${note}\n` : "");
+
+      await api.post("/api/complaints", { subject, message });
+
+      toast.success("✅ Transfer request sent to staff");
+      setTransferEmployer("");
+      setTransferNewEmpNo("");
+      setTransferNote("");
+      fetchMyComplaints();
+    } catch (err) {
+      console.error("Transfer request failed:", err);
+      toast.error("Failed to send transfer request");
+    } finally {
+      setSendingTransfer(false);
     }
   };
 
   // ---------------------- UI CONTROL ----------------------
-  const section = location.pathname.endsWith('/pdf')
-    ? 'pdf'
-    : location.pathname.endsWith('/idcards')
-    ? 'idcards'
-    : location.pathname.endsWith('/generate')
-    ? 'generate'
-    : location.pathname.endsWith('/publications')
-    ? 'publications'
-    : 'overview';
+  const section = location.pathname.endsWith("/pdf")
+    ? "pdf"
+    : location.pathname.endsWith("/idcards")
+    ? "idcards"
+    : location.pathname.endsWith("/generate")
+    ? "generate"
+    : location.pathname.endsWith("/support")
+    ? "support"
+    : "overview";
 
-  const getCardRole = () => 'Member';
+  const getCardRole = () => "Member";
+
+  const latestCard = useMemo(() => (idCards?.length ? idCards[0] : null), [idCards]);
 
   // ---------------------- RENDER ----------------------
   return (
     <div className="space-y-6">
       {/* Overview */}
-      {section === 'overview' && (
+      {section === "overview" && (
         <div>
           <h1 className="text-2xl font-bold text-blue-700">Hello, {user.name}</h1>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="bg-white p-4 rounded shadow">
               <h3 className="font-semibold">Last Submission</h3>
-              <p className="text-gray-600">{loadingSubmission ? 'Loading…' : submission ? new Date(submission.submittedAt).toLocaleDateString() : 'None'}</p>
+              <p className="text-gray-600">
+                {loadingSubmission
+                  ? "Loading…"
+                  : submission
+                  ? new Date(submission.submittedAt).toLocaleDateString()
+                  : "None"}
+              </p>
             </div>
+
             <div className="bg-white p-4 rounded shadow">
               <h3 className="font-semibold">ID Cards Created</h3>
-              <p className="text-gray-600">{loadingCards ? 'Loading…' : idCards.length}</p>
+              <p className="text-gray-600">{loadingCards ? "Loading…" : idCards.length}</p>
             </div>
+
             <div className="bg-white p-4 rounded shadow">
               <h3 className="font-semibold">Role / Title</h3>
               <p className="text-gray-600">{getCardRole()}</p>
             </div>
           </div>
+
+          <div className="flex flex-wrap gap-2 mt-4">
+            <button
+              onClick={() => navigate("/client/support")}
+              className="inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            >
+              <FaRegCommentDots className="mr-2" /> Complaints / Support
+            </button>
+
+            <button
+              onClick={() => navigate("/client/support")}
+              className="inline-flex items-center px-4 py-2 rounded bg-gray-900 text-white hover:bg-gray-800"
+            >
+              <FaExchangeAlt className="mr-2" /> Transfer Request
+            </button>
+          </div>
         </div>
       )}
 
       {/* PDF Section */}
-      {section === 'pdf' && (
+      {section === "pdf" && (
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
           {submission?.pdfPath ? (
             <button
-              onClick={() => downloadPdf(submission.pdfPath, submission.originalFilename || `form_${user.employeeNumber}.pdf`)}
+              onClick={() =>
+                downloadPdf(
+                  submission.pdfPath,
+                  submission.originalFilename || `form_${user.employeeNumber}.pdf`
+                )
+              }
               className="inline-flex items-center text-blue-600 hover:underline"
             >
               <FaFilePdf className="mr-2" /> Download Form
@@ -285,7 +327,7 @@ export default function ClientDashboard() {
       )}
 
       {/* ID Cards */}
-      {section === 'idcards' && (
+      {section === "idcards" && (
         <div>
           <h2 className="text-xl font-bold text-blue-700 mb-4">Your ID Cards</h2>
           {loadingCards ? (
@@ -301,7 +343,9 @@ export default function ClientDashboard() {
                     <button
                       onClick={() => handleReClean(card.id)}
                       disabled={isCleaning}
-                      className={`mt-2 px-3 py-1 rounded text-white ${isCleaning ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+                      className={`mt-2 px-3 py-1 rounded text-white ${
+                        isCleaning ? "bg-gray-400" : "bg-yellow-600 hover:bg-yellow-700"
+                      }`}
                     >
                       <FaRedo className="inline mr-1" /> Re-clean Photo
                     </button>
@@ -310,18 +354,23 @@ export default function ClientDashboard() {
               ))}
             </div>
           )}
+
           {isCleaning && (
             <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
-              <div className="bg-green-500 h-3 rounded-full transition-all duration-300" style={{ width: `${cleanProgress}%` }}></div>
+              <div
+                className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                style={{ width: `${cleanProgress}%` }}
+              />
             </div>
           )}
         </div>
       )}
 
-      {/* Generate / Uploadcare */}
-      {section === 'generate' && (
+      {/* Generate / Upload photo */}
+      {section === "generate" && (
         <div className="bg-white rounded shadow p-6">
           <h2 className="text-xl font-bold mb-4">Add Your Photo</h2>
+
           {loadingCards ? (
             <p className="text-gray-500">Loading placeholder card…</p>
           ) : idCards.length === 0 ? (
@@ -329,37 +378,54 @@ export default function ClientDashboard() {
           ) : (
             <>
               <div className="mb-4 space-y-1">
-                <p><strong>Name:</strong> {user.name}</p>
-                <p><strong>Company:</strong> {idCards[0]?.company || submission?.employerName || 'N/A'}</p>
-                <p><strong>Role / Title:</strong> {getCardRole()}</p>
-                <p><strong>Card #:</strong> {idCards[0].cardNumber}</p>
+                <p>
+                  <strong>Name:</strong> {user.name}
+                </p>
+                <p>
+                  <strong>Company:</strong> {latestCard?.company || submission?.employerName || "N/A"}
+                </p>
+                <p>
+                  <strong>Role / Title:</strong> {getCardRole()}
+                </p>
+                <p>
+                  <strong>Card #:</strong> {latestCard?.cardNumber}
+                </p>
               </div>
 
               <div className="mb-3">
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleFileUpload(e.target.files[0])}
+                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
                   disabled={uploadingPhoto || isCleaning}
                   className="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none"
                 />
               </div>
 
-              {uploadingPhoto && <p className="text-blue-600 mt-2 font-semibold">Uploading / processing…</p>}
+              {uploadingPhoto && (
+                <p className="text-blue-600 mt-2 font-semibold">Uploading / processing…</p>
+              )}
 
               {isCleaning && (
                 <div className="mt-2">
                   <p className="text-yellow-600 font-semibold">Cleaning photo… {cleanProgress}%</p>
                   <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
-                    <div className="bg-green-500 h-3 rounded-full transition-all duration-300" style={{ width: `${cleanProgress}%` }}></div>
+                    <div
+                      className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                      style={{ width: `${cleanProgress}%` }}
+                    />
                   </div>
                 </div>
               )}
 
-              {idCards[0]?.cleanPhotoUrl && (
+              {latestCard?.cleanPhotoUrl && (
                 <div className="mt-4">
                   <p className="font-semibold">Latest Photo:</p>
-                  <img src={idCards[0]?.cleanPhotoUrl} alt="photo-preview" className="w-48 h-48 object-cover rounded shadow" />
+                  <img
+                    src={latestCard.cleanPhotoUrl}
+                    alt="photo-preview"
+                    className="w-48 h-48 object-cover rounded shadow"
+                  />
                 </div>
               )}
             </>
@@ -367,14 +433,139 @@ export default function ClientDashboard() {
         </div>
       )}
 
+      {/* ✅ Support: Complaints + Transfer Request */}
+      {section === "support" && (
+        <div className="space-y-6">
+          <div className="bg-white rounded shadow p-6">
+            <h2 className="text-xl font-bold mb-3 flex items-center">
+              <FaRegCommentDots className="mr-2" /> Complaints / Support
+            </h2>
+
+            <div className="space-y-3">
+              <input
+                value={complaintSubject}
+                onChange={(e) => setComplaintSubject(e.target.value)}
+                placeholder="Subject / Head"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+              />
+              <textarea
+                value={complaintMessage}
+                onChange={(e) => setComplaintMessage(e.target.value)}
+                placeholder="Write your complaint/message..."
+                rows={4}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+              />
+              <button
+                onClick={submitComplaint}
+                disabled={sendingComplaint}
+                className={`px-4 py-2 rounded text-white ${
+                  sendingComplaint ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                Send Complaint
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded shadow p-6">
+            <h2 className="text-xl font-bold mb-3 flex items-center">
+              <FaExchangeAlt className="mr-2" /> Transfer Request (Bank / Employer Change)
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold mb-1">New Employer / Bank</label>
+                <input
+                  value={transferEmployer}
+                  onChange={(e) => setTransferEmployer(e.target.value)}
+                  placeholder="e.g. CRDB Bank"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">New Employee Number</label>
+                <input
+                  value={transferNewEmpNo}
+                  onChange={(e) => setTransferNewEmpNo(e.target.value)}
+                  placeholder="New employee number"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-1">Reason / Note (optional)</label>
+                <textarea
+                  value={transferNote}
+                  onChange={(e) => setTransferNote(e.target.value)}
+                  rows={3}
+                  placeholder="Explain why you are changing bank/employer..."
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={submitTransferRequest}
+              disabled={sendingTransfer}
+              className={`mt-3 px-4 py-2 rounded text-white ${
+                sendingTransfer ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"
+              }`}
+            >
+              Submit Transfer Request
+            </button>
+
+            <p className="text-xs text-gray-500 mt-2">
+              Note: Staff must approve the transfer before your employee number changes in the system.
+            </p>
+          </div>
+
+          <div className="bg-white rounded shadow p-6">
+            <h3 className="font-semibold mb-2">My Requests / Complaints</h3>
+            {loadingComplaints ? (
+              <p className="text-gray-500">Loading…</p>
+            ) : complaints.length === 0 ? (
+              <p className="text-gray-500">No complaints yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {complaints.map((c) => (
+                  <div key={c.id} className="border border-gray-200 rounded p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{c.subject}</p>
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          c.status === "OPEN"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : c.status === "RESOLVED"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{c.message}</p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {new Date(c.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Password Notice */}
       <div className="bg-yellow-100 text-yellow-800 px-4 py-3 rounded-md flex items-center mt-6">
         <FaLock className="mr-2" />
         <span>
-          If you haven’t changed your password,{' '}
-          <button onClick={() => openChangePwModal(true)} className="underline font-semibold text-blue-600">
+          If you haven’t changed your password,{" "}
+          <button
+            onClick={() => openChangePwModal(true)}
+            className="underline font-semibold text-blue-600"
+          >
             click here
-          </button>.
+          </button>
+          .
         </span>
       </div>
     </div>
