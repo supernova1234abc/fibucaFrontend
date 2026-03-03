@@ -8,7 +8,8 @@ const baseURL = import.meta.env.VITE_BACKEND_URL;
 
 const IDCard = ({ card }) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
-  const cardRef = useRef(null);
+  const frontRef = useRef(null);
+  const backRef = useRef(null);
 
   const formattedDate = card?.issuedAt
     ? new Date(card.issuedAt).toLocaleDateString("en-GB", {
@@ -27,14 +28,12 @@ const IDCard = ({ card }) => {
   };
 
   const isUrl = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
-
   const isLikelyUuid = (s) =>
     typeof s === "string" &&
     (/^[0-9a-fA-F-]{36}$/.test(s) || /^[0-9a-fA-F]{24,}$/.test(s));
 
   const getPhotoSrc = (c) => {
     if (!c) return null;
-
     const cleanedCandidates = [
       c.cleanPhotoUrl,
       c.cleanedPhotoUrl,
@@ -42,55 +41,58 @@ const IDCard = ({ card }) => {
       c.photo?.cdnUrl,
       c.photo?.url,
     ];
-
     for (const candidate of cleanedCandidates) {
       if (!candidate) continue;
       if (isUrl(candidate)) return candidate;
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
-
     const rawCandidates = [c.rawPhotoUrl, c.photoUrl, c.photo?.originalUrl];
-
     for (const candidate of rawCandidates) {
       if (!candidate) continue;
       if (isUrl(candidate)) return candidate;
       if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
-
     return null;
   };
 
   const photoSrc = useMemo(() => getPhotoSrc(card), [card]);
+  useEffect(() => setPhotoLoaded(false), [photoSrc]);
 
-  useEffect(() => {
-    setPhotoLoaded(false);
-  }, [photoSrc]);
-
+  // ---------------------- PDF Generation ----------------------
   const handlePrint = async () => {
-    if (!cardRef.current) {
-      alert("Card not ready yet.");
+    if (!frontRef.current || !backRef.current) {
+      alert("Card elements not ready.");
       return;
     }
 
     try {
-      const element = cardRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: [85.6, 54],
+        format: [85.6, 54], // ID card size
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, 85.6, 54);
+      const renderSide = async (element) => {
+        const canvas = await html2canvas(element, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+        return canvas.toDataURL("image/png");
+      };
+
+      // FRONT
+      const frontImg = await renderSide(frontRef.current);
+      pdf.addImage(frontImg, "PNG", 0, 0, 85.6, 54);
+
+      // BACK - new page
+      pdf.addPage([85.6, 54], "landscape");
+      const backImg = await renderSide(backRef.current);
+      pdf.addImage(backImg, "PNG", 0, 0, 85.6, 54);
+
       pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
+      alert("✅ ID Card PDF downloaded!");
     } catch (err) {
       console.error("PDF generation failed:", err);
       alert("Failed to generate PDF.");
@@ -124,20 +126,15 @@ const IDCard = ({ card }) => {
           Print ID
         </button>
 
-        <div ref={cardRef} className="flex flex-col md:flex-row gap-4 print:gap-0">
+        <div className="flex flex-col md:flex-row gap-4 print:gap-0">
           {/* FRONT */}
-          <div className={`${cardStyle} card-front`}>
-            {/* Banner */}
+          <div ref={frontRef} className={`${cardStyle} card-front`}>
             <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 rounded-t-lg flex items-center justify-center">
               <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
             </div>
-
-            {/* Watermark */}
             <div className="absolute inset-0 flex items-center justify-center opacity-20">
               <img src="/images/newFibucaLogo.png" alt="Watermark" className="w-1/2 object-contain" />
             </div>
-
-            {/* Photo + Name + Role */}
             <div className="absolute top-12 left-3 flex flex-col items-center w-1/3">
               <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center">
                 {photoSrc ? (
@@ -155,20 +152,12 @@ const IDCard = ({ card }) => {
                   <span className="text-gray-400 text-xs">No Photo</span>
                 )}
               </div>
-
-              <p className="text-xs font-mono text-center mt-1">
-                {getFirstAndLastName(card?.fullName)}
-              </p>
-
+              <p className="text-xs font-mono text-center mt-1">{getFirstAndLastName(card?.fullName)}</p>
               <p className="text-xs text-gray-700 text-center">{card?.role || "Position"}</p>
             </div>
-
-            {/* QR Code */}
             <div className="absolute top-20 right-4">
               <QRCode value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`} size={64} />
             </div>
-
-            {/* ID # + Date */}
             <div className="absolute bottom-2 right-3 text-xs text-center">
               <p>ID: {card?.cardNumber || "N/A"}</p>
               <p>Issued: {formattedDate}</p>
@@ -176,7 +165,7 @@ const IDCard = ({ card }) => {
           </div>
 
           {/* BACK */}
-          <div className={`${cardStyle} card-back`}>
+          <div ref={backRef} className={`${cardStyle} card-back`}>
             <p className="font-semibold text-center mb-1">This Staff Identity is the Property of</p>
             <p className="text-center font-bold text-[9px] uppercase mb-2">
               THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
@@ -184,8 +173,6 @@ const IDCard = ({ card }) => {
             <p className="text-center text-xs">5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.</p>
             <p className="text-center text-xs">Tel: +255732999782</p>
             <p className="text-center text-xs">fibucatradeunion@gmail.com</p>
-
-            {/* Signature */}
             <div className="absolute bottom-3 left-0 right-0 text-center">
               <hr className="w-1/2 mx-auto border-dotted border-gray-500 mb-1" />
               <p className="italic text-gray-500 text-xs">General Secretary Signature</p>
