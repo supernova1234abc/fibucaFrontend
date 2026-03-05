@@ -7,6 +7,24 @@ import Swal from "sweetalert2";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
+// Cloudinary on-the-fly transform:
+// background removal (transparent) + AI dropshadow + scale + PNG output
+function toCloudinaryBgRemovedShadowUrl(rawUrl, { height = 110 } = {}) {
+  if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
+  if (!rawUrl.includes("/upload/")) return rawUrl; // not a cloudinary delivery URL
+
+  // If URL already has transformations, we still safely insert ours at the beginning
+  // by placing them immediately after /upload/
+  const [prefix, rest] = rawUrl.split("/upload/");
+  const tr =
+    `e_background_removal/` +
+    `e_dropshadow:azimuth_220;elevation_40;spread_20/` +
+    `c_scale,h_${height}/` +
+    `f_png,q_auto/`;
+
+  return `${prefix}/upload/${tr}${rest}`;
+}
+
 const IDCard = forwardRef(({ card }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
 
@@ -38,7 +56,13 @@ const IDCard = forwardRef(({ card }, ref) => {
   const getPhotoSrc = (c) => {
     if (!c) return null;
 
-    const cleanedCandidates = [
+    // Prefer RAW cloudinary URL (so we can deliver transparent + shadow on-the-fly)
+    // If you only have cleanPhotoUrl, we’ll still try to transform it.
+    const candidates = [
+      c.rawPhotoUrl,
+      c.photoUrl,
+      c.photo?.originalUrl,
+
       c.cleanPhotoUrl,
       c.cleanedPhotoUrl,
       c.photo?.cleanUrl,
@@ -46,17 +70,22 @@ const IDCard = forwardRef(({ card }, ref) => {
       c.photo?.url,
     ];
 
-    for (const candidate of cleanedCandidates) {
+    for (const candidate of candidates) {
       if (!candidate) continue;
-      if (isUrl(candidate)) return candidate;
-      return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
-    }
 
-    const rawCandidates = [c.rawPhotoUrl, c.photoUrl, c.photo?.originalUrl];
-    for (const candidate of rawCandidates) {
-      if (!candidate) continue;
-      if (isUrl(candidate)) return candidate;
+      // URL
+      if (isUrl(candidate)) {
+        // If cloudinary, apply bg removal + shadow + png
+        if (candidate.includes("res.cloudinary.com") && candidate.includes("/upload/")) {
+          return toCloudinaryBgRemovedShadowUrl(candidate, { height: 110 });
+        }
+        return candidate;
+      }
+
+      // uploadcare UUID case
       if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
+
+      // relative path
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
 
@@ -125,7 +154,7 @@ const IDCard = forwardRef(({ card }, ref) => {
       await Swal.fire({
         icon: "success",
         title: "PDF Generated!",
-        text: `ID card PDF downloaded successfully.`,
+        text: "ID card PDF downloaded successfully.",
         confirmButtonColor: "#1e40af",
         timer: 2000,
         timerProgressBar: true,
@@ -141,6 +170,7 @@ const IDCard = forwardRef(({ card }, ref) => {
     }
   };
 
+  // Print-safe clipped rectangle
   const cardStyle =
     "relative w-80 h-48 overflow-hidden " +
     "bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
@@ -169,31 +199,16 @@ const IDCard = forwardRef(({ card }, ref) => {
         <div ref={ref} className="flex flex-col md:flex-row gap-4 print:gap-0">
           {/* FRONT */}
           <div ref={frontRef} className={cardStyle}>
-            {/* header bar */}
-            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 flex items-center justify-center print:rounded-none">
-              <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
-            </div>
-
-            {/* watermark */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-              <img
-                src="/images/newFibucaLogo.png"
-                alt="Watermark"
-                className="w-1/2 object-contain"
-              />
-            </div>
-
-            {/* PHOTO BLOCK (fit + no oversize) */}
-            <div className="absolute top-12 left-3 w-[96px]">
-              <div className="relative w-24 h-28 overflow-hidden rounded-lg bg-transparent">
+            {/* PHOTO LAYER (sent backward) */}
+            <div className="absolute top-10 left-2 w-[104px] z-10">
+              <div className="relative w-[104px] h-[118px] overflow-hidden rounded-md bg-transparent">
                 {photoSrc ? (
                   <>
                     <img
                       src={photoSrc}
                       alt="ID"
                       crossOrigin="anonymous"
-                      // ✅ FIX: contain so it fits (no oversize / no weird cropping)
-                      className="absolute inset-0 w-full h-full object-contain object-center"
+                      className="absolute inset-0 w-full h-full object-contain"
                       onLoad={() => setPhotoLoaded(true)}
                       onError={(e) => {
                         e.currentTarget.src = "/fallback-avatar.png";
@@ -210,25 +225,42 @@ const IDCard = forwardRef(({ card }, ref) => {
                   </div>
                 )}
               </div>
+            </div>
 
-              <p className="text-xs font-mono text-left mt-1 leading-snug">
+            {/* watermark/logo MUST be in front of photo */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none z-20">
+              <img
+                src="/images/newFibucaLogo.png"
+                alt="Watermark"
+                className="w-1/2 object-contain"
+              />
+            </div>
+
+            {/* header bar (front-most) */}
+            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 flex items-center justify-center z-30">
+              <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
+            </div>
+
+            {/* NAME + ROLE (front) — moved to fit nicely beside photo */}
+            <div className="absolute top-12 left-[118px] right-3 z-30">
+              <p className="text-[11px] font-mono leading-snug">
                 {getFirstAndLastName(card?.fullName)}
               </p>
-              <p className="text-xs text-gray-700 text-left leading-snug">
+              <p className="text-[11px] text-gray-700 leading-snug">
                 {card?.role || "Position"}
               </p>
             </div>
 
-            {/* ✅ QR (same alignment as before) */}
-            <div className="absolute top-16 right-4">
+            {/* QR (as before) */}
+            <div className="absolute top-20 right-4 z-30">
               <QRCode
                 value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
                 size={64}
               />
             </div>
 
-            {/* ✅ ID + Issued (same alignment as before) */}
-            <div className="absolute bottom-2 right-3 text-xs text-right">
+            {/* bottom info (as before) */}
+            <div className="absolute bottom-2 right-3 text-xs text-center z-30">
               <p>ID: {card?.cardNumber || "N/A"}</p>
               <p>Issued: {formattedDate}</p>
             </div>
@@ -252,9 +284,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
             <div className="absolute bottom-3 left-0 right-0 text-center">
               <hr className="w-1/2 mx-auto border-dotted border-gray-500 mb-1" />
-              <p className="italic text-gray-500 text-xs">
-                General Secretary Signature
-              </p>
+              <p className="italic text-gray-500 text-xs">General Secretary Signature</p>
             </div>
           </div>
         </div>
