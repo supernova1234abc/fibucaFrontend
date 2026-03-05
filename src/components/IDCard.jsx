@@ -213,7 +213,7 @@ const IDCard = forwardRef(({ card }, ref) => {
               </div>
 
               {/* NAME + ROLE (moved back to bottom of photo) */}
-              <div className="mt-1">
+              <div className="mt-3">
                 <p className="text-[11px] font-mono text-left leading-snug">
                   {getFirstAndLastName(card?.fullName)}
                 </p>
