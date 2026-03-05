@@ -7,21 +7,13 @@ import Swal from "sweetalert2";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
-// Cloudinary on-the-fly transform:
-// background removal (transparent) + AI dropshadow + scale + PNG output
-function toCloudinaryBgRemovedShadowUrl(rawUrl, { height = 110 } = {}) {
+// Cloudinary: background removal -> transparent PNG (NO shadow)
+function toCloudinaryTransparentUrl(rawUrl, { height = 110 } = {}) {
   if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
-  if (!rawUrl.includes("/upload/")) return rawUrl; // not a cloudinary delivery URL
+  if (!rawUrl.includes("/upload/")) return rawUrl;
 
-  // If URL already has transformations, we still safely insert ours at the beginning
-  // by placing them immediately after /upload/
   const [prefix, rest] = rawUrl.split("/upload/");
-  const tr =
-    `e_background_removal/` +
-    `e_dropshadow:azimuth_220;elevation_40;spread_20/` +
-    `c_scale,h_${height}/` +
-    `f_png,q_auto/`;
-
+  const tr = `e_background_removal/c_scale,h_${height}/f_png,q_auto/`;
   return `${prefix}/upload/${tr}${rest}`;
 }
 
@@ -56,8 +48,7 @@ const IDCard = forwardRef(({ card }, ref) => {
   const getPhotoSrc = (c) => {
     if (!c) return null;
 
-    // Prefer RAW cloudinary URL (so we can deliver transparent + shadow on-the-fly)
-    // If you only have cleanPhotoUrl, we’ll still try to transform it.
+    // Prefer RAW cloudinary URL so we can deliver transparent bg on-the-fly
     const candidates = [
       c.rawPhotoUrl,
       c.photoUrl,
@@ -73,19 +64,15 @@ const IDCard = forwardRef(({ card }, ref) => {
     for (const candidate of candidates) {
       if (!candidate) continue;
 
-      // URL
       if (isUrl(candidate)) {
-        // If cloudinary, apply bg removal + shadow + png
         if (candidate.includes("res.cloudinary.com") && candidate.includes("/upload/")) {
-          return toCloudinaryBgRemovedShadowUrl(candidate, { height: 110 });
+          return toCloudinaryTransparentUrl(candidate, { height: 110 });
         }
         return candidate;
       }
 
-      // uploadcare UUID case
       if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
 
-      // relative path
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
 
@@ -98,7 +85,7 @@ const IDCard = forwardRef(({ card }, ref) => {
     setPhotoLoaded(false);
   }, [photoSrc]);
 
-  // ---------------- PDF PRINT (optimized scale, smaller file size) ----------------
+  // ---------------- PDF PRINT (optimized) ----------------
   const handlePrint = async () => {
     if (!frontRef.current || !backRef.current) {
       await Swal.fire({
@@ -114,7 +101,7 @@ const IDCard = forwardRef(({ card }, ref) => {
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: [85.6, 54], // ISO/IEC 7810 ID-1
+        format: [85.6, 54],
       });
 
       const renderSide = async (element) => {
@@ -170,7 +157,6 @@ const IDCard = forwardRef(({ card }, ref) => {
     }
   };
 
-  // Print-safe clipped rectangle
   const cardStyle =
     "relative w-80 h-48 overflow-hidden " +
     "bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
@@ -208,7 +194,7 @@ const IDCard = forwardRef(({ card }, ref) => {
                       src={photoSrc}
                       alt="ID"
                       crossOrigin="anonymous"
-                      className="absolute inset-0 w-full h-full object-contain"
+                      className="absolute inset-0 w-full h-full object-cover object-top"
                       onLoad={() => setPhotoLoaded(true)}
                       onError={(e) => {
                         e.currentTarget.src = "/fallback-avatar.png";
@@ -225,9 +211,19 @@ const IDCard = forwardRef(({ card }, ref) => {
                   </div>
                 )}
               </div>
+
+              {/* NAME + ROLE (moved back to bottom of photo) */}
+              <div className="mt-1">
+                <p className="text-[11px] font-mono text-left leading-snug">
+                  {getFirstAndLastName(card?.fullName)}
+                </p>
+                <p className="text-[11px] text-gray-700 text-left leading-snug">
+                  {card?.role || "Position"}
+                </p>
+              </div>
             </div>
 
-            {/* watermark/logo MUST be in front of photo */}
+            {/* watermark/logo stays in front of photo */}
             <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none z-20">
               <img
                 src="/images/newFibucaLogo.png"
@@ -236,19 +232,9 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* header bar (front-most) */}
+            {/* header bar */}
             <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 flex items-center justify-center z-30">
               <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
-            </div>
-
-            {/* NAME + ROLE (front) — moved to fit nicely beside photo */}
-            <div className="absolute top-12 left-[118px] right-3 z-30">
-              <p className="text-[11px] font-mono leading-snug">
-                {getFirstAndLastName(card?.fullName)}
-              </p>
-              <p className="text-[11px] text-gray-700 leading-snug">
-                {card?.role || "Position"}
-              </p>
             </div>
 
             {/* QR (as before) */}
