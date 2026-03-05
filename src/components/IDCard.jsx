@@ -10,7 +10,6 @@ const baseURL = import.meta.env.VITE_BACKEND_URL;
 const IDCard = forwardRef(({ card }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
 
-  // refs for front and back, used only for PDF capture
   const frontRef = useRef(null);
   const backRef = useRef(null);
 
@@ -38,6 +37,7 @@ const IDCard = forwardRef(({ card }, ref) => {
   const getPhotoSrc = (c) => {
     if (!c) return null;
 
+    // Prefer cleaned (should be transparent png)
     const cleanedCandidates = [
       c.cleanPhotoUrl,
       c.cleanedPhotoUrl,
@@ -52,6 +52,7 @@ const IDCard = forwardRef(({ card }, ref) => {
       return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
     }
 
+    // fallback raw
     const rawCandidates = [c.rawPhotoUrl, c.photoUrl, c.photo?.originalUrl];
     for (const candidate of rawCandidates) {
       if (!candidate) continue;
@@ -69,7 +70,7 @@ const IDCard = forwardRef(({ card }, ref) => {
     setPhotoLoaded(false);
   }, [photoSrc]);
 
-  // ---------------- PDF PRINT (optimized scale, smaller file size) ----------------
+  // ---------------- PDF PRINT ----------------
   const handlePrint = async () => {
     if (!frontRef.current || !backRef.current) {
       await Swal.fire({
@@ -90,31 +91,26 @@ const IDCard = forwardRef(({ card }, ref) => {
 
       const renderSide = async (element) => {
         const rect = element.getBoundingClientRect();
-
-        // Reduced scale to optimize file size (from 3*dpr to 1.5)
-        // This maintains reasonable quality while reducing file size from ~41MB to ~2-3MB
         const scale = 1.5;
 
         const canvas = await html2canvas(element, {
           scale,
           useCORS: true,
-          backgroundColor: "#ffffff",
+          backgroundColor: null, // ✅ don't force white behind; let DOM render naturally
           width: Math.round(rect.width),
           height: Math.round(rect.height),
-          // Important: avoid accidental scroll offsets
           scrollX: 0,
           scrollY: 0,
           windowWidth: document.documentElement.clientWidth,
           windowHeight: document.documentElement.clientHeight,
         });
 
-        return canvas.toDataURL("image/png", 0.85); // Reduced quality for compression
+        return canvas.toDataURL("image/png", 0.9);
       };
 
       const addFullPageImage = (imgData) => {
         const w = pdf.internal.pageSize.getWidth();
         const h = pdf.internal.pageSize.getHeight();
-        // Edge-to-edge
         pdf.addImage(imgData, "PNG", 0, 0, w, h, undefined, "FAST");
       };
 
@@ -127,14 +123,14 @@ const IDCard = forwardRef(({ card }, ref) => {
 
       pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
 
-      // Success notification
       await Swal.fire({
         icon: "success",
         title: "PDF Generated!",
-        text: `ID card PDF downloaded successfully.`,
+        text: "ID card PDF downloaded successfully.",
         confirmButtonColor: "#1e40af",
-        timer: 2000,
+        timer: 1800,
         timerProgressBar: true,
+        showConfirmButton: false,
       });
     } catch (err) {
       console.error("PDF generation failed:", err);
@@ -147,14 +143,12 @@ const IDCard = forwardRef(({ card }, ref) => {
     }
   };
 
-  // ✅ Make the card a "print-safe" clipped rectangle:
-  // - overflow-hidden ensures nothing bleeds outside edges in PDF capture
-  // - rounded only on screen; remove rounding in print so edges are exact
+  // ✅ Card shell (print safe)
   const cardStyle =
     "relative w-80 h-48 overflow-hidden " +
     "bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
     "rounded-lg shadow-md border border-gray-300 " +
-    "px-3 pt-8 pb-1 text-[10px] leading-tight " +
+    "text-[10px] leading-tight " +
     "print:shadow-none print:rounded-none print:border-gray-400";
 
   return (
@@ -178,13 +172,37 @@ const IDCard = forwardRef(({ card }, ref) => {
         <div ref={ref} className="flex flex-col md:flex-row gap-4 print:gap-0">
           {/* FRONT */}
           <div ref={frontRef} className={cardStyle}>
-            {/* header bar */}
-            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 flex items-center justify-center print:rounded-none">
-              <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
+            {/* PHOTO LAYER (SEND BACKWARD) */}
+            <div className="absolute inset-0 z-[1] pointer-events-none">
+              {/* photo occupies left side; NO box, NO margin, NO rounded */}
+              <div className="absolute left-0 top-7 bottom-0 w-[42%]">
+                {photoSrc ? (
+                  <>
+                    <img
+                      src={photoSrc}
+                      alt="ID"
+                      crossOrigin="anonymous"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onLoad={() => setPhotoLoaded(true)}
+                      onError={(e) => {
+                        e.currentTarget.src = "/fallback-avatar.png";
+                        setPhotoLoaded(true);
+                      }}
+                    />
+                    {!photoLoaded && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-white to-blue-50" />
+                    )}
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">
+                    No Photo
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* watermark */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+            {/* WATERMARK LAYER (ABOVE PHOTO) */}
+            <div className="absolute inset-0 z-[5] flex items-center justify-center opacity-20 pointer-events-none">
               <img
                 src="/images/newFibucaLogo.png"
                 alt="Watermark"
@@ -192,80 +210,69 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* PHOTO BLOCK (seamlessly blended with card background) */}
-            <div className="absolute top-12 left-3 w-[96px]">
-              <div className="relative w-24 h-28 overflow-hidden rounded-lg bg-transparent">
-                {photoSrc ? (
-                  <>
-                    {/* Clean photo with transparent background blends with card gradient */}
-                    <img
-                      src={photoSrc}
-                      alt="ID"
-                      crossOrigin="anonymous"
-                      className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                      onLoad={() => setPhotoLoaded(true)}
-                      onError={(e) => {
-                        e.currentTarget.src = "/fallback-avatar.png";
-                        setPhotoLoaded(true);
-                      }}
-                    />
-                    {/* Optional: hide loading flash */}
-                    {!photoLoaded && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-white to-blue-50 rounded-lg" />
-                    )}
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs bg-transparent">
-                    No Photo
-                  </div>
-                )}
+            {/* HEADER BAR (TOP) */}
+            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 z-[10] flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
+            </div>
+
+            {/* RIGHT SIDE CONTENT */}
+            <div className="absolute top-10 right-3 z-[10] text-right">
+              <div className="mt-2">
+                <QRCode
+                  value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
+                  size={64}
+                />
               </div>
 
-              <p className="text-xs font-mono text-left mt-1 leading-snug">
-                {getFirstAndLastName(card?.fullName)}
-              </p>
-              <p className="text-xs text-gray-700 text-left leading-snug">
-                {card?.role || "Position"}
-              </p>
+              <div className="mt-2 text-[10px]">
+                <p className="font-semibold">ID: {card?.cardNumber || "N/A"}</p>
+                <p>Issued: {formattedDate}</p>
+              </div>
             </div>
 
-            {/* QR */}
-            <div className="absolute top-16 right-4">
-              <QRCode
-                value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
-                size={64}
-              />
-            </div>
-
-            {/* bottom info */}
-            <div className="absolute bottom-2 right-3 text-xs text-right">
-              <p>ID: {card?.cardNumber || "N/A"}</p>
-              <p>Issued: {formattedDate}</p>
+            {/* NAME + ROLE STRIP (BOTTOM LEFT, FITS BETTER) */}
+            <div className="absolute left-0 right-0 bottom-0 z-[10] px-3 pb-2">
+              <div className="w-[58%]">
+                {/* small strip so text doesn't fight the photo */}
+                <div className="inline-block max-w-full bg-white/65 backdrop-blur-[1px] rounded px-2 py-1">
+                  <p className="text-[11px] font-bold font-mono leading-tight truncate">
+                    {getFirstAndLastName(card?.fullName)}
+                  </p>
+                  <p className="text-[10px] text-gray-700 leading-tight truncate">
+                    {card?.role || "Position"}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* BACK */}
           <div ref={backRef} className={cardStyle}>
-            <p className="font-semibold text-center mb-1">
-              This Staff Identity is the Property of
-            </p>
-
-            <p className="text-center font-bold text-[9px] uppercase mb-2">
-              THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
-            </p>
-
-            <p className="text-center text-xs">
-              5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.
-            </p>
-            <p className="text-center text-xs">Tel: +255732999782</p>
-            <p className="text-center text-xs">fibucatradeunion@gmail.com</p>
-
-            <div className="absolute bottom-3 left-0 right-0 text-center">
-              <hr className="w-1/2 mx-auto border-dotted border-gray-500 mb-1" />
-              <p className="italic text-gray-500 text-xs">
-                General Secretary Signature
+            <div className="absolute inset-0 p-3 pt-8 z-[10]">
+              <p className="font-semibold text-center mb-1">
+                This Staff Identity is the Property of
               </p>
+
+              <p className="text-center font-bold text-[9px] uppercase mb-2">
+                THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
+              </p>
+
+              <p className="text-center text-xs">
+                5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.
+              </p>
+              <p className="text-center text-xs">Tel: +255732999782</p>
+              <p className="text-center text-xs">fibucatradeunion@gmail.com</p>
+
+              <div className="absolute bottom-3 left-0 right-0 text-center">
+                <hr className="w-1/2 mx-auto border-dotted border-gray-500 mb-1" />
+                <p className="italic text-gray-500 text-xs">
+                  General Secretary Signature
+                </p>
+              </div>
             </div>
+
+            {/* BACK HEADER STRIP (keeps same top spacing) */}
+            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 z-[10]" />
           </div>
         </div>
       </div>
