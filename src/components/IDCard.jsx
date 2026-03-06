@@ -231,7 +231,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
               {/* NAME + ROLE - exact positioned below photo */}
               <div
-                className="absolute left-0 right-0 z-30"
+                className="absolute left-2 right-0 z-30"
                 style={{ top: 114 }}
               >
                 <p className="m-0 text-[11px] font-mono text-left leading-none">
