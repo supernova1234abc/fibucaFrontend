@@ -203,7 +203,7 @@ const IDCard = forwardRef(({ card }, ref) => {
           {/* FRONT */}
           <div ref={frontRef} className={cardStyle}>
             {/* PHOTO LAYER */}
-            <div className="absolute top-8 left-2 w-[104px] z-10">
+            <div className="absolute top-10 left-2 w-[104px] z-10">
               <div className="relative w-[104px] h-[104px] overflow-hidden rounded-full bg-transparent">
                 {photoSrc ? (
                   <>
