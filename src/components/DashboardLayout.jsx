@@ -5,7 +5,6 @@ import { FaBars, FaTimes, FaKey } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ChangePasswordPage from "../pages/ChangePassword";
 
-// Context to allow children to open change password modal
 export const ChangePwModalContext = createContext(null);
 
 const avatarColors = ["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6366F1"];
@@ -27,7 +26,6 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [showChangePwModal, setShowChangePwModal] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown on outside click + ESC
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
@@ -43,7 +41,6 @@ export default function DashboardLayout({ children, menus = [], user }) {
     };
   }, []);
 
-  // Close sidebar on route change (nice UX)
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
@@ -77,14 +74,12 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
   return (
     <ChangePwModalContext.Provider value={setShowChangePwModal}>
-      {/* ✅ Global protection against Android/Chrome forced dark */}
       <style>{`
         :root { color-scheme: light; }
         .no-force-dark { forced-color-adjust: none; }
       `}</style>
 
       <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-        {/* Mobile overlay */}
         {sidebarOpen && (
           <div
             className="fixed inset-0 bg-black/40 z-30 md:hidden"
@@ -92,7 +87,6 @@ export default function DashboardLayout({ children, menus = [], user }) {
           />
         )}
 
-        {/* Sidebar */}
         <aside
           className={`no-force-dark fixed md:relative z-40 md:z-20 top-0 left-0 h-screen md:h-auto w-64
             bg-gray-200 shadow-md transition-transform transform
@@ -101,7 +95,6 @@ export default function DashboardLayout({ children, menus = [], user }) {
           <div className="flex items-center justify-between p-4 border-b border-gray-300 md:block">
             <h2 className="text-lg font-bold text-blue-700">FIBUCA Portal</h2>
 
-            {/* ✅ Close button visible even in forced dark */}
             <button
               className="md:hidden no-force-dark p-2 rounded bg-white border border-gray-300 text-gray-900"
               onClick={() => setSidebarOpen(false)}
@@ -133,9 +126,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
           </nav>
         </aside>
 
-        {/* Main Content */}
         <div className="flex-1 flex flex-col min-h-screen">
-          {/* Header */}
           <header className="no-force-dark bg-blue-700 text-white flex items-center justify-between px-4 py-4 shadow-md md:px-6 relative z-30">
             <div className="flex items-center gap-2">
               <button
@@ -187,13 +178,11 @@ export default function DashboardLayout({ children, menus = [], user }) {
             </div>
           </header>
 
-          {/* Page Content */}
-          <main className="flex-1 p-4 overflow-y-auto pb-28 md:pb-4">
+          <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-28 md:pb-6">
             {children || <Outlet />}
           </main>
         </div>
 
-        {/* Change Password Modal */}
         {showChangePwModal && (
           <>
             <div

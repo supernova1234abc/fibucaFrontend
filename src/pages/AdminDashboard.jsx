@@ -24,8 +24,7 @@ import Swal from 'sweetalert2';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('submissions');
-  
-  // Submissions state
+
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
@@ -34,7 +33,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [leaderboard, setLeaderboard] = useState([]);
 
-  // User Management state
   const [systemUsers, setSystemUsers] = useState([]);
   const [filteredSystemUsers, setFilteredSystemUsers] = useState([]);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -49,7 +47,6 @@ export default function AdminDashboard() {
     password: ''
   });
 
-  // Staff Leaderboard state
   const [staffLeaderboard, setStaffLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
@@ -57,7 +54,6 @@ export default function AdminDashboard() {
     import.meta.env.VITE_BACKEND_URL ||
     'https://fibuca-backend.vercel.app';
 
-  // ================= FETCH CALLBACKS =================
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
     api.get('/submissions')
@@ -74,7 +70,6 @@ export default function AdminDashboard() {
     setUserLoading(true);
     api.get('/api/admin/users')
       .then(res => {
-        console.log('✅ Users fetched:', res.data);
         setSystemUsers(res.data || []);
         setFilteredSystemUsers(res.data || []);
       })
@@ -89,7 +84,6 @@ export default function AdminDashboard() {
     setLeaderboardLoading(true);
     api.get('/api/staff/leaderboard')
       .then(res => {
-        console.log('✅ Staff leaderboard fetched:', res.data);
         setStaffLeaderboard(res.data || []);
       })
       .catch(err => {
@@ -99,7 +93,6 @@ export default function AdminDashboard() {
       .finally(() => setLeaderboardLoading(false));
   }, []);
 
-  // ================= INITIALIZE =================
   useEffect(() => {
     const user =
       JSON.parse(localStorage.getItem('fibuca_user')) ||
@@ -115,13 +108,12 @@ export default function AdminDashboard() {
     }
 
     if (token) setAuthToken(token);
-    console.log('🚀 AdminDashboard initialized - fetching data...');
+
     fetchSubmissions();
     fetchSystemUsers();
     fetchStaffLeaderboard();
   }, [navigate, fetchSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
 
-  // ================= USER MANAGEMENT HANDLERS =================
   const handleOpenUserModal = (user = null) => {
     if (user) {
       setEditingSystemUser(user);
@@ -164,7 +156,6 @@ export default function AdminDashboard() {
       }
 
       if (editingSystemUser) {
-        // Update user
         await api.put(`/api/admin/users/${editingSystemUser.id}`, {
           name: userFormData.name,
           email: userFormData.email,
@@ -173,7 +164,6 @@ export default function AdminDashboard() {
         });
         Swal.fire('Success!', 'User updated successfully', 'success');
       } else {
-        // Create user
         if (!userFormData.password || userFormData.password.length < 6) {
           return Swal.fire('Error', 'Password must be at least 6 characters', 'error');
         }
@@ -216,7 +206,6 @@ export default function AdminDashboard() {
     setFilteredSystemUsers(results);
   };
 
-  // ================= GENERATE STAFF LEADERBOARD =================
   const generateLeaderboard = (submissions) => {
     const staffMap = {};
     submissions.forEach(sub => {
@@ -237,7 +226,6 @@ export default function AdminDashboard() {
     setLeaderboard(leaderboardData);
   };
 
-  // ================= SEARCH =================
   const handleSearch = value => {
     if (!value) return setFilteredUsers(users);
 
@@ -249,7 +237,6 @@ export default function AdminDashboard() {
     setFilteredUsers(results);
   };
 
-  // ================= EXPORT =================
   const exportToExcel = () => {
     if (!filteredUsers.length)
       return Swal.fire('No Data', 'No records found.', 'info');
@@ -292,7 +279,6 @@ export default function AdminDashboard() {
     doc.save('fibuca_clients.pdf');
   };
 
-  // ================= EDIT =================
   const handleEdit = user => {
     setEditingUser(user);
     setEditForm({
@@ -333,7 +319,6 @@ export default function AdminDashboard() {
     });
   };
 
-  // ================= EXCEL UPLOAD =================
   const handleUploadExcel = async e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -354,7 +339,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ================= TABLE COLUMNS =================
   const submissionColumns = [
     { name: '#', selector: (row, index) => index + 1, width: '60px' },
     { name: 'Employee', selector: row => row.employeeName, sortable: true, wrap: true },
@@ -398,201 +382,227 @@ export default function AdminDashboard() {
     }
   ];
 
-  // ================= UI =================
   const navbarTabs = [
     { id: 'submissions', label: 'Submissions', icon: FaFileAlt },
     { id: 'users', label: 'Users', icon: FaUsers },
     { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy }
   ];
 
+  const renderDesktopTabNav = () => (
+    <div className="hidden md:block w-64 shrink-0">
+      <div className="bg-white rounded-xl shadow-lg p-3 sticky top-6">
+        <div className="text-sm font-bold text-gray-500 uppercase tracking-wide px-3 py-2">
+          Admin Sections
+        </div>
+        <div className="space-y-1">
+          {navbarTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Icon size={18} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-100 pb-28">
+    <div className="min-h-screen bg-gray-100 pb-28 md:pb-0">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage submissions, users, and staff performance</p>
         </div>
 
-        {/* ==================== SUBMISSIONS TAB ==================== */}
-        {activeTab === 'submissions' && (
-          <div className="space-y-6">
-            {/* Search & Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <h2 className="text-2xl font-bold">Client Submissions</h2>
-                <div className="relative w-full md:w-80">
-                  <FaSearch className="absolute top-3 left-3 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search submissions..."
-                    onChange={e => handleSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+        <div className="flex gap-6">
+          {renderDesktopTabNav()}
+
+          <div className="flex-1 min-w-0">
+            {activeTab === 'submissions' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <h2 className="text-2xl font-bold">Client Submissions</h2>
+                    <div className="relative w-full md:w-80">
+                      <FaSearch className="absolute top-3 left-3 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search submissions..."
+                        onChange={e => handleSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+                      <FaUpload className="inline mr-2" />
+                      {uploading ? 'Uploading...' : 'Upload Excel'}
+                      <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
+                    </label>
+                    <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                      <FaDownload className="inline mr-2" /> Excel
+                    </button>
+                    <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                      <FaFilePdf className="inline mr-2" /> PDF
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <DataTable
+                    columns={submissionColumns}
+                    data={filteredUsers}
+                    pagination
+                    progressPending={loading}
+                    highlightOnHover
+                    responsive
+                    striped
                   />
                 </div>
               </div>
+            )}
 
-              <div className="flex flex-wrap gap-3">
-                <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
-                  <FaUpload className="inline mr-2" />
-                  {uploading ? 'Uploading...' : 'Upload Excel'}
-                  <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
-                </label>
-                <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                  <FaDownload className="inline mr-2" /> Excel
-                </button>
-                <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
-                  <FaFilePdf className="inline mr-2" /> PDF
-                </button>
-              </div>
-            </div>
-
-            {/* Submissions Table */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <DataTable
-                columns={submissionColumns}
-                data={filteredUsers}
-                pagination
-                progressPending={loading}
-                highlightOnHover
-                responsive
-                striped
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ==================== USER MANAGEMENT TAB ==================== */}
-        {activeTab === 'users' && (
-          <div className="space-y-6">
-            {/* Search & Add Button */}
-            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <h2 className="text-2xl font-bold">System Users</h2>
-                <div className="flex gap-3 flex-wrap">
-                  <div className="relative w-full md:w-80">
-                    <FaSearch className="absolute top-3 left-3 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search users..."
-                      onChange={e => handleSearchUsers(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
+            {activeTab === 'users' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <h2 className="text-2xl font-bold">System Users</h2>
+                    <div className="flex gap-3 flex-wrap">
+                      <div className="relative w-full md:w-80">
+                        <FaSearch className="absolute top-3 left-3 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search users..."
+                          onChange={e => handleSearchUsers(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleOpenUserModal()}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
+                      >
+                        <FaPlus /> Add User
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleOpenUserModal()}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
-                  >
-                    <FaPlus /> Add User
-                  </button>
                 </div>
-              </div>
-            </div>
 
-            {/* Users Table */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <DataTable
-                columns={userColumns}
-                data={filteredSystemUsers}
-                pagination
-                progressPending={userLoading}
-                highlightOnHover
-                responsive
-                striped
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ==================== STAFF LEADERBOARD TAB ==================== */}
-        {activeTab === 'leaderboard' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
-              <p className="text-gray-600 mb-4">Ranked by number of active distribution links</p>
-
-              {leaderboardLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading leaderboard...</div>
-              ) : staffLeaderboard.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {staffLeaderboard.map((staff, idx) => (
-                    <div
-                      key={staff.id}
-                      className={`p-6 rounded-lg border-2 ${
-                        idx === 0
-                          ? 'border-yellow-400 bg-yellow-50'
-                          : idx === 1
-                          ? 'border-gray-400 bg-gray-50'
-                          : idx === 2
-                          ? 'border-orange-400 bg-orange-50'
-                          : 'border-blue-200 bg-blue-50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="text-sm font-semibold text-gray-600 mb-1">
-                            {idx === 0 && '🥇 '}
-                            {idx === 1 && '🥈 '}
-                            {idx === 2 && '🥉 '}
-                            Rank #{idx + 1}
-                          </div>
-                          <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
-                          <p className="text-sm text-gray-600">{staff.username}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{staff.activeLinks}</div>
-                          <div className="text-xs text-gray-600">Active Links</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">{staff.totalLinks}</div>
-                          <div className="text-xs text-gray-600">Total Links</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">{staff.totalClients}</div>
-                          <div className="text-xs text-gray-600">Clients</div>
-                        </div>
-                      </div>
-
-                      {staff.email && (
-                        <p className="text-xs text-gray-600 mt-3 truncate">📧 {staff.email}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  No staff members found
-                </div>
-              )}
-            </div>
-
-            {/* Top Staff Sidebar */}
-            {leaderboard.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
-                <div className="space-y-2">
-                  {leaderboard.map((staff, idx) => (
-                    <div key={staff.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                      <span className="font-semibold text-gray-800">
-                        {idx === 0 && '🥇 '}
-                        {idx === 1 && '🥈 '}
-                        {idx === 2 && '🥉 '}
-                        {staff.name}
-                      </span>
-                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">{staff.submissions}</span>
-                    </div>
-                  ))}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <DataTable
+                    columns={userColumns}
+                    data={filteredSystemUsers}
+                    pagination
+                    progressPending={userLoading}
+                    highlightOnHover
+                    responsive
+                    striped
+                  />
                 </div>
               </div>
             )}
+
+            {activeTab === 'leaderboard' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
+                  <p className="text-gray-600 mb-4">Ranked by number of active distribution links</p>
+
+                  {leaderboardLoading ? (
+                    <div className="text-center py-8 text-gray-500">Loading leaderboard...</div>
+                  ) : staffLeaderboard.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {staffLeaderboard.map((staff, idx) => (
+                        <div
+                          key={staff.id}
+                          className={`p-6 rounded-lg border-2 ${
+                            idx === 0
+                              ? 'border-yellow-400 bg-yellow-50'
+                              : idx === 1
+                              ? 'border-gray-400 bg-gray-50'
+                              : idx === 2
+                              ? 'border-orange-400 bg-orange-50'
+                              : 'border-blue-200 bg-blue-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-600 mb-1">
+                                {idx === 0 && '🥇 '}
+                                {idx === 1 && '🥈 '}
+                                {idx === 2 && '🥉 '}
+                                Rank #{idx + 1}
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
+                              <p className="text-sm text-gray-600">{staff.username}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-600">{staff.activeLinks}</div>
+                              <div className="text-xs text-gray-600">Active Links</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-600">{staff.totalLinks}</div>
+                              <div className="text-xs text-gray-600">Total Links</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-600">{staff.totalClients}</div>
+                              <div className="text-xs text-gray-600">Clients</div>
+                            </div>
+                          </div>
+
+                          {staff.email && (
+                            <p className="text-xs text-gray-600 mt-3 truncate">📧 {staff.email}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      No staff members found
+                    </div>
+                  )}
+                </div>
+
+                {leaderboard.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
+                    <div className="space-y-2">
+                      {leaderboard.map((staff, idx) => (
+                        <div key={staff.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                          <span className="font-semibold text-gray-800">
+                            {idx === 0 && '🥇 '}
+                            {idx === 1 && '🥈 '}
+                            {idx === 2 && '🥉 '}
+                            {staff.name}
+                          </span>
+                          <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">{staff.submissions}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* SUBMISSION EDIT MODAL */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
@@ -615,7 +625,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* USER MANAGEMENT MODAL */}
       {showUserModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-96 overflow-y-auto">
@@ -713,7 +722,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Bottom Navbar */}
       <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} tabs={navbarTabs} />
     </div>
   );
