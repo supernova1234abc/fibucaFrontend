@@ -1,8 +1,9 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useContext } from 'react';
 import { api, setAuthToken } from '../lib/api';
 import DataTable from 'react-data-table-component';
 import BottomNavbar from '../components/BottomNavbar';
+import { DashboardSectionMenuContext } from '../components/DashboardLayout';
 import {
   FaDownload,
   FaFilePdf,
@@ -18,12 +19,30 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('submissions');
+  const location = useLocation();
+  const setSectionMenus = useContext(DashboardSectionMenuContext);
+
+  const section = location.pathname.endsWith('/users')
+    ? 'users'
+    : location.pathname.endsWith('/leaderboard')
+    ? 'leaderboard'
+    : 'submissions';
+
+  const navbarTabs = [
+    { id: 'submissions', label: 'Submissions', icon: FaFileAlt, href: '/admin/submissions' },
+    { id: 'users', label: 'Users', icon: FaUsers, href: '/admin/users' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy, href: '/admin/leaderboard' }
+  ];
+
+  useEffect(() => {
+    setSectionMenus(navbarTabs);
+    return () => setSectionMenus([]);
+  }, [setSectionMenus]);
 
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -382,43 +401,6 @@ export default function AdminDashboard() {
     }
   ];
 
-  const navbarTabs = [
-    { id: 'submissions', label: 'Submissions', icon: FaFileAlt },
-    { id: 'users', label: 'Users', icon: FaUsers },
-    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy }
-  ];
-
-  const renderDesktopTabNav = () => (
-    <div className="hidden md:block w-64 shrink-0">
-      <div className="bg-white rounded-xl shadow-lg p-3 sticky top-6">
-        <div className="text-sm font-bold text-gray-500 uppercase tracking-wide px-3 py-2">
-          Admin Sections
-        </div>
-        <div className="space-y-1">
-          {navbarTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Icon size={18} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-100 pb-28 md:pb-0">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -427,180 +409,174 @@ export default function AdminDashboard() {
           <p className="text-gray-600">Manage submissions, users, and staff performance</p>
         </div>
 
-        <div className="flex gap-6">
-          {renderDesktopTabNav()}
-
-          <div className="flex-1 min-w-0">
-            {activeTab === 'submissions' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <h2 className="text-2xl font-bold">Client Submissions</h2>
-                    <div className="relative w-full md:w-80">
-                      <FaSearch className="absolute top-3 left-3 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search submissions..."
-                        onChange={e => handleSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
-                      <FaUpload className="inline mr-2" />
-                      {uploading ? 'Uploading...' : 'Upload Excel'}
-                      <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
-                    </label>
-                    <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                      <FaDownload className="inline mr-2" /> Excel
-                    </button>
-                    <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
-                      <FaFilePdf className="inline mr-2" /> PDF
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <DataTable
-                    columns={submissionColumns}
-                    data={filteredUsers}
-                    pagination
-                    progressPending={loading}
-                    highlightOnHover
-                    responsive
-                    striped
+        {section === 'submissions' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <h2 className="text-2xl font-bold">Client Submissions</h2>
+                <div className="relative w-full md:w-80">
+                  <FaSearch className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search submissions..."
+                    onChange={e => handleSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
               </div>
-            )}
 
-            {activeTab === 'users' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <h2 className="text-2xl font-bold">System Users</h2>
-                    <div className="flex gap-3 flex-wrap">
-                      <div className="relative w-full md:w-80">
-                        <FaSearch className="absolute top-3 left-3 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Search users..."
-                          onChange={e => handleSearchUsers(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                      <button
-                        onClick={() => handleOpenUserModal()}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
-                      >
-                        <FaPlus /> Add User
-                      </button>
-                    </div>
+              <div className="flex flex-wrap gap-3">
+                <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+                  <FaUpload className="inline mr-2" />
+                  {uploading ? 'Uploading...' : 'Upload Excel'}
+                  <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
+                </label>
+                <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                  <FaDownload className="inline mr-2" /> Excel
+                </button>
+                <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                  <FaFilePdf className="inline mr-2" /> PDF
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <DataTable
+                columns={submissionColumns}
+                data={filteredUsers}
+                pagination
+                progressPending={loading}
+                highlightOnHover
+                responsive
+                striped
+              />
+            </div>
+          </div>
+        )}
+
+        {section === 'users' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <h2 className="text-2xl font-bold">System Users</h2>
+                <div className="flex gap-3 flex-wrap">
+                  <div className="relative w-full md:w-80">
+                    <FaSearch className="absolute top-3 left-3 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      onChange={e => handleSearchUsers(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
                   </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <DataTable
-                    columns={userColumns}
-                    data={filteredSystemUsers}
-                    pagination
-                    progressPending={userLoading}
-                    highlightOnHover
-                    responsive
-                    striped
-                  />
+                  <button
+                    onClick={() => handleOpenUserModal()}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <FaPlus /> Add User
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
 
-            {activeTab === 'leaderboard' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
-                  <p className="text-gray-600 mb-4">Ranked by number of active distribution links</p>
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <DataTable
+                columns={userColumns}
+                data={filteredSystemUsers}
+                pagination
+                progressPending={userLoading}
+                highlightOnHover
+                responsive
+                striped
+              />
+            </div>
+          </div>
+        )}
 
-                  {leaderboardLoading ? (
-                    <div className="text-center py-8 text-gray-500">Loading leaderboard...</div>
-                  ) : staffLeaderboard.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {staffLeaderboard.map((staff, idx) => (
-                        <div
-                          key={staff.id}
-                          className={`p-6 rounded-lg border-2 ${
-                            idx === 0
-                              ? 'border-yellow-400 bg-yellow-50'
-                              : idx === 1
-                              ? 'border-gray-400 bg-gray-50'
-                              : idx === 2
-                              ? 'border-orange-400 bg-orange-50'
-                              : 'border-blue-200 bg-blue-50'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <div className="text-sm font-semibold text-gray-600 mb-1">
-                                {idx === 0 && '🥇 '}
-                                {idx === 1 && '🥈 '}
-                                {idx === 2 && '🥉 '}
-                                Rank #{idx + 1}
-                              </div>
-                              <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
-                              <p className="text-sm text-gray-600">{staff.username}</p>
-                            </div>
-                          </div>
+        {section === 'leaderboard' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
+              <p className="text-gray-600 mb-4">Ranked by number of active distribution links</p>
 
-                          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">{staff.activeLinks}</div>
-                              <div className="text-xs text-gray-600">Active Links</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">{staff.totalLinks}</div>
-                              <div className="text-xs text-gray-600">Total Links</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-purple-600">{staff.totalClients}</div>
-                              <div className="text-xs text-gray-600">Clients</div>
-                            </div>
-                          </div>
-
-                          {staff.email && (
-                            <p className="text-xs text-gray-600 mt-3 truncate">📧 {staff.email}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      No staff members found
-                    </div>
-                  )}
-                </div>
-
-                {leaderboard.length > 0 && (
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
-                    <div className="space-y-2">
-                      {leaderboard.map((staff, idx) => (
-                        <div key={staff.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                          <span className="font-semibold text-gray-800">
+              {leaderboardLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading leaderboard...</div>
+              ) : staffLeaderboard.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {staffLeaderboard.map((staff, idx) => (
+                    <div
+                      key={staff.id}
+                      className={`p-6 rounded-lg border-2 ${
+                        idx === 0
+                          ? 'border-yellow-400 bg-yellow-50'
+                          : idx === 1
+                          ? 'border-gray-400 bg-gray-50'
+                          : idx === 2
+                          ? 'border-orange-400 bg-orange-50'
+                          : 'border-blue-200 bg-blue-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-600 mb-1">
                             {idx === 0 && '🥇 '}
                             {idx === 1 && '🥈 '}
                             {idx === 2 && '🥉 '}
-                            {staff.name}
-                          </span>
-                          <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">{staff.submissions}</span>
+                            Rank #{idx + 1}
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
+                          <p className="text-sm text-gray-600">{staff.username}</p>
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{staff.activeLinks}</div>
+                          <div className="text-xs text-gray-600">Active Links</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{staff.totalLinks}</div>
+                          <div className="text-xs text-gray-600">Total Links</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">{staff.totalClients}</div>
+                          <div className="text-xs text-gray-600">Clients</div>
+                        </div>
+                      </div>
+
+                      {staff.email && (
+                        <p className="text-xs text-gray-600 mt-3 truncate">📧 {staff.email}</p>
+                      )}
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  No staff members found
+                </div>
+              )}
+            </div>
+
+            {leaderboard.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
+                <div className="space-y-2">
+                  {leaderboard.map((staff, idx) => (
+                    <div key={staff.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">
+                        {idx === 0 && '🥇 '}
+                        {idx === 1 && '🥈 '}
+                        {idx === 2 && '🥉 '}
+                        {staff.name}
+                      </span>
+                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">{staff.submissions}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
       {editingUser && (
@@ -722,7 +698,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} tabs={navbarTabs} />
+      <BottomNavbar tabs={navbarTabs} />
     </div>
   );
 }

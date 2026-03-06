@@ -11,9 +11,6 @@ import SubmissionValidator from './pages/SubmissionValidator';
 
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import UserManagement from './pages/UserManagement';
-import AdminUpload from './pages/AdminUpload';
-import AdminReports from './pages/AdminReports';
 import ClientDashboard from './pages/ClientDashboard';
 import StaffDashboard from './pages/staffDashboard';
 
@@ -23,23 +20,22 @@ import { useAuth } from './context/AuthContext';
 import './index.css';
 
 // --- Menus ---
+// Keep only top-level dashboard entries here.
+// Section routes for admin/staff will be injected dynamically into DashboardLayout sidebar.
 const clientMenus = [
   { href: '/client', label: 'Overview' },
   { href: '/client/pdf', label: 'PDF Form' },
   { href: '/client/generate', label: 'Generate ID' },
   { href: '/client/idcards', label: 'Your ID Cards' },
-  { href: '/client/publications', label: 'Publications' },
+  { href: '/client/support', label: 'Support' },
 ];
 
 const adminMenus = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/upload', label: 'Upload Data' },
-  { href: '/admin/reports', label: 'Reports' },
-  { href: '/admin/users', label: 'Users' },
+  { href: '/admin/submissions', label: 'Dashboard' },
 ];
 
 const staffMenus = [
-  { href: '/staff', label: 'Dashboard' },
+  { href: '/staff/links', label: 'Dashboard' },
 ];
 
 const superMenus = [
@@ -65,18 +61,11 @@ export default function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
-          
-          {/* Submission validation via staff link */}
           <Route path="/submission/:token" element={<SubmissionValidator />} />
-          
-          {/* Updated Client Form Route: allowNewClient controlled by staff link */}
-   <Route path="/client-form/:token" element={<ClientForm />} />
-
+          <Route path="/client-form/:token" element={<ClientForm />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/change-password" element={<ChangePassword />} />
-
-          {/* Protected Routes */}
 
           {/* Super Admin */}
           <Route element={<PrivateRoute role="SUPERADMIN" />}>
@@ -89,17 +78,20 @@ export default function App() {
           {/* Admin */}
           <Route element={<PrivateRoute role="ADMIN" />}>
             <Route element={<DashboardLayout user={user} menus={adminMenus} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/upload" element={<AdminUpload />} />
-              <Route path="/admin/reports" element={<AdminReports />} />
-              <Route path="/admin/users" element={<UserManagement />} />
+              <Route path="/admin" element={<Navigate to="/admin/submissions" replace />} />
+              <Route path="/admin/submissions" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminDashboard />} />
+              <Route path="/admin/leaderboard" element={<AdminDashboard />} />
             </Route>
           </Route>
 
           {/* Staff */}
           <Route element={<PrivateRoute role="STAFF" />}>
             <Route element={<DashboardLayout user={user} menus={staffMenus} />}>
-              <Route path="/staff" element={<StaffDashboard />} />
+              <Route path="/staff" element={<Navigate to="/staff/links" replace />} />
+              <Route path="/staff/links" element={<StaffDashboard />} />
+              <Route path="/staff/clients" element={<StaffDashboard />} />
+              <Route path="/staff/profile" element={<StaffDashboard />} />
             </Route>
           </Route>
 
@@ -110,11 +102,11 @@ export default function App() {
               <Route path="/client/pdf" element={<ClientDashboard />} />
               <Route path="/client/generate" element={<ClientDashboard />} />
               <Route path="/client/idcards" element={<ClientDashboard />} />
-              <Route path="/client/publications" element={<ClientDashboard />} />
+              <Route path="/client/support" element={<ClientDashboard />} />
             </Route>
           </Route>
 
-          {/* Catch-all → Landing */}
+          {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
