@@ -203,7 +203,7 @@ const IDCard = forwardRef(({ card }, ref) => {
           {/* FRONT */}
           <div ref={frontRef} className={cardStyle}>
             {/* PHOTO LAYER */}
-            <div className="absolute top-10 left-2 w-[104px] z-10">
+            <div className="absolute top-10 left-4 w-[104px] z-10">
               <div className="relative w-[104px] h-[104px] overflow-hidden rounded-full bg-transparent">
                 {photoSrc ? (
                   <>
@@ -232,7 +232,7 @@ const IDCard = forwardRef(({ card }, ref) => {
               {/* NAME + ROLE - exact positioned below photo */}
               <div
                 className="absolute left-0 right-0 z-30"
-                style={{ top: 110 }}
+                style={{ top: 114 }}
               >
                 <p className="m-0 text-[11px] font-mono text-left leading-none">
                   {getFirstAndLastName(card?.fullName)}
