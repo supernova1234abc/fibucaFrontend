@@ -8,6 +8,7 @@ import BottomNavbar from "../components/BottomNavbar";
 import { DashboardSectionMenuContext } from "../components/DashboardLayout";
 import {
   FaDownload,
+  FaFilePdf,
   FaLink,
   FaUsers,
   FaChartLine,
