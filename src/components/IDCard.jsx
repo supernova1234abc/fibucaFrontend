@@ -20,7 +20,6 @@ function toCloudinaryTransparentUrl(rawUrl, { height = 110 } = {}) {
 const IDCard = forwardRef(({ card }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
 
-  // refs for front and back, used only for PDF capture
   const frontRef = useRef(null);
   const backRef = useRef(null);
 
@@ -48,12 +47,10 @@ const IDCard = forwardRef(({ card }, ref) => {
   const getPhotoSrc = (c) => {
     if (!c) return null;
 
-    // Prefer RAW cloudinary URL so we can deliver transparent bg on-the-fly
     const candidates = [
       c.rawPhotoUrl,
       c.photoUrl,
       c.photo?.originalUrl,
-
       c.cleanPhotoUrl,
       c.cleanedPhotoUrl,
       c.photo?.cleanUrl,
@@ -85,7 +82,20 @@ const IDCard = forwardRef(({ card }, ref) => {
     setPhotoLoaded(false);
   }, [photoSrc]);
 
-  // ---------------- PDF PRINT (optimized) ----------------
+  const waitForImages = async (root) => {
+    const imgs = Array.from(root.querySelectorAll("img"));
+    await Promise.all(
+      imgs.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+  };
+
+  // ---------------- PDF PRINT ----------------
   const handlePrint = async () => {
     if (!frontRef.current || !backRef.current) {
       await Swal.fire({
@@ -98,6 +108,12 @@ const IDCard = forwardRef(({ card }, ref) => {
     }
 
     try {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+      await waitForImages(frontRef.current);
+      await waitForImages(backRef.current);
+
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
@@ -143,8 +159,9 @@ const IDCard = forwardRef(({ card }, ref) => {
         title: "PDF Generated!",
         text: "ID card PDF downloaded successfully.",
         confirmButtonColor: "#1e40af",
-        timer: 2000,
+        timer: 1800,
         timerProgressBar: true,
+        showConfirmButton: false,
       });
     } catch (err) {
       console.error("PDF generation failed:", err);
@@ -185,7 +202,7 @@ const IDCard = forwardRef(({ card }, ref) => {
         <div ref={ref} className="flex flex-col md:flex-row gap-4 print:gap-0">
           {/* FRONT */}
           <div ref={frontRef} className={cardStyle}>
-            {/* PHOTO LAYER (sent backward) */}
+            {/* PHOTO LAYER */}
             <div className="absolute top-10 left-2 w-[104px] z-10">
               <div className="relative w-[104px] h-[118px] overflow-hidden rounded-md bg-transparent">
                 {photoSrc ? (
@@ -212,18 +229,21 @@ const IDCard = forwardRef(({ card }, ref) => {
                 )}
               </div>
 
-              {/* NAME + ROLE (moved back to bottom of photo) */}
-              <div className="absolute top-26 left-0 right-0 text-xs text-center z-30">
-                <p className="text-[11px] font-mono text-left leading-snug">
+              {/* NAME + ROLE - exact positioned below photo */}
+              <div
+                className="absolute left-0 right-0 z-30"
+                style={{ top: 121 }}
+              >
+                <p className="m-0 text-[11px] font-mono text-left leading-none">
                   {getFirstAndLastName(card?.fullName)}
                 </p>
-                <p className="text-[11px] text-gray-700 text-left leading-snug">
+                <p className="m-0 mt-[2px] text-[11px] text-gray-700 text-left leading-none">
                   {card?.role || "Position"}
                 </p>
               </div>
             </div>
 
-            {/* watermark/logo stays in front of photo */}
+            {/* watermark/logo */}
             <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none z-20">
               <img
                 src="/images/newFibucaLogo.png"
@@ -232,12 +252,19 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* header bar */}
-            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 flex items-center justify-center z-30">
-              <span className="text-white font-semibold text-sm">IDENTIFICATION</span>
+            {/* header */}
+            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 z-30">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span
+                  className="text-white font-semibold leading-none"
+                  style={{ fontSize: "14px", transform: "translateY(-1px)" }}
+                >
+                  IDENTIFICATION
+                </span>
+              </div>
             </div>
 
-            {/* QR (as before) */}
+            {/* QR */}
             <div className="absolute top-20 right-4 z-30">
               <QRCode
                 value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
@@ -245,10 +272,10 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* bottom info (as before) */}
+            {/* bottom info */}
             <div className="absolute bottom-2 right-3 text-xs text-center z-30">
-              <p>ID: {card?.cardNumber || "N/A"}</p>
-              <p>Issued: {formattedDate}</p>
+              <p className="m-0">ID: {card?.cardNumber || "N/A"}</p>
+              <p className="m-0">Issued: {formattedDate}</p>
             </div>
           </div>
 
