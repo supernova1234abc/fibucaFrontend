@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 import Landing from './pages/Landing';
 import ClientForm from './pages/ClientForm';
+import ScanPaperForm from './pages/ScanPaperForm';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
@@ -32,10 +33,12 @@ const clientMenus = [
 
 const adminMenus = [
   { href: '/admin/submissions', label: 'Dashboard' },
+  { href: '/admin/scan-paper', label: 'Scan Paper' },
 ];
 
 const staffMenus = [
   { href: '/staff/links', label: 'Dashboard' },
+  { href: '/staff/scan-paper', label: 'Scan paper form' },
 ];
 
 const superMenus = [
@@ -82,6 +85,7 @@ export default function App() {
               <Route path="/admin/submissions" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminDashboard />} />
               <Route path="/admin/leaderboard" element={<AdminDashboard />} />
+              <Route path="/admin/scan-paper" element={<ScanPaperForm />} />
             </Route>
           </Route>
 
@@ -92,6 +96,7 @@ export default function App() {
               <Route path="/staff/links" element={<StaffDashboard />} />
               <Route path="/staff/clients" element={<StaffDashboard />} />
               <Route path="/staff/profile" element={<StaffDashboard />} />
+              <Route path="/staff/scan-paper" element={<ScanPaperForm />} />
             </Route>
           </Route>
 
