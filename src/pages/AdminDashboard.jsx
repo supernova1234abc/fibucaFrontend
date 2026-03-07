@@ -14,7 +14,9 @@ import {
   FaPlus,
   FaTrophy,
   FaFileAlt,
-  FaUsers
+  FaUsers,
+  FaHistory,
+  FaFilter,
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -36,7 +38,7 @@ export default function AdminDashboard() {
   const navbarTabs = [
     { id: 'submissions', label: 'Submissions', icon: FaFileAlt, href: '/admin/submissions' },
     { id: 'users', label: 'Users', icon: FaUsers, href: '/admin/users' },
-    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy, href: '/admin/leaderboard' }
+    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy, href: '/admin/leaderboard' },
   ];
 
   useEffect(() => {
@@ -63,36 +65,46 @@ export default function AdminDashboard() {
     email: '',
     employeeNumber: '',
     role: 'CLIENT',
-    password: ''
+    password: '',
+  });
+
+  const [submissionFilters, setSubmissionFilters] = useState({
+    employerName: '',
+    branchName: '',
+    employeeName: '',
+    employeeNumber: '',
+    phoneNumber: '',
   });
 
   const [staffLeaderboard, setStaffLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   const BACKEND_URL =
-    import.meta.env.VITE_BACKEND_URL ||
-    'https://fibuca-backend.vercel.app';
+    import.meta.env.VITE_BACKEND_URL || 'https://fibuca-backend.vercel.app';
 
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
-    api.get('/submissions')
-      .then(res => {
-        setUsers(res.data);
-        setFilteredUsers(res.data);
-        generateLeaderboard(res.data);
+    api
+      .get('/submissions')
+      .then((res) => {
+        const rows = res.data || [];
+        setUsers(rows);
+        setFilteredUsers(rows);
+        generateLeaderboard(rows);
       })
-      .catch(err => console.error(err))
+      .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   }, []);
 
   const fetchSystemUsers = useCallback(() => {
     setUserLoading(true);
-    api.get('/api/admin/users')
-      .then(res => {
+    api
+      .get('/api/admin/users')
+      .then((res) => {
         setSystemUsers(res.data || []);
         setFilteredSystemUsers(res.data || []);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('❌ Failed to fetch users:', err);
         Swal.fire('Error', 'Failed to fetch users', 'error');
       })
@@ -101,11 +113,12 @@ export default function AdminDashboard() {
 
   const fetchStaffLeaderboard = useCallback(() => {
     setLeaderboardLoading(true);
-    api.get('/api/staff/leaderboard')
-      .then(res => {
+    api
+      .get('/api/staff/leaderboard')
+      .then((res) => {
         setStaffLeaderboard(res.data || []);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('❌ Failed to fetch leaderboard:', err);
         Swal.fire('Error', 'Failed to fetch staff leaderboard', 'error');
       })
@@ -133,6 +146,51 @@ export default function AdminDashboard() {
     fetchStaffLeaderboard();
   }, [navigate, fetchSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
 
+  const searchSubmissionsAdvanced = async () => {
+    try {
+      setLoading(true);
+
+      const params = new URLSearchParams();
+      Object.entries(submissionFilters).forEach(([key, value]) => {
+        if (value?.trim()) params.append(key, value.trim());
+      });
+
+      const url = params.toString()
+        ? `/api/admin/submissions/search?${params.toString()}`
+        : '/submissions';
+
+      const res = await api.get(url);
+      setFilteredUsers(res.data || []);
+    } catch (err) {
+      console.error('❌ advanced submission search failed:', err);
+      Swal.fire('Error', 'Failed to search submissions', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetSubmissionFilters = async () => {
+    setSubmissionFilters({
+      employerName: '',
+      branchName: '',
+      employeeName: '',
+      employeeNumber: '',
+      phoneNumber: '',
+    });
+
+    try {
+      setLoading(true);
+      const res = await api.get('/submissions');
+      const rows = res.data || [];
+      setUsers(rows);
+      setFilteredUsers(rows);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOpenUserModal = (user = null) => {
     if (user) {
       setEditingSystemUser(user);
@@ -142,7 +200,7 @@ export default function AdminDashboard() {
         email: user.email || '',
         employeeNumber: user.employeeNumber || '',
         role: user.role,
-        password: ''
+        password: '',
       });
     } else {
       setEditingSystemUser(null);
@@ -152,7 +210,7 @@ export default function AdminDashboard() {
         email: '',
         employeeNumber: '',
         role: 'CLIENT',
-        password: ''
+        password: '',
       });
     }
     setShowUserModal(true);
@@ -165,7 +223,7 @@ export default function AdminDashboard() {
 
   const handleUserFormChange = (e) => {
     const { name, value } = e.target;
-    setUserFormData(prev => ({ ...prev, [name]: value }));
+    setUserFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveUser = async () => {
@@ -179,7 +237,7 @@ export default function AdminDashboard() {
           name: userFormData.name,
           email: userFormData.email,
           role: userFormData.role,
-          employeeNumber: userFormData.employeeNumber
+          employeeNumber: userFormData.employeeNumber,
         });
         Swal.fire('Success!', 'User updated successfully', 'success');
       } else {
@@ -189,6 +247,7 @@ export default function AdminDashboard() {
         await api.post('/api/admin/users', userFormData);
         Swal.fire('Success!', 'User created successfully', 'success');
       }
+
       handleCloseUserModal();
       fetchSystemUsers();
     } catch (err) {
@@ -202,73 +261,87 @@ export default function AdminDashboard() {
       text: 'This action cannot be undone.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#e11d48'
-    }).then(result => {
+      confirmButtonColor: '#e11d48',
+    }).then((result) => {
       if (result.isConfirmed) {
-        api.delete(`/api/admin/users/${userId}`)
+        api
+          .delete(`/api/admin/users/${userId}`)
           .then(() => {
             Swal.fire('Deleted!', 'User deleted successfully', 'success');
             fetchSystemUsers();
           })
-          .catch(err => Swal.fire('Error', err.response?.data?.error || 'Failed to delete user', 'error'));
+          .catch((err) =>
+            Swal.fire('Error', err.response?.data?.error || 'Failed to delete user', 'error')
+          );
       }
     });
   };
 
   const handleSearchUsers = (value) => {
     if (!value) return setFilteredSystemUsers(systemUsers);
-    const results = systemUsers.filter(u =>
-      (u.name || '').toLowerCase().includes(value.toLowerCase()) ||
-      (u.username || '').toLowerCase().includes(value.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(value.toLowerCase())
+
+    const results = systemUsers.filter(
+      (u) =>
+        (u.name || '').toLowerCase().includes(value.toLowerCase()) ||
+        (u.username || '').toLowerCase().includes(value.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(value.toLowerCase())
     );
+
     setFilteredSystemUsers(results);
   };
 
   const generateLeaderboard = (submissions) => {
     const staffMap = {};
-    submissions.forEach(sub => {
+
+    submissions.forEach((sub) => {
       if (sub.employeeName) {
         if (!staffMap[sub.employeeName]) {
           staffMap[sub.employeeName] = {
             name: sub.employeeName,
             employeeNumber: sub.employeeNumber || '',
-            submissions: 0
+            submissions: 0,
           };
         }
         staffMap[sub.employeeName].submissions += 1;
       }
     });
+
     const leaderboardData = Object.values(staffMap)
       .sort((a, b) => b.submissions - a.submissions)
       .slice(0, 5);
+
     setLeaderboard(leaderboardData);
   };
 
-  const handleSearch = value => {
+  const handleSearch = (value) => {
     if (!value) return setFilteredUsers(users);
 
-    const results = users.filter(u =>
-      (u.employeeName || '').toLowerCase().includes(value.toLowerCase()) ||
-      (u.employeeNumber || '').toLowerCase().includes(value.toLowerCase()) ||
-      (u.employerName || '').toLowerCase().includes(value.toLowerCase())
+    const results = users.filter(
+      (u) =>
+        (u.employeeName || '').toLowerCase().includes(value.toLowerCase()) ||
+        (u.employeeNumber || '').toLowerCase().includes(value.toLowerCase()) ||
+        (u.employerName || '').toLowerCase().includes(value.toLowerCase()) ||
+        (u.branchName || '').toLowerCase().includes(value.toLowerCase()) ||
+        (u.phoneNumber || '').toLowerCase().includes(value.toLowerCase())
     );
+
     setFilteredUsers(results);
   };
 
   const exportToExcel = () => {
-    if (!filteredUsers.length)
+    if (!filteredUsers.length) {
       return Swal.fire('No Data', 'No records found.', 'info');
+    }
 
     const data = filteredUsers.map((user, index) => ({
       SN: index + 1,
       Name: user.employeeName,
       Number: user.employeeNumber,
-      Employer: user.employerName,
+      Phone: user.phoneNumber || '',
+      Employer: user.employerName || '',
+      Branch: user.branchName || '',
       Dues: user.dues,
-      Submitted: user.submittedAt
-        ? new Date(user.submittedAt).toLocaleString()
-        : ''
+      Submitted: user.submittedAt ? new Date(user.submittedAt).toLocaleString() : '',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -278,67 +351,78 @@ export default function AdminDashboard() {
   };
 
   const exportToPDF = () => {
-    if (!filteredUsers.length)
+    if (!filteredUsers.length) {
       return Swal.fire('No Data', 'No records found.', 'info');
+    }
 
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [['SN', 'Name', 'Number', 'Employer', 'Dues', 'Submitted']],
+      head: [['SN', 'Name', 'Number', 'Phone', 'Employer', 'Branch', 'Dues', 'Submitted']],
       body: filteredUsers.map((user, index) => [
         index + 1,
         user.employeeName,
         user.employeeNumber,
-        user.employerName,
+        user.phoneNumber || '',
+        user.employerName || '',
+        user.branchName || '',
         user.dues,
-        user.submittedAt
-          ? new Date(user.submittedAt).toLocaleString()
-          : ''
-      ])
+        user.submittedAt ? new Date(user.submittedAt).toLocaleString() : '',
+      ]),
     });
     doc.save('fibuca_clients.pdf');
   };
 
-  const handleEdit = user => {
+  const handleEdit = (user) => {
     setEditingUser(user);
     setEditForm({
       employeeName: user.employeeName || '',
       employeeNumber: user.employeeNumber || '',
       employerName: user.employerName || '',
+      branchName: user.branchName || '',
+      phoneNumber: user.phoneNumber || '',
       dues: user.dues || '',
-      witness: user.witness || ''
+      witness: user.witness || '',
     });
   };
 
   const handleUpdate = () => {
-    api.put(`/submissions/${editingUser.id}`, editForm)
+    api
+      .put(`/submissions/${editingUser.id}`, editForm)
       .then(() => {
         setEditingUser(null);
         fetchSubmissions();
         Swal.fire('Updated!', 'Record updated successfully.', 'success');
       })
-      .catch(err => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        Swal.fire('Error', err.response?.data?.error || 'Failed to update record', 'error');
+      });
   };
 
-  const handleDelete = id => {
+  const handleDelete = (id) => {
     Swal.fire({
       title: 'Delete this record?',
       text: 'This action cannot be undone.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#e11d48'
-    }).then(result => {
+      confirmButtonColor: '#e11d48',
+    }).then((result) => {
       if (result.isConfirmed) {
-        api.delete(`/submissions/${id}`)
+        api
+          .delete(`/submissions/${id}`)
           .then(() => {
             fetchSubmissions();
             Swal.fire('Deleted!', '', 'success');
           })
-          .catch(err => console.error(err));
+          .catch((err) => {
+            console.error(err);
+            Swal.fire('Error', err.response?.data?.error || 'Failed to delete submission', 'error');
+          });
       }
     });
   };
 
-  const handleUploadExcel = async e => {
+  const handleUploadExcel = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -348,57 +432,169 @@ export default function AdminDashboard() {
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const records = XLSX.utils.sheet_to_json(worksheet);
+
       await api.post('/bulk-upload', { records });
       fetchSubmissions();
       Swal.fire('Success', 'Users uploaded!', 'success');
     } catch (err) {
+      console.error(err);
       Swal.fire('Error', 'Upload failed.', 'error');
     } finally {
       setUploading(false);
     }
   };
 
+  const handleViewTransfers = async (row) => {
+    try {
+      const matchedUser = systemUsers.find(
+        (u) => u.employeeNumber === row.employeeNumber
+      );
+
+      if (!matchedUser) {
+        return Swal.fire('Not Found', 'No linked system user found for this submission.', 'info');
+      }
+
+      const { data } = await api.get(`/api/users/${matchedUser.id}/transfers`);
+
+      if (!data || data.length === 0) {
+        return Swal.fire('No Transfer History', 'This client has no transfer history yet.', 'info');
+      }
+
+      const html = data
+        .map(
+          (t) => `
+            <div style="text-align:left; border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:10px;">
+              <div><b>Old Employer:</b> ${t.oldEmployerName || 'N/A'}</div>
+              <div><b>New Employer:</b> ${t.newEmployerName || 'N/A'}</div>
+              <div><b>Old Branch:</b> ${t.oldBranchName || 'N/A'}</div>
+              <div><b>New Branch:</b> ${t.newBranchName || 'N/A'}</div>
+              <div><b>Old Phone:</b> ${t.oldPhoneNumber || 'N/A'}</div>
+              <div><b>New Phone:</b> ${t.newPhoneNumber || 'N/A'}</div>
+              <div><b>Old Employee #:</b> ${t.oldEmployeeNumber}</div>
+              <div><b>New Employee #:</b> ${t.newEmployeeNumber}</div>
+              <div><b>Note:</b> ${t.note || 'N/A'}</div>
+              <div><b>Date:</b> ${new Date(t.createdAt).toLocaleString()}</div>
+              <div><b>Performed By:</b> ${t.performedBy?.name || 'Unknown'}</div>
+            </div>
+          `
+        )
+        .join('');
+
+      Swal.fire({
+        title: 'Transfer History',
+        html: `<div style="max-height:420px;overflow:auto;">${html}</div>`,
+        width: 700,
+        confirmButtonText: 'Close',
+      });
+    } catch (err) {
+      console.error('❌ transfer history fetch failed:', err);
+      Swal.fire('Error', 'Failed to fetch transfer history', 'error');
+    }
+  };
+
   const submissionColumns = [
     { name: '#', selector: (row, index) => index + 1, width: '60px' },
-    { name: 'Employee', selector: row => row.employeeName, sortable: true, wrap: true },
-    { name: 'Number', selector: row => row.employeeNumber, wrap: true },
-    { name: 'Employer', selector: row => row.employerName, wrap: true },
-    { name: 'Dues', selector: row => row.dues },
+    { name: 'Employee', selector: (row) => row.employeeName, sortable: true, wrap: true },
+    { name: 'Number', selector: (row) => row.employeeNumber, wrap: true },
+    { name: 'Phone', selector: (row) => row.phoneNumber || '-', wrap: true },
+    { name: 'Employer', selector: (row) => row.employerName || '-', wrap: true },
+    { name: 'Branch', selector: (row) => row.branchName || '-', wrap: true },
+    { name: 'Dues', selector: (row) => row.dues || '-' },
     {
       name: 'PDF',
-      cell: row => {
+      cell: (row) => {
         if (!row.pdfPath) return <span className="text-gray-400">None</span>;
         const pdfUrl = row.pdfPath.startsWith('http') ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
-        return <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:underline"><FaFilePdf/></a>;
-      }
+        return (
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-red-600 hover:underline flex items-center gap-1"
+            title="Open PDF"
+          >
+            <FaFilePdf />
+          </a>
+        );
+      },
+    },
+    {
+      name: 'Download',
+      cell: (row) => {
+        if (!row.pdfPath) return <span className="text-gray-400">—</span>;
+        const pdfUrl = row.pdfPath.startsWith('http') ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
+        return (
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline flex items-center gap-1"
+            title="Download PDF"
+          >
+            <FaDownload />
+          </a>
+        );
+      },
+    },
+    {
+      name: 'Transfers',
+      cell: (row) => (
+        <button
+          onClick={() => handleViewTransfers(row)}
+          className="text-purple-600 hover:underline flex items-center gap-1"
+          title="View transfer history"
+        >
+          <FaHistory />
+        </button>
+      ),
     },
     {
       name: 'Actions',
-      cell: row => (
+      cell: (row) => (
         <div className="flex gap-2">
-          <button onClick={() => handleEdit(row)} className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"><FaEdit/></button>
-          <button onClick={() => handleDelete(row.id)} className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"><FaTrash/></button>
+          <button
+            onClick={() => handleEdit(row)}
+            className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+          >
+            <FaEdit />
+          </button>
+          <button
+            onClick={() => handleDelete(row.id)}
+            className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"
+          >
+            <FaTrash />
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   const userColumns = [
     { name: '#', selector: (row, index) => index + 1, width: '60px' },
-    { name: 'Name', selector: row => row.name, sortable: true, wrap: true },
-    { name: 'Username', selector: row => row.username, wrap: true },
-    { name: 'Email', selector: row => row.email || '-', wrap: true },
-    { name: 'Role', selector: row => row.role, sortable: true },
-    { name: 'Employee #', selector: row => row.employeeNumber || '-' },
+    { name: 'Name', selector: (row) => row.name, sortable: true, wrap: true },
+    { name: 'Username', selector: (row) => row.username, wrap: true },
+    { name: 'Email', selector: (row) => row.email || '-', wrap: true },
+    { name: 'Role', selector: (row) => row.role, sortable: true },
+    { name: 'Employee #', selector: (row) => row.employeeNumber || '-' },
     {
       name: 'Actions',
-      cell: row => (
+      cell: (row) => (
         <div className="flex gap-2">
-          <button onClick={() => handleOpenUserModal(row)} className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"><FaEdit/></button>
-          <button onClick={() => handleDeleteUser(row.id)} className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"><FaTrash/></button>
+          <button
+            onClick={() => handleOpenUserModal(row)}
+            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          >
+            <FaEdit />
+          </button>
+          <button
+            onClick={() => handleDeleteUser(row.id)}
+            className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"
+          >
+            <FaTrash />
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -411,30 +607,100 @@ export default function AdminDashboard() {
 
         {section === 'submissions' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-5">
               <div className="flex flex-col md:flex-row justify-between gap-4">
                 <h2 className="text-2xl font-bold">Client Submissions</h2>
+
                 <div className="relative w-full md:w-80">
                   <FaSearch className="absolute top-3 left-3 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search submissions..."
-                    onChange={e => handleSearch(e.target.value)}
+                    placeholder="Quick search name / no / employer..."
+                    onChange={(e) => handleSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+                <input
+                  placeholder="Employer e.g. CRDB"
+                  value={submissionFilters.employerName}
+                  onChange={(e) =>
+                    setSubmissionFilters((prev) => ({ ...prev, employerName: e.target.value }))
+                  }
+                  className="border rounded-lg px-3 py-2"
+                />
+
+                <input
+                  placeholder="Branch e.g. Kariakoo"
+                  value={submissionFilters.branchName}
+                  onChange={(e) =>
+                    setSubmissionFilters((prev) => ({ ...prev, branchName: e.target.value }))
+                  }
+                  className="border rounded-lg px-3 py-2"
+                />
+
+                <input
+                  placeholder="Employee name"
+                  value={submissionFilters.employeeName}
+                  onChange={(e) =>
+                    setSubmissionFilters((prev) => ({ ...prev, employeeName: e.target.value }))
+                  }
+                  className="border rounded-lg px-3 py-2"
+                />
+
+                <input
+                  placeholder="Employee number"
+                  value={submissionFilters.employeeNumber}
+                  onChange={(e) =>
+                    setSubmissionFilters((prev) => ({ ...prev, employeeNumber: e.target.value }))
+                  }
+                  className="border rounded-lg px-3 py-2"
+                />
+
+                <input
+                  placeholder="Phone number"
+                  value={submissionFilters.phoneNumber}
+                  onChange={(e) =>
+                    setSubmissionFilters((prev) => ({ ...prev, phoneNumber: e.target.value }))
+                  }
+                  className="border rounded-lg px-3 py-2"
+                />
+              </div>
+
               <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={searchSubmissionsAdvanced}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center gap-2"
+                >
+                  <FaFilter /> Filter
+                </button>
+
+                <button
+                  onClick={resetSubmissionFilters}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+                >
+                  Reset
+                </button>
+
                 <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
                   <FaUpload className="inline mr-2" />
                   {uploading ? 'Uploading...' : 'Upload Excel'}
                   <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
                 </label>
-                <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+
+                <button
+                  onClick={exportToExcel}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                >
                   <FaDownload className="inline mr-2" /> Excel
                 </button>
-                <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+
+                <button
+                  onClick={exportToPDF}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                >
                   <FaFilePdf className="inline mr-2" /> PDF
                 </button>
               </div>
@@ -465,10 +731,11 @@ export default function AdminDashboard() {
                     <input
                       type="text"
                       placeholder="Search users..."
-                      onChange={e => handleSearchUsers(e.target.value)}
+                      onChange={(e) => handleSearchUsers(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
+
                   <button
                     onClick={() => handleOpenUserModal()}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
@@ -551,9 +818,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500">
-                  No staff members found
-                </div>
+                <div className="text-center py-12 text-gray-500">No staff members found</div>
               )}
             </div>
 
@@ -562,14 +827,19 @@ export default function AdminDashboard() {
                 <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
                 <div className="space-y-2">
                   {leaderboard.map((staff, idx) => (
-                    <div key={staff.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div
+                      key={staff.name}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                    >
                       <span className="font-semibold text-gray-800">
                         {idx === 0 && '🥇 '}
                         {idx === 1 && '🥈 '}
                         {idx === 2 && '🥉 '}
                         {staff.name}
                       </span>
-                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">{staff.submissions}</span>
+                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                        {staff.submissions}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -580,33 +850,48 @@ export default function AdminDashboard() {
       </div>
 
       {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Edit Submission</h2>
-            {Object.keys(editForm).map(field => (
+
+            {Object.keys(editForm).map((field) => (
               <div key={field} className="mb-3">
-                <label className="block text-sm font-medium mb-1 capitalize">{field}</label>
+                <label className="block text-sm font-medium mb-1 capitalize">
+                  {field.replace(/([A-Z])/g, ' $1')}
+                </label>
                 <input
                   value={editForm[field]}
-                  onChange={e => setEditForm({ ...editForm, [field]: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })}
                   className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
             ))}
+
             <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setEditingUser(null)} className="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
-              <button onClick={handleUpdate} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="px-4 py-2 bg-gray-300 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdate}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                Save
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {showUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-96 overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editingSystemUser ? 'Edit User' : 'Create New User'}
             </h2>
+
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium mb-1">Name *</label>
@@ -619,6 +904,7 @@ export default function AdminDashboard() {
                   placeholder="Full name"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Username *</label>
                 <input
@@ -631,6 +917,7 @@ export default function AdminDashboard() {
                   placeholder="Unique username"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
                 <input
@@ -642,6 +929,7 @@ export default function AdminDashboard() {
                   placeholder="user@example.com"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Employee Number</label>
                 <input
@@ -653,6 +941,7 @@ export default function AdminDashboard() {
                   placeholder="Optional"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <select
@@ -666,6 +955,7 @@ export default function AdminDashboard() {
                   <option value="ADMIN">Admin</option>
                 </select>
               </div>
+
               {!editingSystemUser && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Password *</label>
@@ -680,6 +970,7 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={handleCloseUserModal}
