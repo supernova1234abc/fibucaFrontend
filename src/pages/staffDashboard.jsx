@@ -23,7 +23,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
 import toast from "react-hot-toast";
-import QRCode from "react-qr-code";
+//import QRCode from "react-qr-code";
+import { QRCodeSVG as QRCode } from "qrcode.react";
 
 export default function StaffDashboard() {
   const { user } = useAuth();
