@@ -1,8 +1,8 @@
 // src/pages/StaffDashboard.jsx
 import { useEffect, useState, useCallback, useMemo, useContext } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { useLocation } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import BottomNavbar from "../components/BottomNavbar";
 import { DashboardSectionMenuContext } from "../components/DashboardLayout";
@@ -13,31 +13,36 @@ import {
   FaUsers,
   FaChartLine,
   FaClock,
-  FaQrcode,
   FaCopy,
-  FaPrint,
+  FaQrcode,
+  FaComments,
+  FaPaperPlane,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
-import ReactDOM from "react-dom/client";
-import { QRCodeSVG } from "qrcode.react";
+import toast from "react-hot-toast";
+import QRCode from "react-qr-code";
 
 export default function StaffDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const setSectionMenus = useContext(DashboardSectionMenuContext);
 
-  const section = location.pathname.endsWith("/clients")
+  const activeTab = location.pathname.endsWith("/clients")
     ? "clients"
     : location.pathname.endsWith("/profile")
     ? "profile"
+    : location.pathname.endsWith("/complaints")
+    ? "complaints"
     : "links";
 
   const navbarTabs = [
     { id: "links", label: "Links", icon: FaLink, href: "/staff/links" },
     { id: "clients", label: "Clients", icon: FaUsers, href: "/staff/clients" },
+    { id: "complaints", label: "Complaints", icon: FaComments, href: "/staff/complaints" },
     { id: "profile", label: "Profile", icon: FaChartLine, href: "/staff/profile" },
   ];
 
@@ -52,148 +57,22 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
+  const [complaints, setComplaints] = useState([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(false);
+  const [replyDrafts, setReplyDrafts] = useState({});
+
   const VITE_FRONTEND_URL =
     import.meta.env.VITE_FRONTEND_URL || window.location.origin;
-
-  const linkUrl = useCallback(
-    (token) => `${String(VITE_FRONTEND_URL).replace(/\/$/, "")}/submission/${token}`,
-    [VITE_FRONTEND_URL]
-  );
-
-  const computeLinkStatus = (row) => {
-    const now = new Date();
-    const expired = row.expiresAt && new Date(row.expiresAt) < now;
-    const used = row.usedCount ?? 0;
-    const maxed = row.maxUses && used >= row.maxUses;
-    const active = (row.isActive ?? true) && !expired && !maxed;
-
-    return { active, expired, maxed };
-  };
-
-  const copyToClipboard = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      Swal.fire("Copied", "Link copied to clipboard", "success");
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-      Swal.fire("Copied", "Link copied to clipboard", "success");
-    }
-  };
-
-  const printQrPage = (url, meta = {}) => {
-    const w = window.open("", "_blank", "noopener,noreferrer");
-    if (!w) {
-      Swal.fire("Blocked", "Popup blocked. Please allow popups to print.", "info");
-      return;
-    }
-
-    const title = meta.title || "FIBUCA Submission Link";
-    const staffName = meta.staffName || "";
-    const expiresAt = meta.expiresAt || "";
-    const maxUses = meta.maxUses ?? "";
-    const usedCount = meta.usedCount ?? "";
-
-    w.document.open();
-    w.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width,initial-scale=1" />
-          <title>Print QR</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
-            .box { max-width: 520px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; padding: 18px; }
-            h1 { font-size: 18px; margin: 0 0 10px; }
-            .url { word-break: break-all; font-size: 12px; color: #333; margin-top: 12px; }
-            .meta { font-size: 12px; color: #444; margin-top: 12px; line-height: 1.5; }
-            .qr { display:flex; justify-content:center; margin-top: 14px; }
-            .hint { font-size: 12px; color: #666; margin-top: 10px; text-align:center; }
-          </style>
-        </head>
-        <body>
-          <div class="box">
-            <h1>${title}</h1>
-            <div class="qr" id="qrRoot"></div>
-            <div class="url">${url}</div>
-            <div class="meta">
-              ${staffName ? `<div><b>Staff:</b> ${staffName}</div>` : ""}
-              ${expiresAt ? `<div><b>Expires:</b> ${new Date(expiresAt).toLocaleString()}</div>` : ""}
-              ${maxUses !== "" ? `<div><b>Max Uses:</b> ${maxUses || "Unlimited"}</div>` : ""}
-              ${usedCount !== "" ? `<div><b>Used:</b> ${usedCount}</div>` : ""}
-            </div>
-            <div class="hint">Scan QR to open the submission form</div>
-          </div>
-
-          <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-          <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-          <script crossorigin src="https://unpkg.com/qrcode.react@3.1.0/dist/index.umd.js"></script>
-          <script>
-            const root = ReactDOM.createRoot(document.getElementById("qrRoot"));
-            const QR = window["qrcode.react"]?.QRCodeSVG || window["qrcode.react"]?.QRCodeCanvas;
-            root.render(
-              React.createElement(QR, { value: "${url}", size: 220 })
-            );
-            setTimeout(() => window.print(), 400);
-          </script>
-        </body>
-      </html>
-    `);
-    w.document.close();
-  };
-
-  const showQrModal = (row) => {
-    const url = linkUrl(row.token);
-
-    Swal.fire({
-      title: "Share Link (QR)",
-      html: `
-        <div style="display:flex;justify-content:center;margin-top:10px;">
-          <div id="qrMount"></div>
-        </div>
-        <div style="margin-top:12px;font-size:12px;word-break:break-all;color:#333;">
-          ${url}
-        </div>
-        <div style="margin-top:10px;font-size:12px;color:#555;text-align:left;line-height:1.5;">
-          <div><b>Expires:</b> ${row.expiresAt ? new Date(row.expiresAt).toLocaleString() : "N/A"}</div>
-          <div><b>Max Uses:</b> ${row.maxUses || "Unlimited"}</div>
-          <div><b>Used:</b> ${row.usedCount ?? 0}</div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Open Link",
-      cancelButtonText: "Close",
-      showDenyButton: true,
-      denyButtonText: "Copy Link",
-      showCloseButton: true,
-      didOpen: () => {
-        const mount = document.getElementById("qrMount");
-        if (!mount) return;
-        const root = ReactDOM.createRoot(mount);
-        root.render(<QRCodeSVG value={url} size={220} />);
-      },
-      preConfirm: () => {
-        window.open(url, "_blank", "noopener,noreferrer");
-      },
-    }).then((result) => {
-      if (result.isDenied) copyToClipboard(url);
-    });
-  };
 
   useEffect(() => {
     fetchSubmissions();
     fetchLinks();
+    fetchComplaints();
   }, []);
 
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
-    api
-      .get("/api/staff/submissions")
+    api.get("/api/staff/submissions")
       .then((res) => {
         setSubmissions(res.data || []);
         setFilteredSubs(res.data || []);
@@ -202,15 +81,32 @@ export default function StaffDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchLinks = useCallback(() => {
-    api
-      .get("/api/staff/links")
+  const fetchLinks = () => {
+    api.get("/api/staff/links")
       .then((res) => setLinks(res.data || []))
       .catch(console.error);
-  }, []);
+  };
+
+  const fetchComplaints = () => {
+    setLoadingComplaints(true);
+    api.get("/api/staff/complaints")
+      .then((res) => setComplaints(res.data || []))
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to fetch complaints");
+      })
+      .finally(() => setLoadingComplaints(false));
+  };
 
   const stats = useMemo(() => {
-    const activeLinks = links.filter((l) => computeLinkStatus(l).active).length;
+    const now = new Date();
+
+    const activeLinks = links.filter((l) => {
+      const expired = l.expiresAt && new Date(l.expiresAt) < now;
+      const maxed = l.maxUses && l.usedCount >= l.maxUses;
+      return l.isActive && !expired && !maxed;
+    }).length;
+
     const expiredLinks = links.length - activeLinks;
 
     return {
@@ -218,31 +114,37 @@ export default function StaffDashboard() {
       totalLinks: links.length,
       activeLinks,
       expiredLinks,
+      totalComplaints: complaints.length,
+      openComplaints: complaints.filter((c) => c.status === "OPEN").length,
     };
-  }, [links, submissions]);
+  }, [links, submissions, complaints]);
 
   const handleSearch = (value) => {
     if (!value) return setFilteredSubs(submissions);
 
-    const v = value.toLowerCase();
-    const results = submissions.filter(
-      (s) =>
-        (s.employeeName || "").toLowerCase().includes(v) ||
-        (s.employeeNumber || "").toLowerCase().includes(v) ||
-        (s.employerName || "").toLowerCase().includes(v)
+    const results = submissions.filter((s) =>
+      (s.employeeName || "").toLowerCase().includes(value.toLowerCase()) ||
+      (s.employeeNumber || "").toLowerCase().includes(value.toLowerCase()) ||
+      (s.employerName || "").toLowerCase().includes(value.toLowerCase()) ||
+      (s.branchName || "").toLowerCase().includes(value.toLowerCase()) ||
+      (s.phoneNumber || "").toLowerCase().includes(value.toLowerCase())
     );
 
     setFilteredSubs(results);
   };
 
   const exportToExcel = () => {
-    if (!filteredSubs.length) return Swal.fire("No Data", "No records found.", "info");
+    if (!filteredSubs.length) {
+      return Swal.fire("No Data", "No records found.", "info");
+    }
 
     const data = filteredSubs.map((s, index) => ({
       SN: index + 1,
       Name: s.employeeName,
       Number: s.employeeNumber,
       Employer: s.employerName,
+      Branch: s.branchName || "",
+      Phone: s.phoneNumber || "",
       Dues: s.dues,
       Submitted: s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "",
     }));
@@ -254,16 +156,20 @@ export default function StaffDashboard() {
   };
 
   const exportToPDF = () => {
-    if (!filteredSubs.length) return Swal.fire("No Data", "No records found.", "info");
+    if (!filteredSubs.length) {
+      return Swal.fire("No Data", "No records found.", "info");
+    }
 
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [["SN", "Name", "Number", "Employer", "Dues", "Submitted"]],
+      head: [["SN", "Name", "Number", "Employer", "Branch", "Phone", "Dues", "Submitted"]],
       body: filteredSubs.map((s, index) => [
         index + 1,
         s.employeeName,
         s.employeeNumber,
         s.employerName,
+        s.branchName || "",
+        s.phoneNumber || "",
         s.dues,
         s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "",
       ]),
@@ -289,38 +195,16 @@ export default function StaffDashboard() {
       if (!formValues) return;
 
       const res = await api.post("/api/staff/generate-link", formValues);
+      const link = res.data.link;
 
-      Swal.fire(
-        "Link Generated",
-        `<div style="text-align:left; font-size:13px;">
-           <div style="margin-bottom:8px;"><b>Link:</b></div>
-           <div style="word-break:break-all">${res.data.link}</div>
-           <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-             <button id="btnCopy" class="swal2-confirm swal2-styled" style="background:#2563eb">Copy</button>
-             <button id="btnQR" class="swal2-confirm swal2-styled" style="background:#111827">QR</button>
-           </div>
-         </div>`,
-        "success"
-      );
-
-      setTimeout(() => {
-        const url = res.data.link;
-        const btnCopy = document.getElementById("btnCopy");
-        const btnQR = document.getElementById("btnQR");
-        if (btnCopy) btnCopy.onclick = () => copyToClipboard(url);
-        if (btnQR)
-          btnQR.onclick = () =>
-            showQrModal({
-              token: url.split("/submission/")[1],
-              expiresAt: res.data.expiresAt,
-              maxUses: res.data.maxUses,
-              usedCount: 0,
-            });
-      }, 50);
+      await Swal.fire({
+        title: "Link Generated",
+        html: `<div class="text-left break-all">${link}</div>`,
+        icon: "success",
+      });
 
       fetchLinks();
     } catch (err) {
-      console.error(err);
       Swal.fire("Error", "Failed to generate link.", "error");
     } finally {
       setGenerating(false);
@@ -328,7 +212,9 @@ export default function StaffDashboard() {
   };
 
   const handleDeleteLink = async (id, usedCount) => {
-    if ((usedCount ?? 0) > 0) return Swal.fire("Locked", "Cannot delete used link.", "info");
+    if (usedCount > 0) {
+      return Swal.fire("Locked", "Cannot delete used link.", "info");
+    }
 
     const confirm = await Swal.fire({
       title: "Delete Link?",
@@ -349,102 +235,139 @@ export default function StaffDashboard() {
     }
   };
 
+  const handleCopyLink = async (token) => {
+    const url = `${VITE_FRONTEND_URL}/submission/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleShowQr = async (token) => {
+    const url = `${VITE_FRONTEND_URL}/submission/${token}`;
+
+    await Swal.fire({
+      title: "Scan QR Code",
+      html: `
+        <div id="qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;"></div>
+        <div style="margin-top:12px;word-break:break-all;font-size:12px;">${url}</div>
+      `,
+      didOpen: () => {
+        const wrap = document.getElementById("qr-wrap");
+        if (wrap) {
+          const container = document.createElement("div");
+          wrap.appendChild(container);
+          import("react-dom/client").then(({ createRoot }) => {
+            const root = createRoot(container);
+            root.render(<QRCode value={url} size={180} />);
+          });
+        }
+      },
+      width: 420,
+      confirmButtonText: "Close",
+    });
+  };
+
+  const updateComplaintStatus = async (id, status) => {
+    try {
+      await api.put(`/api/staff/complaints/${id}/status`, { status });
+      toast.success("Status updated");
+      fetchComplaints();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const sendReply = async (complaintId) => {
+    const message = (replyDrafts[complaintId] || "").trim();
+    if (!message) return toast.error("Reply message is required");
+
+    try {
+      await api.post(`/api/staff/complaints/${complaintId}/reply`, { message });
+      toast.success("Reply sent");
+      setReplyDrafts((prev) => ({ ...prev, [complaintId]: "" }));
+      fetchComplaints();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send reply");
+    }
+  };
+
   const clientColumns = [
-    { name: "#", selector: (row, i) => i + 1, width: "60px" },
-    { name: "Employee", selector: (r) => r.employeeName, sortable: true },
-    { name: "Number", selector: (r) => r.employeeNumber },
-    { name: "Employer", selector: (r) => r.employerName },
+    { name: "#", selector: (_, i) => i + 1, width: "60px" },
+    { name: "Employee", selector: (r) => r.employeeName, sortable: true, wrap: true },
+    { name: "Number", selector: (r) => r.employeeNumber, wrap: true },
+    { name: "Employer", selector: (r) => r.employerName, wrap: true },
+    { name: "Branch", selector: (r) => r.branchName || "-", wrap: true },
+    { name: "Phone", selector: (r) => r.phoneNumber || "-", wrap: true },
     { name: "Dues", selector: (r) => r.dues },
   ];
 
   const linkColumns = [
-    { name: "#", selector: (row, i) => i + 1, width: "60px" },
-
+    { name: "#", selector: (_, i) => i + 1, width: "60px" },
     {
       name: "Link",
       wrap: true,
-      cell: (row) => {
-        const url = linkUrl(row.token);
-        return (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline flex items-center gap-2"
-          >
-            <span style={{ wordBreak: "break-all" }}>{url}</span>
-          </a>
-        );
-      },
+      cell: (row) => (
+        <a
+          href={`${VITE_FRONTEND_URL}/submission/${row.token}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline break-all"
+        >
+          {row.token}
+        </a>
+      ),
     },
-
     { name: "Max Uses", selector: (r) => r.maxUses || "Unlimited" },
-    { name: "Used", selector: (r) => r.usedCount ?? 0 },
-
+    { name: "Used", selector: (r) => r.usedCount },
     {
       name: "Status",
       cell: (row) => {
-        const { active } = computeLinkStatus(row);
-        return active ? (
-          <span className="text-green-600 font-semibold">Active</span>
-        ) : (
-          <span className="text-red-600 font-semibold">Expired</span>
-        );
+        const now = new Date();
+        const expired = row.expiresAt && new Date(row.expiresAt) < now;
+        const maxed = row.maxUses && row.usedCount >= row.maxUses;
+
+        if (!row.isActive || expired || maxed) {
+          return <span className="text-red-600 font-semibold">Expired</span>;
+        }
+
+        return <span className="text-green-600 font-semibold">Active</span>;
       },
     },
-
     {
-      name: "Share",
+      name: "Actions",
       cell: (row) => (
-        <div className="flex gap-3 items-center">
+        <div className="flex items-center gap-2 whitespace-nowrap min-w-[170px]">
           <button
-            className="text-blue-700 hover:underline font-semibold flex items-center gap-1"
-            onClick={() => showQrModal(row)}
-            title="Show QR"
+            onClick={() => handleCopyLink(row.token)}
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            <FaCopy /> Copy
+          </button>
+
+          <button
+            onClick={() => handleShowQr(row.token)}
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
           >
             <FaQrcode /> QR
           </button>
 
-          <button
-            className="text-gray-900 hover:underline font-semibold flex items-center gap-1"
-            onClick={() =>
-              printQrPage(linkUrl(row.token), {
-                title: "FIBUCA Submission Link",
-                staffName: user?.name,
-                expiresAt: row.expiresAt,
-                maxUses: row.maxUses,
-                usedCount: row.usedCount ?? 0,
-              })
-            }
-            title="Print QR"
-          >
-            <FaPrint /> Print
-          </button>
-
-          <button
-            className="text-green-700 hover:underline font-semibold flex items-center gap-1"
-            onClick={() => copyToClipboard(linkUrl(row.token))}
-            title="Copy Link"
-          >
-            <FaCopy /> Copy
-          </button>
+          {row.usedCount === 0 ? (
+            <button
+              onClick={() => handleDeleteLink(row.id, row.usedCount)}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Delete
+            </button>
+          ) : (
+            <span className="text-gray-400 text-xs">Locked</span>
+          )}
         </div>
       ),
-    },
-
-    {
-      name: "Delete",
-      cell: (row) =>
-        (row.usedCount ?? 0) === 0 ? (
-          <button
-            onClick={() => handleDeleteLink(row.id, row.usedCount ?? 0)}
-            className="text-red-600 hover:underline font-semibold"
-          >
-            Delete
-          </button>
-        ) : (
-          <span className="text-gray-400">Locked</span>
-        ),
     },
   ];
 
@@ -453,63 +376,176 @@ export default function StaffDashboard() {
       <div className="max-w-7xl mx-auto space-y-6 p-6">
         <h1 className="text-3xl font-bold">Staff Dashboard</h1>
 
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-5 gap-4">
           <StatCard icon={<FaUsers />} label="Clients" value={stats.totalClients} />
           <StatCard icon={<FaLink />} label="Total Links" value={stats.totalLinks} />
           <StatCard icon={<FaChartLine />} label="Active Links" value={stats.activeLinks} />
           <StatCard icon={<FaClock />} label="Expired Links" value={stats.expiredLinks} />
+          <StatCard icon={<FaComments />} label="Open Complaints" value={stats.openComplaints} />
         </div>
 
-        {section === "links" && (
+        {activeTab === "links" && (
           <>
-            <div className="flex flex-wrap gap-2 mt-4">
-              <button
-                onClick={handleGenerateLink}
-                disabled={generating}
-                className={`px-4 py-2 rounded text-white ${
-                  generating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                }`}
-              >
-                Generate Link
-              </button>
-            </div>
+            <button
+              onClick={handleGenerateLink}
+              disabled={generating}
+              className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
+            >
+              {generating ? "Generating..." : "Generate Link"}
+            </button>
 
             <div className="bg-white rounded shadow mt-4">
-              <DataTable columns={linkColumns} data={links} pagination highlightOnHover responsive />
+              <DataTable
+                columns={linkColumns}
+                data={links}
+                pagination
+                highlightOnHover
+                responsive
+              />
             </div>
           </>
         )}
 
-        {section === "clients" && (
+        {activeTab === "clients" && (
           <>
-            <div className="flex flex-wrap gap-2 mt-4 items-center">
+            <div className="flex flex-col md:flex-row gap-3 mt-4 md:items-center md:justify-between">
               <input
-                placeholder="Search name / number / employer..."
+                type="text"
+                placeholder="Search by name, number, employer, branch, phone..."
                 onChange={(e) => handleSearch(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 w-full md:w-96"
+                className="border rounded px-3 py-2 w-full md:max-w-md"
               />
 
-              <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2">
-                <FaDownload /> Excel
-              </button>
-              <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded flex items-center gap-2">
-                <FaFilePdf /> PDF
-              </button>
+              <div className="flex gap-3">
+                <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded">
+                  Excel
+                </button>
+                <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded">
+                  PDF
+                </button>
+              </div>
             </div>
 
             <div className="bg-white rounded shadow mt-4">
-              <DataTable columns={clientColumns} data={filteredSubs} pagination highlightOnHover responsive />
+              <DataTable
+                columns={clientColumns}
+                data={filteredSubs}
+                pagination
+                highlightOnHover
+                responsive
+              />
             </div>
           </>
         )}
 
-        {section === "profile" && (
+        {activeTab === "complaints" && (
+          <div className="space-y-4">
+            {loadingComplaints ? (
+              <div className="bg-white p-6 rounded shadow text-gray-500">Loading complaints...</div>
+            ) : complaints.length === 0 ? (
+              <div className="bg-white p-6 rounded shadow text-gray-500">No complaints found.</div>
+            ) : (
+              complaints.map((c) => (
+                <div key={c.id} className="bg-white p-5 rounded shadow space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold">{c.subject}</h3>
+                      <p className="text-sm text-gray-600">
+                        {c.user?.name} • {c.user?.employeeNumber}
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => updateComplaintStatus(c.id, "OPEN")}
+                        className={`px-3 py-1 rounded text-sm ${
+                          c.status === "OPEN"
+                            ? "bg-yellow-500 text-white"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        OPEN
+                      </button>
+                      <button
+                        onClick={() => updateComplaintStatus(c.id, "RESOLVED")}
+                        className={`px-3 py-1 rounded text-sm ${
+                          c.status === "RESOLVED"
+                            ? "bg-green-600 text-white"
+                            : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        RESOLVED
+                      </button>
+                      <button
+                        onClick={() => updateComplaintStatus(c.id, "CLOSED")}
+                        className={`px-3 py-1 rounded text-sm ${
+                          c.status === "CLOSED"
+                            ? "bg-gray-700 text-white"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        CLOSED
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border rounded p-3 bg-gray-50">
+                    <p className="whitespace-pre-wrap text-sm text-gray-800">{c.message}</p>
+                  </div>
+
+                  {c.replies?.length > 0 && (
+                    <div className="space-y-2">
+                      {c.replies.map((r) => (
+                        <div key={r.id} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded">
+                          <div className="text-sm font-semibold text-blue-900">
+                            {r.sender?.name} ({r.sender?.role})
+                          </div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            {new Date(r.createdAt).toLocaleString()}
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{r.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <textarea
+                      rows={3}
+                      value={replyDrafts[c.id] || ""}
+                      onChange={(e) =>
+                        setReplyDrafts((prev) => ({
+                          ...prev,
+                          [c.id]: e.target.value,
+                        }))
+                      }
+                      placeholder="Write reply..."
+                      className="w-full border rounded px-3 py-2"
+                    />
+                    <button
+                      onClick={() => sendReply(c.id)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      <FaPaperPlane /> Send Reply
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === "profile" && (
           <div className="bg-white p-6 rounded shadow mt-4 space-y-2">
             <p><strong>Name:</strong> {user?.name}</p>
             <p><strong>Email:</strong> {user?.email}</p>
             <p><strong>Role:</strong> {user?.role}</p>
             <p><strong>Total Clients Served:</strong> {stats.totalClients}</p>
             <p><strong>Total Links Generated:</strong> {stats.totalLinks}</p>
+            <p><strong>Total Complaints:</strong> {stats.totalComplaints}</p>
           </div>
         )}
       </div>

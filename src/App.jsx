@@ -97,6 +97,7 @@ export default function App() {
               <Route path="/staff/clients" element={<StaffDashboard />} />
               <Route path="/staff/profile" element={<StaffDashboard />} />
               <Route path="/staff/scan-paper" element={<ScanPaperForm />} />
+              <Route path="/staff/complaints" element={<StaffDashboard />} />
             </Route>
           </Route>
 

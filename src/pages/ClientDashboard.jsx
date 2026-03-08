@@ -244,12 +244,12 @@ export default function ClientDashboard() {
   const section = location.pathname.endsWith("/pdf")
     ? "pdf"
     : location.pathname.endsWith("/idcards")
-    ? "idcards"
-    : location.pathname.endsWith("/generate")
-    ? "generate"
-    : location.pathname.endsWith("/support")
-    ? "support"
-    : "overview";
+      ? "idcards"
+      : location.pathname.endsWith("/generate")
+        ? "generate"
+        : location.pathname.endsWith("/support")
+          ? "support"
+          : "overview";
 
   const getCardRole = () => "Member";
 
@@ -270,8 +270,8 @@ export default function ClientDashboard() {
                 {loadingSubmission
                   ? "Loading…"
                   : submission
-                  ? new Date(submission.submittedAt).toLocaleDateString()
-                  : "None"}
+                    ? new Date(submission.submittedAt).toLocaleDateString()
+                    : "None"}
               </p>
             </div>
 
@@ -343,9 +343,8 @@ export default function ClientDashboard() {
                     <button
                       onClick={() => handleReClean(card.id)}
                       disabled={isCleaning}
-                      className={`mt-2 px-3 py-1 rounded text-white ${
-                        isCleaning ? "bg-gray-400" : "bg-yellow-600 hover:bg-yellow-700"
-                      }`}
+                      className={`mt-2 px-3 py-1 rounded text-white ${isCleaning ? "bg-gray-400" : "bg-yellow-600 hover:bg-yellow-700"
+                        }`}
                     >
                       <FaRedo className="inline mr-1" /> Re-clean Photo
                     </button>
@@ -458,9 +457,8 @@ export default function ClientDashboard() {
               <button
                 onClick={submitComplaint}
                 disabled={sendingComplaint}
-                className={`px-4 py-2 rounded text-white ${
-                  sendingComplaint ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                }`}
+                className={`px-4 py-2 rounded text-white ${sendingComplaint ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+                  }`}
               >
                 Send Complaint
               </button>
@@ -506,9 +504,8 @@ export default function ClientDashboard() {
             <button
               onClick={submitTransferRequest}
               disabled={sendingTransfer}
-              className={`mt-3 px-4 py-2 rounded text-white ${
-                sendingTransfer ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"
-              }`}
+              className={`mt-3 px-4 py-2 rounded text-white ${sendingTransfer ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"
+                }`}
             >
               Submit Transfer Request
             </button>
@@ -520,6 +517,7 @@ export default function ClientDashboard() {
 
           <div className="bg-white rounded shadow p-6">
             <h3 className="font-semibold mb-2">My Requests / Complaints</h3>
+
             {loadingComplaints ? (
               <p className="text-gray-500">Loading…</p>
             ) : complaints.length === 0 ? (
@@ -531,21 +529,45 @@ export default function ClientDashboard() {
                     <div className="flex items-center justify-between">
                       <p className="font-semibold">{c.subject}</p>
                       <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          c.status === "OPEN"
+                        className={`text-xs px-2 py-1 rounded ${c.status === "OPEN"
                             ? "bg-yellow-100 text-yellow-800"
                             : c.status === "RESOLVED"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
                       >
                         {c.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{c.message}</p>
+
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">
+                      {c.message}
+                    </p>
+
                     <p className="text-xs text-gray-400 mt-2">
                       {new Date(c.createdAt).toLocaleString()}
                     </p>
+
+                    {c.replies?.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {c.replies.map((r) => (
+                          <div
+                            key={r.id}
+                            className="bg-blue-50 border-l-4 border-blue-500 rounded p-3"
+                          >
+                            <p className="text-sm font-semibold text-blue-900">
+                              {r.sender?.name} ({r.sender?.role})
+                            </p>
+                            <p className="text-xs text-gray-500 mb-1">
+                              {new Date(r.createdAt).toLocaleString()}
+                            </p>
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                              {r.message}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
