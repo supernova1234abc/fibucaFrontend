@@ -246,7 +246,7 @@ const IDCard = forwardRef(({ card }, ref) => {
             {/* watermark/logo */}
             <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none z-20">
               <img
-                src="/images/newFibucaLogo.png"
+                src="/images/logo-watermark.png"
                 alt="Watermark"
                 className="w-1/2 object-contain"
               />
