@@ -248,7 +248,7 @@ const IDCard = forwardRef(({ card }, ref) => {
               <img
                 src="/images/logo-watermark.png"
                 alt="Watermark"
-                className="w-[170px] object-contain"
+                className="w-[150px] object-contain"
               />
             </div>
 
