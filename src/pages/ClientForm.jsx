@@ -11,13 +11,12 @@ export default function ClientForm() {
   const navigate = useNavigate();
   const { token } = useParams();
 
-  // ======= FORM STATE =======
   const [form, setForm] = useState({
     employeeName: "",
     employeeNumber: "",
     employerName: "",
-    branchName: "",     // ✅ DB only, not PDF
-    phoneNumber: "",    // ✅ DB only, not PDF
+    branchName: "",
+    phoneNumber: "",
     dues: "1%",
     witness: "",
     employeeDate: "",
@@ -28,7 +27,6 @@ export default function ClientForm() {
   const [loading, setLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
 
-  // ======= SIGNATURE STATE =======
   const [employeeSigOpen, setEmployeeSigOpen] = useState(false);
   const [witnessSigOpen, setWitnessSigOpen] = useState(false);
   const [employeeSignature, setEmployeeSignature] = useState(null);
@@ -37,7 +35,6 @@ export default function ClientForm() {
   const sigPadRef = useRef(null);
   const witnessSigPadRef = useRef(null);
 
-  // ======= TOKEN VALIDATION =======
   useEffect(() => {
     if (!token) {
       console.warn("❌ ClientForm: No token in URL");
@@ -66,11 +63,23 @@ export default function ClientForm() {
       });
   }, [token]);
 
-  // ======= DEFAULT DATES =======
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setForm((f) => ({ ...f, employeeDate: today, witnessDate: today }));
   }, []);
+
+  const toUpperSafe = (value) => String(value || "").toUpperCase().trim();
+
+  const normalizeFormForSubmit = (rawForm) => ({
+    ...rawForm,
+    employeeName: toUpperSafe(rawForm.employeeName),
+    employeeNumber: toUpperSafe(rawForm.employeeNumber),
+    employerName: toUpperSafe(rawForm.employerName),
+    branchName: toUpperSafe(rawForm.branchName),
+    phoneNumber: toUpperSafe(rawForm.phoneNumber),
+    witness: toUpperSafe(rawForm.witness),
+    dues: toUpperSafe(rawForm.dues || "1%"),
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,7 +110,6 @@ export default function ClientForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ======= PDF GENERATION & SUBMIT =======
   const generatePDF = async () => {
     if (!validate()) {
       Swal.fire("Missing Information", "Please complete all required fields.", "warning");
@@ -128,6 +136,8 @@ export default function ClientForm() {
     setLoading(true);
 
     try {
+      const submitForm = normalizeFormForSubmit(form);
+
       const doc = new jsPDF({
         orientation: "p",
         unit: "mm",
@@ -137,7 +147,9 @@ export default function ClientForm() {
 
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
-      let y = 20;
+
+      // pushed a bit downward so the whole header area is not too high
+      let y = 30;
 
       // ======= HEADER =======
       doc.setFont("Times", "italic");
@@ -145,14 +157,22 @@ export default function ClientForm() {
       doc.text("Employment and Labour Relations (General)", pageWidth / 2, y, {
         align: "center",
       });
+
       y += 3;
       doc.line(margin, y, pageWidth - margin, y);
+
       y += 6;
       doc.setFontSize(11);
+
+      // Left text stays as before
       doc.text("G.N No. 47 (contd.)", margin, y);
+
+      // Right text moved one line lower, still right aligned
       doc.setFont("Times", "bold");
-      doc.text("TUF. 15", pageWidth - margin, y, { align: "right" });
-      y += 12;
+      doc.text("TUF. 15", pageWidth - margin, y + 6, { align: "right" });
+
+      // extra space so title starts lower and neatly separated
+      y += 18;
 
       // ======= TITLE =======
       doc.setFont("Times", "normal");
@@ -173,8 +193,6 @@ export default function ClientForm() {
       y += 15;
 
       // ======= FORM FIELDS =======
-      // NOTE:
-      // branchName and phoneNumber are intentionally NOT printed to the PDF.
       doc.setFont("Times", "normal");
 
       const drawField = (label, value) => {
@@ -191,9 +209,9 @@ export default function ClientForm() {
         y += 8;
       };
 
-      drawField("EMPLOYEE'S NAME", form.employeeName);
-      drawField("EMPLOYEE NUMBER", form.employeeNumber);
-      drawField("EMPLOYER NAME", form.employerName);
+      drawField("EMPLOYEE'S NAME", submitForm.employeeName);
+      drawField("EMPLOYEE NUMBER", submitForm.employeeNumber);
+      drawField("EMPLOYER NAME", submitForm.employerName);
       drawField("TRADE UNION NAME", "FIBUCA");
 
       const duesLabel = "INITIAL MONTHLY UNION DUES:";
@@ -204,7 +222,7 @@ export default function ClientForm() {
 
       doc.text(duesLabel, margin, y);
       doc.line(duesStart, y + 1, pageWidth - margin, y + 1);
-      doc.text(form.dues, (duesStart + pageWidth - margin) / 2, y, {
+      doc.text(submitForm.dues, (duesStart + pageWidth - margin) / 2, y, {
         align: "center",
       });
       y += 15;
@@ -244,7 +262,7 @@ export default function ClientForm() {
 
       doc.setFontSize(11);
       doc.setFont("Times", "normal");
-      doc.text(form.employeeDate, empDateStart + dateWidth / 2, y - 1, {
+      doc.text(submitForm.employeeDate, empDateStart + dateWidth / 2, y - 1, {
         align: "center",
       });
 
@@ -267,12 +285,12 @@ export default function ClientForm() {
 
       doc.setFontSize(11);
       doc.setFont("Times", "normal");
-      doc.text(form.witness, witSignStart + 5, y);
+      doc.text(submitForm.witness, witSignStart + 5, y);
 
       const witImgX = witSignStart + (lineWidth - signWidth) / 2;
       doc.addImage(witnessSignature, "PNG", witImgX, y - signHeight, signWidth, signHeight);
 
-      doc.text(form.witnessDate, witDateStart + dateWidth / 2, y - 1, {
+      doc.text(submitForm.witnessDate, witDateStart + dateWidth / 2, y - 1, {
         align: "center",
       });
 
@@ -286,8 +304,8 @@ export default function ClientForm() {
       // ======= UPLOAD =======
       const pdfBlob = doc.output("blob", { compress: true });
       const formData = new FormData();
-      formData.append("pdf", pdfBlob, `${form.employeeName}_form.pdf`);
-      formData.append("data", JSON.stringify(form)); // includes branchName + phoneNumber for DB
+      formData.append("pdf", pdfBlob, `${submitForm.employeeName}_form.pdf`);
+      formData.append("data", JSON.stringify(submitForm));
 
       console.log("🔍 Token check during submit:", { token: !!token, full: token });
 
@@ -343,7 +361,6 @@ export default function ClientForm() {
         throw lastError || new Error("Form submission failed after retries");
       }
 
-      // ======= SUCCESS =======
       if (response.data.loginCredentials) {
         await Swal.fire({
           title: "Account Created Successfully!",
@@ -423,7 +440,6 @@ export default function ClientForm() {
           <span className="font-bold">TUF. 15</span>
         </div>
 
-        {/* FORM GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           {mainFields.map((field) => (
             <div key={field.name}>
@@ -471,7 +487,6 @@ export default function ClientForm() {
           They will not appear in the generated PDF.
         </div>
 
-        {/* SIGNATURE BOXES */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           <SignatureBox
             label="Employee Signature"
@@ -487,7 +502,6 @@ export default function ClientForm() {
           />
         </div>
 
-        {/* SUBMIT */}
         {!tokenValid && (
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-300 rounded text-yellow-800 text-center">
             <p className="font-semibold">🔒 Staff Authorization Required</p>
@@ -529,7 +543,6 @@ export default function ClientForm() {
         </button>
       </div>
 
-      {/* SIGNATURE MODALS */}
       {employeeSigOpen && (
         <SignatureModal
           close={() => setEmployeeSigOpen(false)}
@@ -555,7 +568,6 @@ export default function ClientForm() {
   );
 }
 
-// ======= SIGNATURE COMPONENTS =======
 function SignatureBox({ label, signature, openModal, error }) {
   return (
     <div>

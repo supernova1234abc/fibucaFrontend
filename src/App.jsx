@@ -12,6 +12,7 @@ import SubmissionValidator from './pages/SubmissionValidator';
 
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminReports from './pages/AdminReports';
 import ClientDashboard from './pages/ClientDashboard';
 import StaffDashboard from './pages/staffDashboard';
 
@@ -21,8 +22,6 @@ import { useAuth } from './context/AuthContext';
 import './index.css';
 
 // --- Menus ---
-// Keep only top-level dashboard entries here.
-// Section routes for admin/staff will be injected dynamically into DashboardLayout sidebar.
 const clientMenus = [
   { href: '/client', label: 'Overview' },
   { href: '/client/pdf', label: 'PDF Form' },
@@ -34,6 +33,7 @@ const clientMenus = [
 const adminMenus = [
   { href: '/admin/submissions', label: 'Dashboard' },
   { href: '/admin/scan-paper', label: 'Scan Paper' },
+  { href: '/admin/reports', label: 'Reports' },
 ];
 
 const staffMenus = [
@@ -85,6 +85,7 @@ export default function App() {
               <Route path="/admin/submissions" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminDashboard />} />
               <Route path="/admin/leaderboard" element={<AdminDashboard />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/scan-paper" element={<ScanPaperForm />} />
             </Route>
           </Route>

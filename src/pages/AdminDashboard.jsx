@@ -1,9 +1,9 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState, useCallback, useContext } from 'react';
-import { api, setAuthToken } from '../lib/api';
-import DataTable from 'react-data-table-component';
-import BottomNavbar from '../components/BottomNavbar';
-import { DashboardSectionMenuContext } from '../components/DashboardLayout';
+import { useEffect, useState, useCallback, useContext } from "react";
+import { api, setAuthToken } from "../lib/api";
+import DataTable from "react-data-table-component";
+import BottomNavbar from "../components/BottomNavbar";
+import { DashboardSectionMenuContext } from "../components/DashboardLayout";
 import {
   FaDownload,
   FaFilePdf,
@@ -17,28 +17,32 @@ import {
   FaUsers,
   FaHistory,
   FaFilter,
-} from 'react-icons/fa';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Swal from 'sweetalert2';
+  FaChartLine,
+} from "react-icons/fa";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useNavigate, useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const setSectionMenus = useContext(DashboardSectionMenuContext);
 
-  const section = location.pathname.endsWith('/users')
-    ? 'users'
-    : location.pathname.endsWith('/leaderboard')
-    ? 'leaderboard'
-    : 'submissions';
+  const section = location.pathname.endsWith("/users")
+    ? "users"
+    : location.pathname.endsWith("/leaderboard")
+    ? "leaderboard"
+    : location.pathname.endsWith("/reports")
+    ? "reports"
+    : "submissions";
 
   const navbarTabs = [
-    { id: 'submissions', label: 'Submissions', icon: FaFileAlt, href: '/admin/submissions' },
-    { id: 'users', label: 'Users', icon: FaUsers, href: '/admin/users' },
-    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy, href: '/admin/leaderboard' },
+    { id: "submissions", label: "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
+    { id: "users", label: "Users", icon: FaUsers, href: "/admin/users" },
+    { id: "leaderboard", label: "Leaderboard", icon: FaTrophy, href: "/admin/leaderboard" },
+    { id: "reports", label: "Reports", icon: FaChartLine, href: "/admin/reports" },
   ];
 
   useEffect(() => {
@@ -52,7 +56,6 @@ export default function AdminDashboard() {
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [leaderboard, setLeaderboard] = useState([]);
 
   const [systemUsers, setSystemUsers] = useState([]);
   const [filteredSystemUsers, setFilteredSystemUsers] = useState([]);
@@ -60,37 +63,36 @@ export default function AdminDashboard() {
   const [editingSystemUser, setEditingSystemUser] = useState(null);
   const [userLoading, setUserLoading] = useState(false);
   const [userFormData, setUserFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    employeeNumber: '',
-    role: 'CLIENT',
-    password: '',
+    name: "",
+    username: "",
+    email: "",
+    employeeNumber: "",
+    role: "CLIENT",
+    password: "",
   });
 
   const [submissionFilters, setSubmissionFilters] = useState({
-    employerName: '',
-    branchName: '',
-    employeeName: '',
-    employeeNumber: '',
-    phoneNumber: '',
+    employerName: "",
+    branchName: "",
+    employeeName: "",
+    employeeNumber: "",
+    phoneNumber: "",
   });
 
   const [staffLeaderboard, setStaffLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   const BACKEND_URL =
-    import.meta.env.VITE_BACKEND_URL || 'https://fibuca-backend.vercel.app';
+    import.meta.env.VITE_BACKEND_URL || "https://fibuca-backend.vercel.app";
 
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
     api
-      .get('/submissions')
+      .get("/submissions")
       .then((res) => {
         const rows = res.data || [];
         setUsers(rows);
         setFilteredUsers(rows);
-        generateLeaderboard(rows);
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
@@ -99,14 +101,14 @@ export default function AdminDashboard() {
   const fetchSystemUsers = useCallback(() => {
     setUserLoading(true);
     api
-      .get('/api/admin/users')
+      .get("/api/admin/users")
       .then((res) => {
         setSystemUsers(res.data || []);
         setFilteredSystemUsers(res.data || []);
       })
       .catch((err) => {
-        console.error('❌ Failed to fetch users:', err);
-        Swal.fire('Error', 'Failed to fetch users', 'error');
+        console.error("❌ Failed to fetch users:", err);
+        Swal.fire("Error", "Failed to fetch users", "error");
       })
       .finally(() => setUserLoading(false));
   }, []);
@@ -114,28 +116,28 @@ export default function AdminDashboard() {
   const fetchStaffLeaderboard = useCallback(() => {
     setLeaderboardLoading(true);
     api
-      .get('/api/staff/leaderboard')
+      .get("/api/staff/leaderboard")
       .then((res) => {
         setStaffLeaderboard(res.data || []);
       })
       .catch((err) => {
-        console.error('❌ Failed to fetch leaderboard:', err);
-        Swal.fire('Error', 'Failed to fetch staff leaderboard', 'error');
+        console.error("❌ Failed to fetch leaderboard:", err);
+        Swal.fire("Error", "Failed to fetch staff leaderboard", "error");
       })
       .finally(() => setLeaderboardLoading(false));
   }, []);
 
   useEffect(() => {
     const user =
-      JSON.parse(localStorage.getItem('fibuca_user')) ||
-      JSON.parse(sessionStorage.getItem('fibuca_user'));
+      JSON.parse(localStorage.getItem("fibuca_user")) ||
+      JSON.parse(sessionStorage.getItem("fibuca_user"));
 
     const token =
-      localStorage.getItem('fibuca_token') ||
-      sessionStorage.getItem('fibuca_token');
+      localStorage.getItem("fibuca_token") ||
+      sessionStorage.getItem("fibuca_token");
 
-    if (!user || user.role !== 'ADMIN') {
-      navigate('/login');
+    if (!user || user.role !== "ADMIN") {
+      navigate("/login");
       return;
     }
 
@@ -157,13 +159,13 @@ export default function AdminDashboard() {
 
       const url = params.toString()
         ? `/api/admin/submissions/search?${params.toString()}`
-        : '/submissions';
+        : "/submissions";
 
       const res = await api.get(url);
       setFilteredUsers(res.data || []);
     } catch (err) {
-      console.error('❌ advanced submission search failed:', err);
-      Swal.fire('Error', 'Failed to search submissions', 'error');
+      console.error("❌ advanced submission search failed:", err);
+      Swal.fire("Error", "Failed to search submissions", "error");
     } finally {
       setLoading(false);
     }
@@ -171,16 +173,16 @@ export default function AdminDashboard() {
 
   const resetSubmissionFilters = async () => {
     setSubmissionFilters({
-      employerName: '',
-      branchName: '',
-      employeeName: '',
-      employeeNumber: '',
-      phoneNumber: '',
+      employerName: "",
+      branchName: "",
+      employeeName: "",
+      employeeNumber: "",
+      phoneNumber: "",
     });
 
     try {
       setLoading(true);
-      const res = await api.get('/submissions');
+      const res = await api.get("/submissions");
       const rows = res.data || [];
       setUsers(rows);
       setFilteredUsers(rows);
@@ -197,20 +199,20 @@ export default function AdminDashboard() {
       setUserFormData({
         name: user.name,
         username: user.username,
-        email: user.email || '',
-        employeeNumber: user.employeeNumber || '',
+        email: user.email || "",
+        employeeNumber: user.employeeNumber || "",
         role: user.role,
-        password: '',
+        password: "",
       });
     } else {
       setEditingSystemUser(null);
       setUserFormData({
-        name: '',
-        username: '',
-        email: '',
-        employeeNumber: '',
-        role: 'CLIENT',
-        password: '',
+        name: "",
+        username: "",
+        email: "",
+        employeeNumber: "",
+        role: "CLIENT",
+        password: "",
       });
     }
     setShowUserModal(true);
@@ -229,7 +231,7 @@ export default function AdminDashboard() {
   const handleSaveUser = async () => {
     try {
       if (!userFormData.name || !userFormData.username) {
-        return Swal.fire('Error', 'Name and Username are required', 'error');
+        return Swal.fire("Error", "Name and Username are required", "error");
       }
 
       if (editingSystemUser) {
@@ -239,39 +241,39 @@ export default function AdminDashboard() {
           role: userFormData.role,
           employeeNumber: userFormData.employeeNumber,
         });
-        Swal.fire('Success!', 'User updated successfully', 'success');
+        Swal.fire("Success!", "User updated successfully", "success");
       } else {
         if (!userFormData.password || userFormData.password.length < 6) {
-          return Swal.fire('Error', 'Password must be at least 6 characters', 'error');
+          return Swal.fire("Error", "Password must be at least 6 characters", "error");
         }
-        await api.post('/api/admin/users', userFormData);
-        Swal.fire('Success!', 'User created successfully', 'success');
+        await api.post("/api/admin/users", userFormData);
+        Swal.fire("Success!", "User created successfully", "success");
       }
 
       handleCloseUserModal();
       fetchSystemUsers();
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.error || 'Failed to save user', 'error');
+      Swal.fire("Error", err.response?.data?.error || "Failed to save user", "error");
     }
   };
 
   const handleDeleteUser = (userId) => {
     Swal.fire({
-      title: 'Delete User?',
-      text: 'This action cannot be undone.',
-      icon: 'warning',
+      title: "Delete User?",
+      text: "This action cannot be undone.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#e11d48',
+      confirmButtonColor: "#e11d48",
     }).then((result) => {
       if (result.isConfirmed) {
         api
           .delete(`/api/admin/users/${userId}`)
           .then(() => {
-            Swal.fire('Deleted!', 'User deleted successfully', 'success');
+            Swal.fire("Deleted!", "User deleted successfully", "success");
             fetchSystemUsers();
           })
           .catch((err) =>
-            Swal.fire('Error', err.response?.data?.error || 'Failed to delete user', 'error')
+            Swal.fire("Error", err.response?.data?.error || "Failed to delete user", "error")
           );
       }
     });
@@ -282,35 +284,12 @@ export default function AdminDashboard() {
 
     const results = systemUsers.filter(
       (u) =>
-        (u.name || '').toLowerCase().includes(value.toLowerCase()) ||
-        (u.username || '').toLowerCase().includes(value.toLowerCase()) ||
-        (u.email || '').toLowerCase().includes(value.toLowerCase())
+        (u.name || "").toLowerCase().includes(value.toLowerCase()) ||
+        (u.username || "").toLowerCase().includes(value.toLowerCase()) ||
+        (u.email || "").toLowerCase().includes(value.toLowerCase())
     );
 
     setFilteredSystemUsers(results);
-  };
-
-  const generateLeaderboard = (submissions) => {
-    const staffMap = {};
-
-    submissions.forEach((sub) => {
-      if (sub.employeeName) {
-        if (!staffMap[sub.employeeName]) {
-          staffMap[sub.employeeName] = {
-            name: sub.employeeName,
-            employeeNumber: sub.employeeNumber || '',
-            submissions: 0,
-          };
-        }
-        staffMap[sub.employeeName].submissions += 1;
-      }
-    });
-
-    const leaderboardData = Object.values(staffMap)
-      .sort((a, b) => b.submissions - a.submissions)
-      .slice(0, 5);
-
-    setLeaderboard(leaderboardData);
   };
 
   const handleSearch = (value) => {
@@ -318,11 +297,11 @@ export default function AdminDashboard() {
 
     const results = users.filter(
       (u) =>
-        (u.employeeName || '').toLowerCase().includes(value.toLowerCase()) ||
-        (u.employeeNumber || '').toLowerCase().includes(value.toLowerCase()) ||
-        (u.employerName || '').toLowerCase().includes(value.toLowerCase()) ||
-        (u.branchName || '').toLowerCase().includes(value.toLowerCase()) ||
-        (u.phoneNumber || '').toLowerCase().includes(value.toLowerCase())
+        (u.employeeName || "").toLowerCase().includes(value.toLowerCase()) ||
+        (u.employeeNumber || "").toLowerCase().includes(value.toLowerCase()) ||
+        (u.employerName || "").toLowerCase().includes(value.toLowerCase()) ||
+        (u.branchName || "").toLowerCase().includes(value.toLowerCase()) ||
+        (u.phoneNumber || "").toLowerCase().includes(value.toLowerCase())
     );
 
     setFilteredUsers(results);
@@ -330,58 +309,58 @@ export default function AdminDashboard() {
 
   const exportToExcel = () => {
     if (!filteredUsers.length) {
-      return Swal.fire('No Data', 'No records found.', 'info');
+      return Swal.fire("No Data", "No records found.", "info");
     }
 
     const data = filteredUsers.map((user, index) => ({
       SN: index + 1,
       Name: user.employeeName,
       Number: user.employeeNumber,
-      Phone: user.phoneNumber || '',
-      Employer: user.employerName || '',
-      Branch: user.branchName || '',
+      Phone: user.phoneNumber || "",
+      Employer: user.employerName || "",
+      Branch: user.branchName || "",
       Dues: user.dues,
-      Submitted: user.submittedAt ? new Date(user.submittedAt).toLocaleString() : '',
+      Submitted: user.submittedAt ? new Date(user.submittedAt).toLocaleString() : "",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Submissions');
-    XLSX.writeFile(workbook, 'fibuca_clients.xlsx');
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Submissions");
+    XLSX.writeFile(workbook, "fibuca_clients.xlsx");
   };
 
   const exportToPDF = () => {
     if (!filteredUsers.length) {
-      return Swal.fire('No Data', 'No records found.', 'info');
+      return Swal.fire("No Data", "No records found.", "info");
     }
 
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [['SN', 'Name', 'Number', 'Phone', 'Employer', 'Branch', 'Dues', 'Submitted']],
+      head: [["SN", "Name", "Number", "Phone", "Employer", "Branch", "Dues", "Submitted"]],
       body: filteredUsers.map((user, index) => [
         index + 1,
         user.employeeName,
         user.employeeNumber,
-        user.phoneNumber || '',
-        user.employerName || '',
-        user.branchName || '',
+        user.phoneNumber || "",
+        user.employerName || "",
+        user.branchName || "",
         user.dues,
-        user.submittedAt ? new Date(user.submittedAt).toLocaleString() : '',
+        user.submittedAt ? new Date(user.submittedAt).toLocaleString() : "",
       ]),
     });
-    doc.save('fibuca_clients.pdf');
+    doc.save("fibuca_clients.pdf");
   };
 
   const handleEdit = (user) => {
     setEditingUser(user);
     setEditForm({
-      employeeName: user.employeeName || '',
-      employeeNumber: user.employeeNumber || '',
-      employerName: user.employerName || '',
-      branchName: user.branchName || '',
-      phoneNumber: user.phoneNumber || '',
-      dues: user.dues || '',
-      witness: user.witness || '',
+      employeeName: user.employeeName || "",
+      employeeNumber: user.employeeNumber || "",
+      employerName: user.employerName || "",
+      branchName: user.branchName || "",
+      phoneNumber: user.phoneNumber || "",
+      dues: user.dues || "",
+      witness: user.witness || "",
     });
   };
 
@@ -391,32 +370,32 @@ export default function AdminDashboard() {
       .then(() => {
         setEditingUser(null);
         fetchSubmissions();
-        Swal.fire('Updated!', 'Record updated successfully.', 'success');
+        Swal.fire("Updated!", "Record updated successfully.", "success");
       })
       .catch((err) => {
         console.error(err);
-        Swal.fire('Error', err.response?.data?.error || 'Failed to update record', 'error');
+        Swal.fire("Error", err.response?.data?.error || "Failed to update record", "error");
       });
   };
 
   const handleDelete = (id) => {
     Swal.fire({
-      title: 'Delete this record?',
-      text: 'This action cannot be undone.',
-      icon: 'warning',
+      title: "Delete this record?",
+      text: "This action cannot be undone.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#e11d48',
+      confirmButtonColor: "#e11d48",
     }).then((result) => {
       if (result.isConfirmed) {
         api
           .delete(`/submissions/${id}`)
           .then(() => {
             fetchSubmissions();
-            Swal.fire('Deleted!', '', 'success');
+            Swal.fire("Deleted!", "", "success");
           })
           .catch((err) => {
             console.error(err);
-            Swal.fire('Error', err.response?.data?.error || 'Failed to delete submission', 'error');
+            Swal.fire("Error", err.response?.data?.error || "Failed to delete submission", "error");
           });
       }
     });
@@ -433,12 +412,12 @@ export default function AdminDashboard() {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const records = XLSX.utils.sheet_to_json(worksheet);
 
-      await api.post('/bulk-upload', { records });
+      await api.post("/bulk-upload", { records });
       fetchSubmissions();
-      Swal.fire('Success', 'Users uploaded!', 'success');
+      Swal.fire("Success", "Users uploaded!", "success");
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'Upload failed.', 'error');
+      Swal.fire("Error", "Upload failed.", "error");
     } finally {
       setUploading(false);
     }
@@ -451,60 +430,60 @@ export default function AdminDashboard() {
       );
 
       if (!matchedUser) {
-        return Swal.fire('Not Found', 'No linked system user found for this submission.', 'info');
+        return Swal.fire("Not Found", "No linked system user found for this submission.", "info");
       }
 
       const { data } = await api.get(`/api/users/${matchedUser.id}/transfers`);
 
       if (!data || data.length === 0) {
-        return Swal.fire('No Transfer History', 'This client has no transfer history yet.', 'info');
+        return Swal.fire("No Transfer History", "This client has no transfer history yet.", "info");
       }
 
       const html = data
         .map(
           (t) => `
             <div style="text-align:left; border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:10px;">
-              <div><b>Old Employer:</b> ${t.oldEmployerName || 'N/A'}</div>
-              <div><b>New Employer:</b> ${t.newEmployerName || 'N/A'}</div>
-              <div><b>Old Branch:</b> ${t.oldBranchName || 'N/A'}</div>
-              <div><b>New Branch:</b> ${t.newBranchName || 'N/A'}</div>
-              <div><b>Old Phone:</b> ${t.oldPhoneNumber || 'N/A'}</div>
-              <div><b>New Phone:</b> ${t.newPhoneNumber || 'N/A'}</div>
+              <div><b>Old Employer:</b> ${t.oldEmployerName || "N/A"}</div>
+              <div><b>New Employer:</b> ${t.newEmployerName || "N/A"}</div>
+              <div><b>Old Branch:</b> ${t.oldBranchName || "N/A"}</div>
+              <div><b>New Branch:</b> ${t.newBranchName || "N/A"}</div>
+              <div><b>Old Phone:</b> ${t.oldPhoneNumber || "N/A"}</div>
+              <div><b>New Phone:</b> ${t.newPhoneNumber || "N/A"}</div>
               <div><b>Old Employee #:</b> ${t.oldEmployeeNumber}</div>
               <div><b>New Employee #:</b> ${t.newEmployeeNumber}</div>
-              <div><b>Note:</b> ${t.note || 'N/A'}</div>
+              <div><b>Note:</b> ${t.note || "N/A"}</div>
               <div><b>Date:</b> ${new Date(t.createdAt).toLocaleString()}</div>
-              <div><b>Performed By:</b> ${t.performedBy?.name || 'Unknown'}</div>
+              <div><b>Performed By:</b> ${t.performedBy?.name || "Unknown"}</div>
             </div>
           `
         )
-        .join('');
+        .join("");
 
       Swal.fire({
-        title: 'Transfer History',
+        title: "Transfer History",
         html: `<div style="max-height:420px;overflow:auto;">${html}</div>`,
         width: 700,
-        confirmButtonText: 'Close',
+        confirmButtonText: "Close",
       });
     } catch (err) {
-      console.error('❌ transfer history fetch failed:', err);
-      Swal.fire('Error', 'Failed to fetch transfer history', 'error');
+      console.error("❌ transfer history fetch failed:", err);
+      Swal.fire("Error", "Failed to fetch transfer history", "error");
     }
   };
 
   const submissionColumns = [
-    { name: '#', selector: (row, index) => index + 1, width: '60px' },
-    { name: 'Employee', selector: (row) => row.employeeName, sortable: true, wrap: true },
-    { name: 'Number', selector: (row) => row.employeeNumber, wrap: true },
-    { name: 'Phone', selector: (row) => row.phoneNumber || '-', wrap: true },
-    { name: 'Employer', selector: (row) => row.employerName || '-', wrap: true },
-    { name: 'Branch', selector: (row) => row.branchName || '-', wrap: true },
-    { name: 'Dues', selector: (row) => row.dues || '-' },
+    { name: "#", selector: (row, index) => index + 1, width: "60px" },
+    { name: "Employee", selector: (row) => row.employeeName, sortable: true, wrap: true },
+    { name: "Number", selector: (row) => row.employeeNumber, wrap: true },
+    { name: "Phone", selector: (row) => row.phoneNumber || "-", wrap: true },
+    { name: "Employer", selector: (row) => row.employerName || "-", wrap: true },
+    { name: "Branch", selector: (row) => row.branchName || "-", wrap: true },
+    { name: "Dues", selector: (row) => row.dues || "-" },
     {
-      name: 'PDF',
+      name: "PDF",
       cell: (row) => {
         if (!row.pdfPath) return <span className="text-gray-400">None</span>;
-        const pdfUrl = row.pdfPath.startsWith('http') ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
+        const pdfUrl = row.pdfPath.startsWith("http") ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
         return (
           <a
             href={pdfUrl}
@@ -519,10 +498,10 @@ export default function AdminDashboard() {
       },
     },
     {
-      name: 'Download',
+      name: "Download",
       cell: (row) => {
         if (!row.pdfPath) return <span className="text-gray-400">—</span>;
-        const pdfUrl = row.pdfPath.startsWith('http') ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
+        const pdfUrl = row.pdfPath.startsWith("http") ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
         return (
           <a
             href={pdfUrl}
@@ -537,7 +516,7 @@ export default function AdminDashboard() {
       },
     },
     {
-      name: 'Transfers',
+      name: "Transfers",
       cell: (row) => (
         <button
           onClick={() => handleViewTransfers(row)}
@@ -549,7 +528,7 @@ export default function AdminDashboard() {
       ),
     },
     {
-      name: 'Actions',
+      name: "Actions",
       cell: (row) => (
         <div className="flex gap-2">
           <button
@@ -570,14 +549,14 @@ export default function AdminDashboard() {
   ];
 
   const userColumns = [
-    { name: '#', selector: (row, index) => index + 1, width: '60px' },
-    { name: 'Name', selector: (row) => row.name, sortable: true, wrap: true },
-    { name: 'Username', selector: (row) => row.username, wrap: true },
-    { name: 'Email', selector: (row) => row.email || '-', wrap: true },
-    { name: 'Role', selector: (row) => row.role, sortable: true },
-    { name: 'Employee #', selector: (row) => row.employeeNumber || '-' },
+    { name: "#", selector: (row, index) => index + 1, width: "60px" },
+    { name: "Name", selector: (row) => row.name, sortable: true, wrap: true },
+    { name: "Username", selector: (row) => row.username, wrap: true },
+    { name: "Email", selector: (row) => row.email || "-", wrap: true },
+    { name: "Role", selector: (row) => row.role, sortable: true },
+    { name: "Employee #", selector: (row) => row.employeeNumber || "-" },
     {
-      name: 'Actions',
+      name: "Actions",
       cell: (row) => (
         <div className="flex gap-2">
           <button
@@ -602,10 +581,10 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage submissions, users, and staff performance</p>
+          <p className="text-gray-600">Manage submissions, users, leaderboard and reports</p>
         </div>
 
-        {section === 'submissions' && (
+        {section === "submissions" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 space-y-5">
               <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -686,7 +665,7 @@ export default function AdminDashboard() {
 
                 <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
                   <FaUpload className="inline mr-2" />
-                  {uploading ? 'Uploading...' : 'Upload Excel'}
+                  {uploading ? "Uploading..." : "Upload Excel"}
                   <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
                 </label>
 
@@ -720,7 +699,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {section === 'users' && (
+        {section === "users" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
               <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -760,7 +739,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {section === 'leaderboard' && (
+        {section === "leaderboard" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
@@ -775,20 +754,20 @@ export default function AdminDashboard() {
                       key={staff.id}
                       className={`p-6 rounded-lg border-2 ${
                         idx === 0
-                          ? 'border-yellow-400 bg-yellow-50'
+                          ? "border-yellow-400 bg-yellow-50"
                           : idx === 1
-                          ? 'border-gray-400 bg-gray-50'
+                          ? "border-gray-400 bg-gray-50"
                           : idx === 2
-                          ? 'border-orange-400 bg-orange-50'
-                          : 'border-blue-200 bg-blue-50'
+                          ? "border-orange-400 bg-orange-50"
+                          : "border-blue-200 bg-blue-50"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="text-sm font-semibold text-gray-600 mb-1">
-                            {idx === 0 && '🥇 '}
-                            {idx === 1 && '🥈 '}
-                            {idx === 2 && '🥉 '}
+                            {idx === 0 && "🥇 "}
+                            {idx === 1 && "🥈 "}
+                            {idx === 2 && "🥉 "}
                             Rank #{idx + 1}
                           </div>
                           <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
@@ -822,29 +801,42 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {leaderboard.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-4">Top Submission Users</h3>
-                <div className="space-y-2">
-                  {leaderboard.map((staff, idx) => (
-                    <div
-                      key={staff.name}
-                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                    >
-                      <span className="font-semibold text-gray-800">
-                        {idx === 0 && '🥇 '}
-                        {idx === 1 && '🥈 '}
-                        {idx === 2 && '🥉 '}
-                        {staff.name}
-                      </span>
-                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        {staff.submissions}
-                      </span>
-                    </div>
-                  ))}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Need deeper insight?</h3>
+                  <p className="text-gray-600 text-sm">
+                    Open the reports page for trends, summaries and visual analytics.
+                  </p>
                 </div>
+                <button
+                  onClick={() => navigate("/admin/reports")}
+                  className="bg-blue-700 text-white px-5 py-2.5 rounded-lg hover:bg-blue-800 transition flex items-center gap-2"
+                >
+                  <FaChartLine /> Open Reports
+                </button>
               </div>
-            )}
+            </div>
+          </div>
+        )}
+
+        {section === "reports" && (
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="max-w-2xl mx-auto">
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-2xl">
+                <FaChartLine />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Advanced Reports</h2>
+              <p className="text-gray-600 mb-6">
+                Your analytics page is now separated from the main dashboard for cleaner admin workflow.
+              </p>
+              <button
+                onClick={() => navigate("/admin/reports")}
+                className="bg-blue-700 text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition"
+              >
+                Go to Reports Page
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -857,7 +849,7 @@ export default function AdminDashboard() {
             {Object.keys(editForm).map((field) => (
               <div key={field} className="mb-3">
                 <label className="block text-sm font-medium mb-1 capitalize">
-                  {field.replace(/([A-Z])/g, ' $1')}
+                  {field.replace(/([A-Z])/g, " $1")}
                 </label>
                 <input
                   value={editForm[field]}
@@ -889,7 +881,7 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-96 overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
-              {editingSystemUser ? 'Edit User' : 'Create New User'}
+              {editingSystemUser ? "Edit User" : "Create New User"}
             </h2>
 
             <div className="space-y-3">
@@ -982,7 +974,7 @@ export default function AdminDashboard() {
                 onClick={handleSaveUser}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
-                {editingSystemUser ? 'Update' : 'Create'}
+                {editingSystemUser ? "Update" : "Create"}
               </button>
             </div>
           </div>

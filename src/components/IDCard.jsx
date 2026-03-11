@@ -7,13 +7,13 @@ import Swal from "sweetalert2";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
-// Cloudinary: background removal -> transparent PNG (NO shadow)
-function toCloudinaryTransparentUrl(rawUrl, { height = 110 } = {}) {
+// Cloudinary: background removal -> transparent PNG
+function toCloudinaryTransparentUrl(rawUrl, { height = 140 } = {}) {
   if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
   if (!rawUrl.includes("/upload/")) return rawUrl;
 
   const [prefix, rest] = rawUrl.split("/upload/");
-  const tr = `e_background_removal/c_scale,h_${height}/f_png,q_auto/`;
+  const tr = `e_background_removal/c_scale,h_${height}/f_png,q_auto:best/`;
   return `${prefix}/upload/${tr}${rest}`;
 }
 
@@ -32,7 +32,7 @@ const IDCard = forwardRef(({ card }, ref) => {
     : "N/A";
 
   const getFirstAndLastName = (fullName) => {
-    if (!fullName) return "Name";
+    if (!fullName) return "NAME";
     const parts = fullName.trim().split(/\s+/);
     const first = parts[0].toUpperCase();
     const last = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
@@ -40,6 +40,7 @@ const IDCard = forwardRef(({ card }, ref) => {
   };
 
   const isUrl = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
+
   const isLikelyUuid = (s) =>
     typeof s === "string" &&
     (/^[0-9a-fA-F-]{36}$/.test(s) || /^[0-9a-fA-F]{24,}$/.test(s));
@@ -48,12 +49,12 @@ const IDCard = forwardRef(({ card }, ref) => {
     if (!c) return null;
 
     const candidates = [
-      c.rawPhotoUrl,
-      c.photoUrl,
-      c.photo?.originalUrl,
       c.cleanPhotoUrl,
       c.cleanedPhotoUrl,
       c.photo?.cleanUrl,
+      c.rawPhotoUrl,
+      c.photoUrl,
+      c.photo?.originalUrl,
       c.photo?.cdnUrl,
       c.photo?.url,
     ];
@@ -63,7 +64,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
       if (isUrl(candidate)) {
         if (candidate.includes("res.cloudinary.com") && candidate.includes("/upload/")) {
-          return toCloudinaryTransparentUrl(candidate, { height: 110 });
+          return toCloudinaryTransparentUrl(candidate, { height: 140 });
         }
         return candidate;
       }
@@ -95,14 +96,46 @@ const IDCard = forwardRef(({ card }, ref) => {
     );
   };
 
-  // ---------------- PDF PRINT ----------------
+  const renderCardSide = async (element) => {
+    const rect = element.getBoundingClientRect();
+
+    const canvas = await html2canvas(element, {
+      scale: 4,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: document.documentElement.clientWidth,
+      windowHeight: document.documentElement.clientHeight,
+      imageTimeout: 30000,
+      logging: false,
+      onclone: (clonedDoc) => {
+        const clonedEl = clonedDoc.body.querySelector("[data-idcard-side='true']");
+        if (clonedEl) {
+          clonedEl.style.transform = "none";
+        }
+      },
+    });
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+    }
+
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
   const handlePrint = async () => {
     if (!frontRef.current || !backRef.current) {
       await Swal.fire({
         icon: "warning",
         title: "Not Ready",
         text: "Card elements not ready for printing.",
-        confirmButtonColor: "#1e40af",
+        confirmButtonColor: "#1d4ed8",
       });
       return;
     }
@@ -111,6 +144,7 @@ const IDCard = forwardRef(({ card }, ref) => {
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
+
       await waitForImages(frontRef.current);
       await waitForImages(backRef.current);
 
@@ -118,26 +152,8 @@ const IDCard = forwardRef(({ card }, ref) => {
         orientation: "landscape",
         unit: "mm",
         format: [85.6, 54],
+        compress: false,
       });
-
-      const renderSide = async (element) => {
-        const rect = element.getBoundingClientRect();
-        const scale = 1.5;
-
-        const canvas = await html2canvas(element, {
-          scale,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: document.documentElement.clientWidth,
-          windowHeight: document.documentElement.clientHeight,
-        });
-
-        return canvas.toDataURL("image/png", 0.85);
-      };
 
       const addFullPageImage = (imgData) => {
         const w = pdf.internal.pageSize.getWidth();
@@ -145,10 +161,10 @@ const IDCard = forwardRef(({ card }, ref) => {
         pdf.addImage(imgData, "PNG", 0, 0, w, h, undefined, "FAST");
       };
 
-      const frontImg = await renderSide(frontRef.current);
+      const frontImg = await renderCardSide(frontRef.current);
       addFullPageImage(frontImg);
 
-      const backImg = await renderSide(backRef.current);
+      const backImg = await renderCardSide(backRef.current);
       pdf.addPage([85.6, 54], "landscape");
       addFullPageImage(backImg);
 
@@ -158,7 +174,7 @@ const IDCard = forwardRef(({ card }, ref) => {
         icon: "success",
         title: "PDF Generated!",
         text: "ID card PDF downloaded successfully.",
-        confirmButtonColor: "#1e40af",
+        confirmButtonColor: "#1d4ed8",
         timer: 1800,
         timerProgressBar: true,
         showConfirmButton: false,
@@ -175,11 +191,10 @@ const IDCard = forwardRef(({ card }, ref) => {
   };
 
   const cardStyle =
-    "relative w-80 h-48 overflow-hidden " +
-    "bg-gradient-to-br from-blue-100 via-white to-blue-50 " +
-    "rounded-lg shadow-md border border-gray-300 " +
-    "px-3 pt-8 pb-1 text-[10px] leading-tight " +
-    "print:shadow-none print:rounded-none print:border-gray-400";
+    "relative w-[340px] h-[214px] overflow-hidden " +
+    "rounded-[18px] shadow-[0_10px_30px_rgba(0,0,0,0.16)] border border-blue-200 " +
+    "text-[10px] leading-tight " +
+    "print:shadow-none print:rounded-none print:border-gray-300 bg-white";
 
   return (
     <>
@@ -187,24 +202,99 @@ const IDCard = forwardRef(({ card }, ref) => {
         @media print {
           body { margin:0; padding:0; }
           button { display:none !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
 
       <div className="flex flex-col items-center space-y-4 p-4">
         <button
           onClick={handlePrint}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-md print:hidden"
+          className="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded-md print:hidden shadow"
         >
           Print ID
         </button>
 
-        <div ref={ref} className="flex flex-col md:flex-row gap-4 print:gap-0">
+        <div ref={ref} className="flex flex-col md:flex-row gap-5 print:gap-0">
           {/* FRONT */}
-          <div ref={frontRef} className={cardStyle}>
-            {/* PHOTO LAYER */}
-            <div className="absolute top-10 left-0 w-[104px] z-10">
-              <div className="relative w-[104px] h-[104px] overflow-hidden rounded-full bg-transparent">
+          <div
+            ref={frontRef}
+            data-idcard-side="true"
+            className={cardStyle}
+            style={{
+              background:
+                "linear-gradient(135deg, #eff6ff 0%, #dbeafe 18%, #ffffff 45%, #e0f2fe 72%, #bfdbfe 100%)",
+            }}
+          >
+            {/* decorative glow 1 */}
+            <div
+              className="absolute -top-10 -left-10 w-36 h-36 rounded-full blur-2xl opacity-50"
+              style={{ background: "radial-gradient(circle, rgba(37,99,235,0.35), transparent 70%)" }}
+            />
+
+            {/* decorative glow 2 */}
+            <div
+              className="absolute bottom-0 right-0 w-40 h-40 rounded-full blur-2xl opacity-50"
+              style={{ background: "radial-gradient(circle, rgba(14,165,233,0.28), transparent 70%)" }}
+            />
+
+            {/* subtle diagonal pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.10] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(135deg, rgba(30,64,175,0.22) 0px, rgba(30,64,175,0.22) 2px, transparent 2px, transparent 14px)",
+              }}
+            />
+
+            {/* watermark/logo */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.16] pointer-events-none z-10">
+              <img
+                src="/images/logo-watermark.png"
+                alt="Watermark"
+                crossOrigin="anonymous"
+                className="w-[175px] object-contain saturate-150 contrast-125"
+              />
+            </div>
+
+            {/* top header band */}
+            <div
+              className="absolute top-0 left-0 right-0 h-9 z-30"
+              style={{
+                background: "linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 48%, #2563eb 100%)",
+              }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span
+                  className="text-white font-bold tracking-[1px] leading-none drop-shadow-sm"
+                  style={{ fontSize: "15px" }}
+                >
+                  IDENTIFICATION
+                </span>
+              </div>
+            </div>
+
+            {/* small accent bar */}
+            <div
+              className="absolute top-9 left-0 right-0 h-[4px] z-30"
+              style={{
+                background: "linear-gradient(90deg, #93c5fd 0%, #e0f2fe 50%, #60a5fa 100%)",
+              }}
+            />
+
+            {/* photo block */}
+            <div className="absolute top-[48px] left-[10px] z-30">
+              <div
+                className="relative w-[110px] h-[110px] rounded-full overflow-hidden"
+                style={{
+                  background: "radial-gradient(circle at 30% 30%, #f8fafc 0%, #dbeafe 100%)",
+                  border: "4px solid rgba(255,255,255,0.95)",
+                  boxShadow:
+                    "0 6px 18px rgba(30,64,175,0.22), inset 0 0 0 1px rgba(30,64,175,0.14)",
+                }}
+              >
                 {photoSrc ? (
                   <>
                     <img
@@ -212,6 +302,10 @@ const IDCard = forwardRef(({ card }, ref) => {
                       alt="ID"
                       crossOrigin="anonymous"
                       className="absolute inset-0 w-full h-full object-cover object-top"
+                      style={{
+                        imageRendering: "auto",
+                        filter: "saturate(1.08) contrast(1.06)",
+                      }}
                       onLoad={() => setPhotoLoaded(true)}
                       onError={(e) => {
                         e.currentTarget.src = "/fallback-avatar.png";
@@ -223,81 +317,154 @@ const IDCard = forwardRef(({ card }, ref) => {
                     )}
                   </>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs bg-transparent">
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-xs bg-transparent">
                     No Photo
                   </div>
                 )}
               </div>
 
-              {/* NAME + ROLE - exact positioned below photo */}
-              <div
-                className="absolute left-2 right-0 z-30"
-                style={{ top: 114 }}
-              >
-                <p className="m-0 text-[11px] font-mono text-left leading-none">
+              {/* name + role */}
+              <div className="mt-2 pl-1 w-[140px]">
+                <p className="m-0 text-[12px] font-bold text-slate-900 leading-none tracking-[0.4px]">
                   {getFirstAndLastName(card?.fullName)}
                 </p>
-                <p className="m-0 mt-[2px] text-[11px] text-gray-700 text-left leading-none">
-                  {card?.role || "Position"}
+                <p className="m-0 mt-[4px] text-[11px] font-medium text-blue-900 leading-none">
+                  {(card?.role || "MEMBER").toUpperCase()}
                 </p>
               </div>
             </div>
 
-            {/* watermark/logo */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none z-20">
-              <img
-                src="/images/logo-watermark.png"
-                alt="Watermark"
-                className="w-[150px] object-contain"
-              />
-            </div>
-
-            {/* header */}
-            <div className="absolute top-0 left-0 right-0 h-7 bg-blue-800 z-30">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span
-                  className="text-white font-semibold leading-none"
-                  style={{ fontSize: "14px", transform: "translateY(-1px)" }}
-                >
-                  IDENTIFICATION
-                </span>
-              </div>
+            {/* organization mini label */}
+            <div className="absolute top-[54px] right-[12px] z-30 text-right">
+              <p className="m-0 text-[9px] font-semibold text-blue-900 tracking-[0.6px]">
+                FIBUCA
+              </p>
+              <p className="m-0 text-[8px] text-slate-600">
+                TRADE UNION CARD
+              </p>
             </div>
 
             {/* QR */}
-            <div className="absolute top-20 right-4 z-30">
+            <div
+              className="absolute top-[78px] right-[14px] z-30 bg-white p-[4px] rounded-[10px]"
+              style={{
+                boxShadow: "0 4px 14px rgba(0,0,0,0.14)",
+                border: "1px solid rgba(59,130,246,0.18)",
+              }}
+            >
               <QRCode
                 value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
-                size={64}
+                size={72}
+                bgColor="#ffffff"
+                fgColor="#0f172a"
+                level="H"
+                includeMargin={false}
               />
             </div>
 
-            {/* bottom info */}
-            <div className="absolute bottom-2 right-3 text-xs text-center z-30">
-              <p className="m-0">ID: {card?.cardNumber || "N/A"}</p>
-              <p className="m-0">Issued: {formattedDate}</p>
+            {/* bottom info panel */}
+            <div
+              className="absolute bottom-[10px] right-[12px] left-[150px] z-30 rounded-[12px] px-3 py-2"
+              style={{
+                background: "rgba(255,255,255,0.78)",
+                backdropFilter: "blur(3px)",
+                border: "1px solid rgba(148,163,184,0.28)",
+                boxShadow: "0 4px 12px rgba(30,41,59,0.08)",
+              }}
+            >
+              <p className="m-0 text-[10px] font-semibold text-slate-800">
+                ID: <span className="text-blue-900">{card?.cardNumber || "N/A"}</span>
+              </p>
+              <p className="m-0 mt-[2px] text-[9px] text-slate-700">
+                Issued: {formattedDate}
+              </p>
+              <p className="m-0 mt-[2px] text-[9px] text-slate-700 truncate">
+                {String(card?.company || "FIBUCA").toUpperCase()}
+              </p>
             </div>
           </div>
 
           {/* BACK */}
-          <div ref={backRef} className={cardStyle}>
-            <p className="font-semibold text-center mb-1">
-              This Staff Identity is the Property of
-            </p>
+          <div
+            ref={backRef}
+            data-idcard-side="true"
+            className={cardStyle}
+            style={{
+              background:
+                "linear-gradient(160deg, #eff6ff 0%, #ffffff 28%, #dbeafe 58%, #e0f2fe 100%)",
+            }}
+          >
+            {/* back pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.08]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 16px 16px, rgba(30,64,175,0.35) 2px, transparent 2.5px)",
+                backgroundSize: "22px 22px",
+              }}
+            />
 
-            <p className="text-center font-bold text-[9px] uppercase mb-2">
-              THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
-            </p>
+            {/* header */}
+            <div
+              className="absolute top-0 left-0 right-0 h-9 z-20"
+              style={{
+                background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
+              }}
+            />
+            <div className="absolute top-[10px] left-0 right-0 z-30 text-center">
+              <span className="text-white font-bold tracking-[1px] text-[14px]">
+                FIBUCA
+              </span>
+            </div>
 
-            <p className="text-center text-xs">
-              5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam.
-            </p>
-            <p className="text-center text-xs">Tel: +255732999782</p>
-            <p className="text-center text-xs">fibucatradeunion@gmail.com</p>
+            {/* watermark */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.09] z-10 pointer-events-none">
+              <img
+                src="/images/logo-watermark.png"
+                alt="Watermark"
+                crossOrigin="anonymous"
+                className="w-[160px] object-contain saturate-150 contrast-125"
+              />
+            </div>
 
-            <div className="absolute bottom-3 left-0 right-0 text-center">
-              <hr className="w-1/2 mx-auto border-dotted border-gray-500 mb-1" />
-              <p className="italic text-gray-500 text-xs">General Secretary Signature</p>
+            {/* content */}
+            <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
+              <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
+                THIS STAFF IDENTITY IS THE PROPERTY OF
+              </p>
+
+              <p className="font-bold text-[9px] uppercase mb-3 leading-snug text-blue-950">
+                THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
+              </p>
+
+              <div
+                className="rounded-[12px] px-3 py-3"
+                style={{
+                  background: "rgba(255,255,255,0.72)",
+                  border: "1px solid rgba(148,163,184,0.28)",
+                  boxShadow: "0 4px 14px rgba(30,41,59,0.08)",
+                }}
+              >
+                <p className="text-[10px] text-slate-800 m-0">
+                  5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam
+                </p>
+                <p className="text-[10px] text-slate-800 m-0 mt-[4px]">
+                  Tel: +255732999782
+                </p>
+                <p className="text-[10px] text-slate-800 m-0 mt-[4px]">
+                  fibucatradeunion@gmail.com
+                </p>
+              </div>
+            </div>
+
+            {/* bottom signature area */}
+            <div className="absolute bottom-[12px] left-0 right-0 text-center z-30">
+              <div
+                className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1"
+              />
+              <p className="italic text-slate-600 text-[10px]">
+                General Secretary Signature
+              </p>
             </div>
           </div>
         </div>
