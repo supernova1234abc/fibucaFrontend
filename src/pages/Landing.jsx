@@ -1,4 +1,3 @@
-// frontend/src/pages/Landing.jsx
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +29,15 @@ export default function Landing() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const heroSlides = [
+    "/images/slide1.jpg",
+    "/images/slide2.jpg",
+    "/images/slide3.jpg",
+    "/images/slide4.jpg",
+    "/images/slide1.jpg",
+    "/images/slide2.jpg",
+  ];
+
   const content = {
     en: {
       navAbout: "About",
@@ -39,7 +47,8 @@ export default function Landing() {
       navContact: "Contact",
 
       badge: "Official Trade Union Portal",
-      title: "Protecting Workers’ Rights Through Unity, Representation and Action",
+      title: "Protecting Workers’ Rights Through Unity,",
+      title2: "Representation and Action",
       subtitle:
         "FIBUCA supports workers in financial, industrial, banking, utilities, commercial and agro-processing sectors through representation, negotiation and member services.",
 
@@ -112,7 +121,8 @@ export default function Landing() {
       navContact: "Mawasiliano",
 
       badge: "Tovuti Rasmi ya Chama",
-      title: "Kulinda Haki za Wafanyakazi Kupitia Umoja, Uwakilishi na Hatua",
+      title: "Kulinda Haki za Wafanyakazi Kupitia Umoja,",
+      title2: "Uwakilishi na Hatua",
       subtitle:
         "FIBUCA inasaidia wafanyakazi wa sekta za kifedha, viwanda, benki, huduma, biashara na usindikaji wa mazao kupitia uwakilishi, majadiliano na huduma za wanachama.",
 
@@ -224,61 +234,92 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-sky-50 text-slate-800">
-      {/* NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur shadow-sm h-16 px-6 flex items-center justify-between z-50 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <img src="/images/newFibucaLogo.png" alt="FIBUCA logo" className="h-10 w-10 object-contain" />
-          <div>
-            <h1 className="text-xl font-bold text-blue-700 leading-none">FIBUCA</h1>
-            <p className="text-[11px] text-slate-500 hidden sm:block">Official Trade Union Portal</p>
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-100 text-slate-800">
+      <style>{`
+        @keyframes fibuca-slide-left {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+
+        .fibuca-slide-wrap {
+          overflow: hidden;
+          width: 100%;
+        }
+
+        .fibuca-slide-track {
+          display: flex;
+          width: max-content;
+          animation: fibuca-slide-left 30s linear infinite;
+        }
+
+        .fibuca-slide-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src="/images/newFibucaLogo.png"
+              alt="FIBUCA logo"
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-lg sm:text-xl font-bold text-blue-700">
+                FIBUCA
+              </h1>
+              <p className="hidden sm:block text-[11px] text-slate-500">
+                Official Trade Union Portal
+              </p>
+            </div>
           </div>
-        </div>
 
-        <nav className="hidden md:flex space-x-6 text-blue-800 font-medium">
-          <a href="#about" className="hover:text-blue-600">{t.navAbout}</a>
-          <a href="#services" className="hover:text-blue-600">{t.navServices}</a>
-          <a href="#benefits" className="hover:text-blue-600">{t.navBenefits}</a>
-          <a href="#leadership" className="hover:text-blue-600">{t.navLeadership}</a>
-          <a href="#contact" className="hover:text-blue-600">{t.navContact}</a>
-        </nav>
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-blue-800">
+            <a href="#about" className="hover:text-blue-600 transition">{t.navAbout}</a>
+            <a href="#services" className="hover:text-blue-600 transition">{t.navServices}</a>
+            <a href="#benefits" className="hover:text-blue-600 transition">{t.navBenefits}</a>
+            <a href="#leadership" className="hover:text-blue-600 transition">{t.navLeadership}</a>
+            <a href="#contact" className="hover:text-blue-600 transition">{t.navContact}</a>
+          </nav>
 
-        <button
-          onClick={toggleLang}
-          className="hidden md:block text-sm px-3 py-1.5 border border-blue-500 rounded-lg text-blue-700 hover:bg-blue-50"
-        >
-          {lang === "en" ? "Swahili" : "English"}
-        </button>
-
-        <div className="md:hidden flex items-center gap-3">
           <button
             onClick={toggleLang}
-            className="text-sm px-2 py-1 border border-blue-500 rounded text-blue-700"
+            className="hidden md:block rounded-lg border border-blue-500 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 transition"
           >
-            {lang === "en" ? "SW" : "EN"}
+            {lang === "en" ? "Swahili" : "English"}
           </button>
 
-          <button
-            onClick={toggleMenu}
-            className="relative w-8 h-8 flex flex-col justify-center items-center"
-            aria-label="Toggle menu"
-          >
-            <span
-              className={`block h-0.5 w-6 bg-blue-700 transition ${
-                menuOpen ? "rotate-45 translate-y-1.5" : ""
-              }`}
-            />
-            <span
-              className={`block h-0.5 w-6 bg-blue-700 my-1 transition ${
-                menuOpen ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`block h-0.5 w-6 bg-blue-700 transition ${
-                menuOpen ? "-rotate-45 -translate-y-1.5" : ""
-              }`}
-            />
-          </button>
+          <div className="flex md:hidden items-center gap-3">
+            <button
+              onClick={toggleLang}
+              className="rounded border border-blue-500 px-2 py-1 text-sm text-blue-700"
+            >
+              {lang === "en" ? "SW" : "EN"}
+            </button>
+
+            <button
+              onClick={toggleMenu}
+              className="relative flex h-8 w-8 flex-col items-center justify-center"
+              aria-label="Toggle menu"
+            >
+              <span
+                className={`block h-0.5 w-6 bg-blue-700 transition ${
+                  menuOpen ? "translate-y-1.5 rotate-45" : ""
+                }`}
+              />
+              <span
+                className={`my-1 block h-0.5 w-6 bg-blue-700 transition ${
+                  menuOpen ? "opacity-0" : ""
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-6 bg-blue-700 transition ${
+                  menuOpen ? "-translate-y-1.5 -rotate-45" : ""
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -286,13 +327,13 @@ export default function Landing() {
         {menuOpen && (
           <motion.div
             ref={menuRef}
-            initial={{ y: -20, opacity: 0 }}
+            initial={{ y: -18, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed top-16 left-0 right-0 bg-white shadow-lg z-40 md:hidden border-b border-slate-200"
+            exit={{ y: -18, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="fixed top-16 left-0 right-0 z-40 border-b border-slate-200 bg-white shadow-lg md:hidden"
           >
-            <nav className="flex flex-col px-6 py-6 space-y-4 text-blue-800 font-medium">
+            <nav className="flex flex-col gap-4 px-6 py-6 text-blue-800 font-medium">
               <a href="#about" onClick={closeMenu}>{t.navAbout}</a>
               <a href="#services" onClick={closeMenu}>{t.navServices}</a>
               <a href="#benefits" onClick={closeMenu}>{t.navBenefits}</a>
@@ -305,43 +346,63 @@ export default function Landing() {
 
       <div className="h-16" />
 
-      {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.15),transparent_35%)]" />
-        <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 relative">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold mb-5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.14),transparent_35%)]" />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 lg:py-24">
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
+            <div className="order-2 lg:order-1">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-xs sm:text-sm font-semibold text-blue-800 shadow-sm">
                 {t.badge}
               </div>
 
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-900 leading-tight mb-5">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-black leading-tight text-slate-900">
                 {t.title}
+                <span className="mt-2 block bg-gradient-to-r from-blue-700 via-sky-600 to-emerald-500 bg-clip-text text-transparent">
+                  {t.title2}
+                </span>
               </h2>
 
-              <p className="text-lg text-slate-600 mb-8 max-w-2xl">
+              <p className="mt-5 max-w-2xl text-base sm:text-lg leading-7 sm:leading-8 text-slate-600">
                 {t.subtitle}
               </p>
 
-              <div className="grid sm:grid-cols-3 gap-3 mb-8">
+              <div className="mt-6 fibuca-slide-wrap rounded-3xl border border-slate-200 bg-white/90 p-3 shadow-lg">
+                <div className="fibuca-slide-track gap-3">
+                  {[...heroSlides, ...heroSlides].map((src, index) => (
+                    <div
+                      key={`${src}-${index}`}
+                      className="shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                    >
+                      <img
+                        src={src}
+                        alt={`FIBUCA activity ${index + 1}`}
+                        className="h-24 w-36 object-cover sm:h-28 sm:w-44 md:h-32 md:w-48 xl:h-36 xl:w-52"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {t.heroPoints.map((item, i) => (
                   <div
                     key={i}
-                    className="bg-white border border-slate-200 rounded-2xl px-4 py-4 shadow-sm text-sm font-medium text-slate-700"
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700 shadow-sm hover:shadow-md transition"
                   >
                     {item}
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   to="/client-form"
                   onClick={handleClientFormClick}
-                  className={`px-6 py-3 rounded-xl shadow transition font-semibold text-center ${
+                  className={`rounded-xl px-6 py-3 text-center font-semibold shadow transition ${
                     isClientFormAccessible()
                       ? "bg-blue-700 text-white hover:bg-blue-800"
-                      : "bg-slate-300 text-slate-500 cursor-not-allowed"
+                      : "cursor-not-allowed bg-slate-300 text-slate-500"
                   }`}
                 >
                   {t.btnForm}
@@ -349,45 +410,56 @@ export default function Landing() {
 
                 <Link
                   to="/login"
-                  className="border border-blue-700 text-blue-700 px-6 py-3 rounded-xl hover:bg-blue-50 transition font-semibold text-center"
+                  className="rounded-xl border border-blue-700 px-6 py-3 text-center font-semibold text-blue-700 transition hover:bg-blue-50"
                 >
                   {t.btnLogin}
                 </Link>
 
                 <button
                   onClick={handleContactClick}
-                  className="bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition font-semibold"
+                  className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 shadow-sm"
                 >
                   {t.btnContact}
                 </button>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 md:p-8">
-                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-blue-700 via-blue-500 to-sky-400 p-6 text-white relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_top_right,white,transparent_35%),radial-gradient(circle_at_bottom_left,white,transparent_30%)]" />
-                  <img
-                    src="/images/newFibucaLogo.png"
-                    alt="FIBUCA emblem"
-                    className="h-16 w-16 object-contain mb-5"
-                  />
-                  <h3 className="text-2xl font-bold mb-3">FIBUCA</h3>
-                  <p className="text-sm md:text-base text-blue-50 leading-relaxed">
-                    Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union.
-                  </p>
-                  <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-white/10 rounded-xl p-3">
-                      <p className="text-blue-100">Workers’ Rights</p>
+            <div className="order-1 lg:order-2">
+              <div className="rounded-[28px] border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl">
+                <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-blue-800 via-blue-600 to-sky-400 p-5 sm:p-6 text-white">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_35%),radial-gradient(circle_at_bottom_left,white,transparent_30%)]" />
+
+                  <div className="relative">
+                    <img
+                      src="/images/newFibucaLogo.png"
+                      alt="FIBUCA emblem"
+                      className="mb-4 h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                    />
+
+                    <h3 className="text-2xl sm:text-3xl font-bold">FIBUCA</h3>
+                    <p className="mt-3 text-sm sm:text-base leading-7 text-blue-50">
+                      Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union.
+                    </p>
+
+                    <div className="mt-6 grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
+                        <p className="text-sm font-semibold text-white">Workers’ Rights</p>
+                      </div>
+                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
+                        <p className="text-sm font-semibold text-white">Union Representation</p>
+                      </div>
+                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
+                        <p className="text-sm font-semibold text-white">Collective Action</p>
+                      </div>
+                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
+                        <p className="text-sm font-semibold text-white">Member Support</p>
+                      </div>
                     </div>
-                    <div className="bg-white/10 rounded-xl p-3">
-                      <p className="text-blue-100">Union Representation</p>
-                    </div>
-                    <div className="bg-white/10 rounded-xl p-3">
-                      <p className="text-blue-100">Collective Action</p>
-                    </div>
-                    <div className="bg-white/10 rounded-xl p-3">
-                      <p className="text-blue-100">Member Support</p>
+
+                    <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4">
+                      <p className="text-sm leading-7 text-blue-50">
+                        A clear digital entry point for union information, member access and worker support.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -397,35 +469,34 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ABOUT */}
-      <section id="about" className="py-20 px-6 bg-white">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
+      <section id="about" className="bg-white px-4 sm:px-6 py-16 sm:py-20">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
           <div>
-            <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
               {t.navAbout}
             </p>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-5">
+            <h3 className="mb-5 text-3xl md:text-4xl font-bold text-slate-900">
               {t.aboutTitle}
             </h3>
-            <p className="text-slate-600 leading-8 mb-4">{t.aboutText1}</p>
-            <p className="text-slate-600 leading-8">{t.aboutText2}</p>
+            <p className="mb-4 leading-8 text-slate-600">{t.aboutText1}</p>
+            <p className="leading-8 text-slate-600">{t.aboutText2}</p>
           </div>
 
           <div className="grid gap-4">
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
-              <h4 className="font-bold text-blue-900 mb-2">Representation</h4>
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
+              <h4 className="mb-2 font-bold text-blue-900">Representation</h4>
               <p className="text-slate-600">
                 We help workers organize and strengthen their position through collective voice and formal union structures.
               </p>
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
-              <h4 className="font-bold text-slate-900 mb-2">Protection</h4>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <h4 className="mb-2 font-bold text-slate-900">Protection</h4>
               <p className="text-slate-600">
                 We support members on rights, fairness, labour relations and work-related concerns.
               </p>
             </div>
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6">
-              <h4 className="font-bold text-emerald-900 mb-2">Coordination</h4>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm">
+              <h4 className="mb-2 font-bold text-emerald-900">Coordination</h4>
               <p className="text-slate-600">
                 We connect members, staff and union processes through structured submission and communication systems.
               </p>
@@ -434,93 +505,89 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* SERVICES */}
-      <section id="services" className="py-20 px-6 bg-slate-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
+      <section id="services" className="bg-slate-50 px-4 sm:px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
               {t.navServices}
             </p>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900">
               {t.servicesTitle}
             </h3>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {t.services.map((service, i) => (
               <motion.div
                 key={i}
                 whileHover={{ y: -4 }}
-                className="bg-white p-7 rounded-3xl shadow-sm border border-slate-200"
+                className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm hover:shadow-lg transition"
               >
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg mb-5">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-lg font-bold text-blue-700">
                   {i + 1}
                 </div>
-                <h4 className="text-xl font-bold text-slate-900 mb-3">{service.title}</h4>
-                <p className="text-slate-600 leading-7">{service.text}</p>
+                <h4 className="mb-3 text-xl font-bold text-slate-900">{service.title}</h4>
+                <p className="leading-7 text-slate-600">{service.text}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* BENEFITS */}
-      <section id="benefits" className="py-20 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
+      <section id="benefits" className="bg-white px-4 sm:px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
               {t.navBenefits}
             </p>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900">
               {t.benefitsTitle}
             </h3>
           </div>
 
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {t.benefits.map((b, i) => (
               <motion.div
                 key={i}
                 whileHover={{ scale: 1.02 }}
-                className="bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-sm"
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm hover:shadow-md transition"
               >
-                <h4 className="text-blue-700 font-semibold leading-7">✓ {b}</h4>
+                <h4 className="font-semibold leading-7 text-blue-700">✓ {b}</h4>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* LEADERSHIP */}
-      <section id="leadership" className="py-20 px-6 bg-blue-50">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
+      <section id="leadership" className="bg-blue-50 px-4 sm:px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
             {t.navLeadership}
           </p>
-          <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-5">
+          <h3 className="mb-5 text-3xl md:text-4xl font-bold text-slate-900">
             {t.leadershipTitle}
           </h3>
-          <p className="text-slate-600 leading-8 max-w-3xl mx-auto">
+          <p className="mx-auto max-w-3xl leading-8 text-slate-600">
             {t.leadershipText}
           </p>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-6 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h3 className="text-3xl md:text-4xl font-bold mb-4">{t.ctaTitle}</h3>
-          <p className="text-slate-300 leading-8 mb-8">{t.ctaText}</p>
+      <section className="bg-slate-900 px-4 sm:px-6 py-16 sm:py-20 text-white">
+        <div className="mx-auto max-w-4xl text-center">
+          <h3 className="mb-4 text-3xl md:text-4xl font-bold">{t.ctaTitle}</h3>
+          <p className="mb-8 leading-8 text-slate-300">{t.ctaText}</p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link
               to="/login"
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold"
+              className="rounded-xl bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-700 transition"
             >
               {t.btnLogin}
             </Link>
             <button
               onClick={handleContactClick}
-              className="border border-slate-500 hover:border-white hover:bg-white hover:text-slate-900 px-6 py-3 rounded-xl font-semibold transition"
+              className="rounded-xl border border-slate-500 px-6 py-3 font-semibold transition hover:border-white hover:bg-white hover:text-slate-900"
             >
               {t.btnContact}
             </button>
@@ -528,15 +595,14 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CONTACT */}
-      <section id="contact" className="py-16 px-6 text-center bg-white">
-        <h3 className="text-2xl font-bold mb-6">{t.contactTitle}</h3>
+      <section id="contact" className="bg-white px-4 sm:px-6 py-16 text-center">
+        <h3 className="mb-6 text-2xl font-bold text-slate-900">{t.contactTitle}</h3>
 
-        <div className="max-w-3xl mx-auto grid md:grid-cols-3 gap-4">
+        <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-3">
           {t.contactItems.map((item, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 text-slate-700"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 text-slate-700 shadow-sm"
             >
               {item}
             </div>
@@ -544,7 +610,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="bg-blue-800 text-white py-5 text-center text-sm px-6">
+      <footer className="bg-blue-800 px-4 sm:px-6 py-5 text-center text-sm text-white">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
