@@ -197,30 +197,35 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-slate-100">
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 text-slate-900">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-blue-200/60 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <img src="/images/newFibucaLogo.png" alt="FIBUCA logo" className="h-10 w-10 object-contain" />
-            <h1 className="text-lg font-bold text-sky-300">FIBUCA</h1>
+            <h1 className="text-lg font-bold text-blue-700">FIBUCA</h1>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-6 text-sm text-slate-200">
-            <a href="#about" className="hover:text-sky-300">{t.navAbout}</a>
-            <a href="#services" className="hover:text-sky-300">{t.navServices}</a>
-            <a href="#benefits" className="hover:text-sky-300">{t.navBenefits}</a>
-            <a href="#leadership" className="hover:text-sky-300">{t.navLeadership}</a>
-            <a href="#contact" className="hover:text-sky-300">{t.navContact}</a>
+          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-700">
+            <a href="#about" className="hover:text-blue-600">{t.navAbout}</a>
+            <a href="#services" className="hover:text-blue-600">{t.navServices}</a>
+            <a href="#benefits" className="hover:text-blue-600">{t.navBenefits}</a>
+            <a href="#leadership" className="hover:text-blue-600">{t.navLeadership}</a>
+            <a href="#contact" className="hover:text-blue-600">{t.navContact}</a>
           </nav>
 
           <div className="flex items-center gap-2">
             <button
               onClick={toggleLang}
-              className="rounded-md border border-sky-400/60 px-3 py-1.5 text-sm text-sky-200 hover:bg-sky-500/10"
+              className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50"
             >
               {lang === "en" ? "SW" : "EN"}
             </button>
-            <button onClick={toggleMenu} className="md:hidden rounded p-2 border border-white/20">☰</button>
+            <button
+              onClick={toggleMenu}
+              className="md:hidden rounded p-2 border border-blue-200 text-slate-700"
+            >
+              ☰
+            </button>
           </div>
         </div>
       </header>
@@ -232,9 +237,9 @@ export default function Landing() {
             initial={{ y: -16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -16, opacity: 0 }}
-            className="fixed top-16 left-0 right-0 z-40 border-b border-white/10 bg-slate-950/95 px-6 py-6 md:hidden"
+            className="fixed top-16 left-0 right-0 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 md:hidden"
           >
-            <nav className="flex flex-col gap-4 text-slate-200">
+            <nav className="flex flex-col gap-4 text-slate-700">
               <a href="#about" onClick={closeMenu}>{t.navAbout}</a>
               <a href="#services" onClick={closeMenu}>{t.navServices}</a>
               <a href="#benefits" onClick={closeMenu}>{t.navBenefits}</a>
@@ -248,7 +253,7 @@ export default function Landing() {
       <div className="h-16" />
 
       <section className="relative">
-        <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
+        <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden rounded-b-3xl">
           <AnimatePresence mode="wait">
             <motion.img
               key={heroSlides[activeSlide]}
@@ -262,22 +267,22 @@ export default function Landing() {
             />
           </AnimatePresence>
 
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/70 to-slate-900/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/35 via-blue-700/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-950/35 via-transparent to-transparent" />
 
           <div className="relative mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 sm:pb-14">
             <div className="max-w-3xl">
-              <p className="mb-3 inline-block rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-200">
+              <p className="mb-3 inline-block rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-blue-700">
                 {t.badge}
               </p>
-              <h2 className="text-3xl font-black leading-tight sm:text-5xl">{t.title}</h2>
-              <p className="mt-2 text-xl sm:text-2xl text-sky-200">{t.title2}</p>
-              <p className="mt-4 max-w-2xl text-sm sm:text-base text-slate-200">{t.subtitle}</p>
+              <h2 className="text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl">{t.title}</h2>
+              <p className="mt-2 text-xl sm:text-2xl text-blue-100">{t.title2}</p>
+              <p className="mt-4 max-w-2xl text-sm sm:text-base text-blue-50">{t.subtitle}</p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/login"
-                  className="rounded-xl bg-sky-500 px-7 py-3 text-base font-bold text-white shadow-lg shadow-sky-500/30 hover:bg-sky-400"
+                  className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500"
                 >
                   {t.btnLogin}
                 </Link>
@@ -286,15 +291,15 @@ export default function Landing() {
                   onClick={handleClientFormClick}
                   className={`rounded-xl px-6 py-3 font-semibold ${
                     isClientFormAccessible()
-                      ? "bg-white/15 text-white hover:bg-white/25"
-                      : "cursor-not-allowed bg-white/10 text-slate-400"
+                      ? "bg-white/80 text-blue-700 hover:bg-white"
+                      : "cursor-not-allowed bg-white/60 text-slate-400"
                   }`}
                 >
                   {t.btnForm}
                 </Link>
                 <button
                   onClick={handleContactClick}
-                  className="rounded-xl border border-emerald-400/60 bg-emerald-500/20 px-6 py-3 font-semibold text-emerald-200 hover:bg-emerald-500/30"
+                  className="rounded-xl border border-emerald-500/50 bg-emerald-100/80 px-6 py-3 font-semibold text-emerald-700 hover:bg-emerald-100"
                 >
                   {t.btnContact}
                 </button>
@@ -306,7 +311,7 @@ export default function Landing() {
                     key={i}
                     onClick={() => setActiveSlide(i)}
                     className={`h-2.5 rounded-full transition-all ${
-                      i === activeSlide ? "w-8 bg-sky-300" : "w-2.5 bg-white/40"
+                      i === activeSlide ? "w-8 bg-white" : "w-2.5 bg-white/65"
                     }`}
                   />
                 ))}
@@ -316,13 +321,13 @@ export default function Landing() {
 
           <button
             onClick={() => setActiveSlide((p) => (p - 1 + heroSlides.length) % heroSlides.length)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white hover:bg-black/60"
+            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/75 px-3 py-2 text-blue-700 hover:bg-white"
           >
             ‹
           </button>
           <button
             onClick={() => setActiveSlide((p) => (p + 1) % heroSlides.length)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white hover:bg-black/60"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/75 px-3 py-2 text-blue-700 hover:bg-white"
           >
             ›
           </button>
@@ -330,21 +335,21 @@ export default function Landing() {
       </section>
 
       <section id="about" className="px-4 py-14 sm:px-6">
-        <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-10">
-          <h3 className="text-2xl font-bold text-sky-300">{t.aboutTitle}</h3>
-          <p className="mt-4 text-slate-200">{t.aboutText1}</p>
-          <p className="mt-2 text-slate-300">{t.aboutText2}</p>
+        <div className="mx-auto max-w-6xl rounded-3xl border border-blue-100 bg-white/85 p-6 shadow-sm sm:p-10">
+          <h3 className="text-2xl font-bold text-blue-700">{t.aboutTitle}</h3>
+          <p className="mt-4 text-slate-700">{t.aboutText1}</p>
+          <p className="mt-2 text-slate-600">{t.aboutText2}</p>
         </div>
       </section>
 
       <section id="services" className="px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <h3 className="mb-6 text-2xl font-bold text-sky-300">{t.servicesTitle}</h3>
+          <h3 className="mb-6 text-2xl font-bold text-blue-700">{t.servicesTitle}</h3>
           <div className="grid gap-4 md:grid-cols-3">
             {t.services.map((service, i) => (
-              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                <h4 className="font-bold text-white">{service.title}</h4>
-                <p className="mt-2 text-slate-300">{service.text}</p>
+              <div key={i} className="rounded-2xl border border-blue-100 bg-white/85 p-6 shadow-sm">
+                <h4 className="font-bold text-slate-900">{service.title}</h4>
+                <p className="mt-2 text-slate-600">{service.text}</p>
               </div>
             ))}
           </div>
@@ -353,10 +358,10 @@ export default function Landing() {
 
       <section id="benefits" className="px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <h3 className="mb-6 text-2xl font-bold text-sky-300">{t.benefitsTitle}</h3>
+          <h3 className="mb-6 text-2xl font-bold text-blue-700">{t.benefitsTitle}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {t.benefits.map((b, i) => (
-              <div key={i} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-200">
+              <div key={i} className="rounded-xl border border-blue-100 bg-white/85 px-4 py-3 text-slate-700 shadow-sm">
                 ✓ {b}
               </div>
             ))}
@@ -365,18 +370,18 @@ export default function Landing() {
       </section>
 
       <section id="leadership" className="px-4 py-12 sm:px-6">
-        <div className="mx-auto max-w-5xl rounded-3xl border border-sky-400/20 bg-sky-500/10 p-8 text-center">
-          <h3 className="text-2xl font-bold text-sky-200">{t.leadershipTitle}</h3>
-          <p className="mt-3 text-slate-200">{t.leadershipText}</p>
+        <div className="mx-auto max-w-5xl rounded-3xl border border-blue-200 bg-blue-100/70 p-8 text-center">
+          <h3 className="text-2xl font-bold text-blue-700">{t.leadershipTitle}</h3>
+          <p className="mt-3 text-slate-700">{t.leadershipText}</p>
         </div>
       </section>
 
       <section id="contact" className="px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <h3 className="mb-5 text-2xl font-bold text-sky-300">{t.contactTitle}</h3>
+          <h3 className="mb-5 text-2xl font-bold text-blue-700">{t.contactTitle}</h3>
           <div className="grid gap-4 md:grid-cols-3">
             {t.contactItems.map((item, i) => (
-              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-200">
+              <div key={i} className="rounded-2xl border border-blue-100 bg-white/85 p-4 text-slate-700 shadow-sm">
                 {item}
               </div>
             ))}
@@ -384,7 +389,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="mt-10 border-t border-white/10 bg-slate-950/60 px-4 py-5 text-center text-xs text-slate-300">
+      <footer className="mt-10 border-t border-blue-100 bg-white/70 px-4 py-5 text-center text-xs text-slate-600">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
