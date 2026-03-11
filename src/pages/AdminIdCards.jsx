@@ -8,6 +8,8 @@ import {
   FaEye,
   FaDownload,
   FaSyncAlt,
+  FaFileAlt,
+  FaChartLine,
 } from "react-icons/fa";
 import BottomNavbar from "../components/BottomNavbar";
 import { api, setAuthToken } from "../lib/api";
@@ -23,10 +25,8 @@ export default function AdminIdCards() {
   const previewRef = useRef(null);
 
   const navbarTabs = [
-    { id: "submissions", label: "Submissions", icon: FaIdCard, href: "/admin/submissions" },
-    { id: "users", label: "Users", icon: FaIdCard, href: "/admin/users" },
-    { id: "leaderboard", label: "Leaderboard", icon: FaIdCard, href: "/admin/leaderboard" },
-    { id: "reports", label: "Reports", icon: FaIdCard, href: "/admin/reports" },
+    { id: "submissions", label: "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
+    { id: "reports", label: "Reports", icon: FaChartLine, href: "/admin/reports" },
     { id: "idcards", label: "ID Cards", icon: FaIdCard, href: "/admin/idcards" },
   ];
 

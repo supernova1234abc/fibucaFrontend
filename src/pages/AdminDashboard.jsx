@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   const navbarTabs = [
     { id: "submissions", label: "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
     { id: "users", label: "Users", icon: FaUsers, href: "/admin/users" },
-    { id: "leaderboard", label: "Leaderboard", icon: FaTrophy, href: "/admin/leaderboard" },
+    { id: "leaderboard", label: "Ranking", icon: FaTrophy, href: "/admin/leaderboard" },
     { id: "reports", label: "Reports", icon: FaChartLine, href: "/admin/reports" },
   ];
 
