@@ -1,3 +1,4 @@
+// frontend/src/pages/Landing.jsx
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,15 +30,6 @@ export default function Landing() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const heroSlides = [
-    "/images/slide1.jpg",
-    "/images/slide2.jpg",
-    "/images/slide3.jpg",
-    "/images/slide4.jpg",
-    "/images/slide1.jpg",
-    "/images/slide2.jpg",
-  ];
-
   const content = {
     en: {
       navAbout: "About",
@@ -47,8 +39,7 @@ export default function Landing() {
       navContact: "Contact",
 
       badge: "Official Trade Union Portal",
-      title: "Protecting Workers’ Rights Through Unity,",
-      title2: "Representation and Action",
+      title: "Protecting Workers’ Rights Through Unity, Representation and Action",
       subtitle:
         "FIBUCA supports workers in financial, industrial, banking, utilities, commercial and agro-processing sectors through representation, negotiation and member services.",
 
@@ -121,8 +112,7 @@ export default function Landing() {
       navContact: "Mawasiliano",
 
       badge: "Tovuti Rasmi ya Chama",
-      title: "Kulinda Haki za Wafanyakazi Kupitia Umoja,",
-      title2: "Uwakilishi na Hatua",
+      title: "Kulinda Haki za Wafanyakazi Kupitia Umoja, Uwakilishi na Hatua",
       subtitle:
         "FIBUCA inasaidia wafanyakazi wa sekta za kifedha, viwanda, benki, huduma, biashara na usindikaji wa mazao kupitia uwakilishi, majadiliano na huduma za wanachama.",
 
@@ -235,46 +225,17 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-sky-50 text-slate-800">
-      <style>{`
-        @keyframes fibuca-slide-left {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-
-        .fibuca-slide-wrap {
-          overflow: hidden;
-          width: 100%;
-        }
-
-        .fibuca-slide-track {
-          display: flex;
-          width: max-content;
-          animation: fibuca-slide-left 30s linear infinite;
-        }
-
-        .fibuca-slide-track:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-
-      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur shadow-sm h-16 px-4 sm:px-6 flex items-center justify-between z-50 border-b border-slate-200">
-        <div className="flex items-center gap-3 min-w-0">
-          <img
-            src="/images/newFibucaLogo.png"
-            alt="FIBUCA logo"
-            className="h-10 w-10 object-contain shrink-0"
-          />
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-blue-700 leading-none truncate">
-              FIBUCA
-            </h1>
-            <p className="text-[11px] text-slate-500 hidden sm:block">
-              Official Trade Union Portal
-            </p>
+      {/* NAVBAR */}
+      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur shadow-sm h-16 px-6 flex items-center justify-between z-50 border-b border-slate-200">
+        <div className="flex items-center gap-3">
+          <img src="/images/newFibucaLogo.png" alt="FIBUCA logo" className="h-10 w-10 object-contain" />
+          <div>
+            <h1 className="text-xl font-bold text-blue-700 leading-none">FIBUCA</h1>
+            <p className="text-[11px] text-slate-500 hidden sm:block">Official Trade Union Portal</p>
           </div>
         </div>
 
-        <nav className="hidden lg:flex space-x-6 text-blue-800 font-medium">
+        <nav className="hidden md:flex space-x-6 text-blue-800 font-medium">
           <a href="#about" className="hover:text-blue-600">{t.navAbout}</a>
           <a href="#services" className="hover:text-blue-600">{t.navServices}</a>
           <a href="#benefits" className="hover:text-blue-600">{t.navBenefits}</a>
@@ -344,50 +305,25 @@ export default function Landing() {
 
       <div className="h-16" />
 
+      {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.15),transparent_35%)]" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-24 relative">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold mb-4">
+        <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 relative">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold mb-5">
                 {t.badge}
               </div>
 
-              <h2 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-bold text-blue-900 leading-tight">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-900 leading-tight mb-5">
                 {t.title}
               </h2>
 
-              <p className="text-base sm:text-lg text-slate-600 mt-5 mb-7 max-w-2xl leading-7">
+              <p className="text-lg text-slate-600 mb-8 max-w-2xl">
                 {t.subtitle}
               </p>
 
-              {/* CAROUSEL */}
-              <div className="fibuca-slide-wrap mb-7 rounded-2xl border border-slate-200 bg-white/80 shadow-sm p-3">
-                <div className="fibuca-slide-track gap-3">
-                  {[...heroSlides, ...heroSlides].map((src, index) => (
-                    <div
-                      key={`${src}-${index}`}
-                      className="shrink-0 overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white"
-                    >
-                      <img
-                        src={src}
-                        alt={`FIBUCA activity ${index + 1}`}
-                        className="
-                          h-24 w-36
-                          sm:h-28 sm:w-44
-                          md:h-28 md:w-44
-                          lg:h-28 lg:w-40
-                          xl:h-32 xl:w-44
-                          object-cover
-                        "
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+              <div className="grid sm:grid-cols-3 gap-3 mb-8">
                 {t.heroPoints.map((item, i) => (
                   <div
                     key={i}
@@ -398,7 +334,7 @@ export default function Landing() {
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   to="/client-form"
                   onClick={handleClientFormClick}
@@ -427,20 +363,20 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="order-1 lg:order-2 relative">
-              <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-4 sm:p-6 md:p-8">
-                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-blue-700 via-blue-500 to-sky-400 p-5 sm:p-6 text-white relative overflow-hidden">
+            <div className="relative">
+              <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 md:p-8">
+                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-blue-700 via-blue-500 to-sky-400 p-6 text-white relative overflow-hidden">
                   <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_top_right,white,transparent_35%),radial-gradient(circle_at_bottom_left,white,transparent_30%)]" />
                   <img
                     src="/images/newFibucaLogo.png"
                     alt="FIBUCA emblem"
-                    className="h-14 w-14 sm:h-16 sm:w-16 object-contain mb-4 sm:mb-5"
+                    className="h-16 w-16 object-contain mb-5"
                   />
-                  <h3 className="text-xl sm:text-2xl font-bold mb-3">FIBUCA</h3>
+                  <h3 className="text-2xl font-bold mb-3">FIBUCA</h3>
                   <p className="text-sm md:text-base text-blue-50 leading-relaxed">
                     Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union.
                   </p>
-                  <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                  <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
                     <div className="bg-white/10 rounded-xl p-3">
                       <p className="text-blue-100">Workers’ Rights</p>
                     </div>
@@ -461,7 +397,8 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="about" className="py-16 sm:py-20 px-4 sm:px-6 bg-white">
+      {/* ABOUT */}
+      <section id="about" className="py-20 px-6 bg-white">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
           <div>
             <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
@@ -497,7 +434,8 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="services" className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50">
+      {/* SERVICES */}
+      <section id="services" className="py-20 px-6 bg-slate-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
@@ -508,7 +446,7 @@ export default function Landing() {
             </h3>
           </div>
 
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {t.services.map((service, i) => (
               <motion.div
                 key={i}
@@ -526,7 +464,8 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="benefits" className="py-16 sm:py-20 px-4 sm:px-6 bg-white">
+      {/* BENEFITS */}
+      <section id="benefits" className="py-20 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
@@ -551,7 +490,8 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="leadership" className="py-16 sm:py-20 px-4 sm:px-6 bg-blue-50">
+      {/* LEADERSHIP */}
+      <section id="leadership" className="py-20 px-6 bg-blue-50">
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase mb-3">
             {t.navLeadership}
@@ -565,7 +505,8 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-900 text-white">
+      {/* CTA */}
+      <section className="py-20 px-6 bg-slate-900 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h3 className="text-3xl md:text-4xl font-bold mb-4">{t.ctaTitle}</h3>
           <p className="text-slate-300 leading-8 mb-8">{t.ctaText}</p>
@@ -587,10 +528,11 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="contact" className="py-16 px-4 sm:px-6 text-center bg-white">
+      {/* CONTACT */}
+      <section id="contact" className="py-16 px-6 text-center bg-white">
         <h3 className="text-2xl font-bold mb-6">{t.contactTitle}</h3>
 
-        <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-4">
+        <div className="max-w-3xl mx-auto grid md:grid-cols-3 gap-4">
           {t.contactItems.map((item, i) => (
             <div
               key={i}
@@ -602,7 +544,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="bg-blue-800 text-white py-5 text-center text-sm px-4 sm:px-6">
+      <footer className="bg-blue-800 text-white py-5 text-center text-sm px-6">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
