@@ -86,6 +86,40 @@ export default function AdminIdCards() {
     return { total, withCleanPhoto, withRawPhoto, uniqueCompanies };
   }, [cards]);
 
+  const handlePreviewCard = (row) => {
+    setSelectedCard(row);
+  };
+
+  const handleDownloadCard = async (row) => {
+    try {
+      if (!row) return;
+
+      // If already previewing same card and ref is ready, print immediately
+      if (selectedCard?.id === row.id && previewRef.current?.printCard) {
+        await previewRef.current.printCard();
+        return;
+      }
+
+      // Otherwise open preview first, then print after render
+      setSelectedCard(row);
+
+      setTimeout(async () => {
+        if (previewRef.current?.printCard) {
+          await previewRef.current.printCard();
+        } else {
+          await Swal.fire(
+            "Not ready",
+            "Card preview is still loading. Please try again.",
+            "warning"
+          );
+        }
+      }, 350);
+    } catch (err) {
+      console.error("❌ Failed to download ID card PDF:", err);
+      Swal.fire("Error", "Failed to generate ID card PDF", "error");
+    }
+  };
+
   const columns = [
     {
       name: "#",
@@ -148,7 +182,7 @@ export default function AdminIdCards() {
       cell: (row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => setSelectedCard(row)}
+            onClick={() => handlePreviewCard(row)}
             className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             title="Preview card"
           >
@@ -156,13 +190,7 @@ export default function AdminIdCards() {
           </button>
 
           <button
-            onClick={() => {
-              setSelectedCard(row);
-              setTimeout(() => {
-                const btn = document.getElementById("admin-idcard-print-btn");
-                if (btn) btn.click();
-              }, 200);
-            }}
+            onClick={() => handleDownloadCard(row)}
             className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
             title="Generate / download PDF"
           >
@@ -251,28 +279,26 @@ export default function AdminIdCards() {
               ✕
             </button>
 
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold text-slate-800">ID Card Preview</h2>
-              <p className="text-sm text-slate-500">
-                Preview the generated card and download the PDF for printing.
-              </p>
+            <div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">ID Card Preview</h2>
+                <p className="text-sm text-slate-500">
+                  Preview the generated card and download the PDF for printing.
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleDownloadCard(selectedCard)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2"
+              >
+                <FaDownload />
+                Download PDF
+              </button>
             </div>
 
-            <div ref={previewRef}>
+            <div>
               <IDCard ref={previewRef} card={selectedCard} />
             </div>
-
-            {/* hidden helper button to trigger existing handlePrint */}
-            <button
-              id="admin-idcard-print-btn"
-              onClick={() => {
-                const printBtn = document.querySelector("button.print\\:hidden, button.bg-blue-700, button.bg-blue-600");
-                if (printBtn) printBtn.click();
-              }}
-              className="hidden"
-            >
-              hidden print
-            </button>
           </div>
         </div>
       )}

@@ -1,5 +1,12 @@
 // src/components/IDCard.jsx
-import React, { forwardRef, useMemo, useState, useEffect, useRef } from "react";
+import React, {
+  forwardRef,
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useImperativeHandle,
+} from "react";
 import { QRCodeSVG as QRCode } from "qrcode.react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -8,7 +15,7 @@ import Swal from "sweetalert2";
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
 // Cloudinary: background removal -> transparent PNG
-function toCloudinaryTransparentUrl(rawUrl, { height = 140 } = {}) {
+function toCloudinaryTransparentUrl(rawUrl, { height = 180 } = {}) {
   if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
   if (!rawUrl.includes("/upload/")) return rawUrl;
 
@@ -16,6 +23,9 @@ function toCloudinaryTransparentUrl(rawUrl, { height = 140 } = {}) {
   const tr = `e_background_removal/c_scale,h_${height}/f_png,q_auto:best/`;
   return `${prefix}/upload/${tr}${rest}`;
 }
+
+const CARD_W = 340;
+const CARD_H = 214;
 
 const IDCard = forwardRef(({ card }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
@@ -64,7 +74,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
       if (isUrl(candidate)) {
         if (candidate.includes("res.cloudinary.com") && candidate.includes("/upload/")) {
-          return toCloudinaryTransparentUrl(candidate, { height: 140 });
+          return toCloudinaryTransparentUrl(candidate, { height: 180 });
         }
         return candidate;
       }
@@ -87,7 +97,7 @@ const IDCard = forwardRef(({ card }, ref) => {
     const imgs = Array.from(root.querySelectorAll("img"));
     await Promise.all(
       imgs.map((img) => {
-        if (img.complete) return Promise.resolve();
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve;
@@ -97,27 +107,17 @@ const IDCard = forwardRef(({ card }, ref) => {
   };
 
   const renderCardSide = async (element) => {
-    const rect = element.getBoundingClientRect();
-
     const canvas = await html2canvas(element, {
-      scale: 4,
+      scale: 5,
       useCORS: true,
       allowTaint: false,
-      backgroundColor: "#ffffff",
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
+      backgroundColor: null,
+      width: CARD_W,
+      height: CARD_H,
       scrollX: 0,
       scrollY: 0,
-      windowWidth: document.documentElement.clientWidth,
-      windowHeight: document.documentElement.clientHeight,
       imageTimeout: 30000,
       logging: false,
-      onclone: (clonedDoc) => {
-        const clonedEl = clonedDoc.body.querySelector("[data-idcard-side='true']");
-        if (clonedEl) {
-          clonedEl.style.transform = "none";
-        }
-      },
     });
 
     const ctx = canvas.getContext("2d");
@@ -158,7 +158,7 @@ const IDCard = forwardRef(({ card }, ref) => {
       const addFullPageImage = (imgData) => {
         const w = pdf.internal.pageSize.getWidth();
         const h = pdf.internal.pageSize.getHeight();
-        pdf.addImage(imgData, "PNG", 0, 0, w, h, undefined, "FAST");
+        pdf.addImage(imgData, "PNG", 0, 0, w, h, undefined, "SLOW");
       };
 
       const frontImg = await renderCardSide(frontRef.current);
@@ -175,7 +175,7 @@ const IDCard = forwardRef(({ card }, ref) => {
         title: "PDF Generated!",
         text: "ID card PDF downloaded successfully.",
         confirmButtonColor: "#1d4ed8",
-        timer: 1800,
+        timer: 1500,
         timerProgressBar: true,
         showConfirmButton: false,
       });
@@ -190,67 +190,60 @@ const IDCard = forwardRef(({ card }, ref) => {
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    printCard: handlePrint,
+  }));
+
   const cardStyle =
-    "relative w-[340px] h-[214px] overflow-hidden " +
-    "rounded-[18px] shadow-[0_10px_30px_rgba(0,0,0,0.16)] border border-blue-200 " +
-    "text-[10px] leading-tight " +
-    "print:shadow-none print:rounded-none print:border-gray-300 bg-white";
+    "relative overflow-hidden rounded-[18px] border border-blue-200 bg-white text-[10px] leading-tight shadow-[0_10px_30px_rgba(0,0,0,0.16)]";
 
   return (
     <>
-      <style>{`
-        @media print {
-          body { margin:0; padding:0; }
-          button { display:none !important; }
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        }
-      `}</style>
-
       <div className="flex flex-col items-center space-y-4 p-4">
         <button
           onClick={handlePrint}
-          className="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded-md print:hidden shadow"
+          className="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded-md"
         >
           Print ID
         </button>
 
-        <div ref={ref} className="flex flex-col md:flex-row gap-5 print:gap-0">
+        <div className="flex flex-col md:flex-row gap-5">
           {/* FRONT */}
           <div
             ref={frontRef}
-            data-idcard-side="true"
-            className={cardStyle}
+            className={`${cardStyle} print-container print-bg`}
             style={{
+              width: `${CARD_W}px`,
+              height: `${CARD_H}px`,
               background:
-                "linear-gradient(135deg, #eff6ff 0%, #dbeafe 18%, #ffffff 45%, #e0f2fe 72%, #bfdbfe 100%)",
+                "linear-gradient(135deg, #eff6ff 0%, #dbeafe 18%, #ffffff 42%, #e0f2fe 68%, #bfdbfe 100%)",
             }}
           >
-            {/* decorative glow 1 */}
+            {/* decorative background blobs */}
             <div
-              className="absolute -top-10 -left-10 w-36 h-36 rounded-full blur-2xl opacity-50"
-              style={{ background: "radial-gradient(circle, rgba(37,99,235,0.35), transparent 70%)" }}
-            />
-
-            {/* decorative glow 2 */}
-            <div
-              className="absolute bottom-0 right-0 w-40 h-40 rounded-full blur-2xl opacity-50"
-              style={{ background: "radial-gradient(circle, rgba(14,165,233,0.28), transparent 70%)" }}
-            />
-
-            {/* subtle diagonal pattern */}
-            <div
-              className="absolute inset-0 opacity-[0.10] pointer-events-none"
+              className="absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl opacity-50"
               style={{
-                backgroundImage:
-                  "repeating-linear-gradient(135deg, rgba(30,64,175,0.22) 0px, rgba(30,64,175,0.22) 2px, transparent 2px, transparent 14px)",
+                background: "radial-gradient(circle, rgba(37,99,235,0.38), transparent 70%)",
+              }}
+            />
+            <div
+              className="absolute bottom-0 right-0 w-44 h-44 rounded-full blur-3xl opacity-50"
+              style={{
+                background: "radial-gradient(circle, rgba(14,165,233,0.28), transparent 70%)",
               }}
             />
 
-            {/* watermark/logo */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.16] pointer-events-none z-10">
+            {/* pattern */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.12]"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(135deg, rgba(30,64,175,0.18) 0px, rgba(30,64,175,0.18) 2px, transparent 2px, transparent 14px)",
+              }}
+            />
+
+            {/* watermark */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.16] z-10 pointer-events-none">
               <img
                 src="/images/logo-watermark.png"
                 alt="Watermark"
@@ -259,24 +252,22 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* top header band */}
+            {/* top band */}
             <div
               className="absolute top-0 left-0 right-0 h-9 z-30"
               style={{
                 background: "linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 48%, #2563eb 100%)",
               }}
-            >
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span
-                  className="text-white font-bold tracking-[1px] leading-none drop-shadow-sm"
-                  style={{ fontSize: "15px" }}
-                >
-                  IDENTIFICATION
-                </span>
-              </div>
+            />
+            <div className="absolute top-0 left-0 right-0 h-9 z-40 flex items-center justify-center">
+              <span
+                className="text-white font-bold tracking-[1px] leading-none drop-shadow-sm"
+                style={{ fontSize: "15px" }}
+              >
+                IDENTIFICATION
+              </span>
             </div>
 
-            {/* small accent bar */}
             <div
               className="absolute top-9 left-0 right-0 h-[4px] z-30"
               style={{
@@ -284,10 +275,10 @@ const IDCard = forwardRef(({ card }, ref) => {
               }}
             />
 
-            {/* photo block */}
-            <div className="absolute top-[48px] left-[10px] z-30">
+            {/* photo */}
+            <div className="absolute top-[48px] left-[12px] z-30">
               <div
-                className="relative w-[110px] h-[110px] rounded-full overflow-hidden"
+                className="relative w-[106px] h-[106px] rounded-full overflow-hidden"
                 style={{
                   background: "radial-gradient(circle at 30% 30%, #f8fafc 0%, #dbeafe 100%)",
                   border: "4px solid rgba(255,255,255,0.95)",
@@ -323,9 +314,8 @@ const IDCard = forwardRef(({ card }, ref) => {
                 )}
               </div>
 
-              {/* name + role */}
-              <div className="mt-2 pl-1 w-[140px]">
-                <p className="m-0 text-[12px] font-bold text-slate-900 leading-none tracking-[0.4px]">
+              <div className="mt-2 pl-1 w-[150px]">
+                <p className="m-0 text-[12px] font-bold text-slate-900 leading-none tracking-[0.3px]">
                   {getFirstAndLastName(card?.fullName)}
                 </p>
                 <p className="m-0 mt-[4px] text-[11px] font-medium text-blue-900 leading-none">
@@ -334,8 +324,8 @@ const IDCard = forwardRef(({ card }, ref) => {
               </div>
             </div>
 
-            {/* organization mini label */}
-            <div className="absolute top-[54px] right-[12px] z-30 text-right">
+            {/* organization label */}
+            <div className="absolute top-[54px] right-[14px] z-30 text-right">
               <p className="m-0 text-[9px] font-semibold text-blue-900 tracking-[0.6px]">
                 FIBUCA
               </p>
@@ -344,7 +334,7 @@ const IDCard = forwardRef(({ card }, ref) => {
               </p>
             </div>
 
-            {/* QR */}
+            {/* qr */}
             <div
               className="absolute top-[78px] right-[14px] z-30 bg-white p-[4px] rounded-[10px]"
               style={{
@@ -362,23 +352,23 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* bottom info panel */}
+            {/* bottom info */}
             <div
-              className="absolute bottom-[10px] right-[12px] left-[150px] z-30 rounded-[12px] px-3 py-2"
+              className="absolute bottom-[12px] right-[12px] left-[150px] z-30 rounded-[12px] px-3 py-2"
               style={{
-                background: "rgba(255,255,255,0.78)",
+                background: "rgba(255,255,255,0.8)",
                 backdropFilter: "blur(3px)",
                 border: "1px solid rgba(148,163,184,0.28)",
                 boxShadow: "0 4px 12px rgba(30,41,59,0.08)",
               }}
             >
-              <p className="m-0 text-[10px] font-semibold text-slate-800">
+              <p className="m-0 text-[10px] font-semibold text-slate-800 leading-tight">
                 ID: <span className="text-blue-900">{card?.cardNumber || "N/A"}</span>
               </p>
-              <p className="m-0 mt-[2px] text-[9px] text-slate-700">
+              <p className="m-0 mt-[3px] text-[9px] text-slate-700 leading-tight">
                 Issued: {formattedDate}
               </p>
-              <p className="m-0 mt-[2px] text-[9px] text-slate-700 truncate">
+              <p className="m-0 mt-[3px] text-[9px] text-slate-700 leading-tight break-words">
                 {String(card?.company || "FIBUCA").toUpperCase()}
               </p>
             </div>
@@ -387,14 +377,14 @@ const IDCard = forwardRef(({ card }, ref) => {
           {/* BACK */}
           <div
             ref={backRef}
-            data-idcard-side="true"
-            className={cardStyle}
+            className={`${cardStyle} print-container print-bg`}
             style={{
+              width: `${CARD_W}px`,
+              height: `${CARD_H}px`,
               background:
                 "linear-gradient(160deg, #eff6ff 0%, #ffffff 28%, #dbeafe 58%, #e0f2fe 100%)",
             }}
           >
-            {/* back pattern */}
             <div
               className="absolute inset-0 opacity-[0.08]"
               style={{
@@ -404,7 +394,6 @@ const IDCard = forwardRef(({ card }, ref) => {
               }}
             />
 
-            {/* header */}
             <div
               className="absolute top-0 left-0 right-0 h-9 z-20"
               style={{
@@ -417,7 +406,6 @@ const IDCard = forwardRef(({ card }, ref) => {
               </span>
             </div>
 
-            {/* watermark */}
             <div className="absolute inset-0 flex items-center justify-center opacity-[0.09] z-10 pointer-events-none">
               <img
                 src="/images/logo-watermark.png"
@@ -427,7 +415,6 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* content */}
             <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
               <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
                 THIS STAFF IDENTITY IS THE PROPERTY OF
@@ -440,29 +427,26 @@ const IDCard = forwardRef(({ card }, ref) => {
               <div
                 className="rounded-[12px] px-3 py-3"
                 style={{
-                  background: "rgba(255,255,255,0.72)",
+                  background: "rgba(255,255,255,0.76)",
                   border: "1px solid rgba(148,163,184,0.28)",
                   boxShadow: "0 4px 14px rgba(30,41,59,0.08)",
                 }}
               >
-                <p className="text-[10px] text-slate-800 m-0">
+                <p className="text-[10px] text-slate-800 m-0 leading-snug">
                   5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam
                 </p>
-                <p className="text-[10px] text-slate-800 m-0 mt-[4px]">
+                <p className="text-[10px] text-slate-800 m-0 mt-[4px] leading-snug">
                   Tel: +255732999782
                 </p>
-                <p className="text-[10px] text-slate-800 m-0 mt-[4px]">
+                <p className="text-[10px] text-slate-800 m-0 mt-[4px] leading-snug break-all">
                   fibucatradeunion@gmail.com
                 </p>
               </div>
             </div>
 
-            {/* bottom signature area */}
-            <div className="absolute bottom-[12px] left-0 right-0 text-center z-30">
-              <div
-                className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1"
-              />
-              <p className="italic text-slate-600 text-[10px]">
+            <div className="absolute bottom-[14px] left-0 right-0 text-center z-30">
+              <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
+              <p className="italic text-slate-600 text-[10px] leading-none">
                 General Secretary Signature
               </p>
             </div>

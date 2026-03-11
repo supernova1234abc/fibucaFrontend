@@ -1,4 +1,3 @@
-// frontend/src/pages/Landing.jsx
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +28,14 @@ export default function Landing() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const heroSlides = [
+    "/images/slide1.jpg",
+    "/images/slide2.jpg",
+    "/images/slide3.jpg",
+    "/images/slide4.jpg",
+    "/images/slide5.jpg",
+  ];
 
   const content = {
     en: {
@@ -225,6 +232,27 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-sky-50 text-slate-800">
+      <style>{`
+        @keyframes fibuca-slide-left {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .fibuca-slide-track {
+          display: flex;
+          width: max-content;
+          animation: fibuca-slide-left 28s linear infinite;
+        }
+
+        .fibuca-slide-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* NAVBAR */}
       <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur shadow-sm h-16 px-6 flex items-center justify-between z-50 border-b border-slate-200">
         <div className="flex items-center gap-3">
@@ -318,6 +346,24 @@ export default function Landing() {
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-900 leading-tight mb-5">
                 {t.title}
               </h2>
+
+              {/* MOVING PICTURES DIV */}
+              <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm">
+                <div className="fibuca-slide-track py-3">
+                  {[...heroSlides, ...heroSlides].map((src, index) => (
+                    <div
+                      key={`${src}-${index}`}
+                      className="mx-3 shrink-0 overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white"
+                    >
+                      <img
+                        src={src}
+                        alt={`FIBUCA activity ${index + 1}`}
+                        className="h-28 w-44 md:h-32 md:w-52 object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <p className="text-lg text-slate-600 mb-8 max-w-2xl">
                 {t.subtitle}
