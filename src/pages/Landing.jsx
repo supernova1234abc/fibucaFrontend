@@ -31,8 +31,8 @@ export default function Landing() {
 
   const heroSlides = [
     "/images/slide1.jpg",
-    "/images/slide2.jpg",
-    "/images/slide3.jpg",
+    "/images/slide2.jpeg",
+    "/images/slide3.jpeg",
     "/images/slide4.jpg",
   ];
 
