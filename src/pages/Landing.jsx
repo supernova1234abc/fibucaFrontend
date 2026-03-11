@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lang, setLang] = useState("en");
+  const [activeSlide, setActiveSlide] = useState(0);
   const menuRef = useRef(null);
 
   const toggleMenu = () => setMenuOpen((p) => !p);
@@ -21,9 +22,7 @@ export default function Landing() {
 
   useEffect(() => {
     const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        closeMenu();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) closeMenu();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -34,9 +33,14 @@ export default function Landing() {
     "/images/slide2.jpg",
     "/images/slide3.jpg",
     "/images/slide4.jpg",
-    "/images/slide1.jpg",
-    "/images/slide2.jpg",
   ];
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveSlide((p) => (p + 1) % heroSlides.length);
+    }, 4500);
+    return () => clearInterval(id);
+  }, [heroSlides.length]);
 
   const content = {
     en: {
@@ -45,144 +49,103 @@ export default function Landing() {
       navBenefits: "Benefits",
       navLeadership: "Leadership",
       navContact: "Contact",
-
       badge: "Official Trade Union Portal",
-      title: "Protecting Workers’ Rights Through Unity,",
-      title2: "Representation and Action",
+      title: "Protecting Workers’ Rights",
+      title2: "Through Unity, Representation and Action",
       subtitle:
-        "FIBUCA supports workers in financial, industrial, banking, utilities, commercial and agro-processing sectors through representation, negotiation and member services.",
-
-      heroPoints: [
-        "Collective bargaining and representation",
-        "Legal and labour-rights support",
-        "Member welfare and education services",
-      ],
-
+        "FIBUCA supports workers in financial, industrial, banking, utilities, commercial and agro-processing sectors.",
       btnForm: "Submit Union Form",
       btnLogin: "Member Login",
       btnContact: "Contact Union Office",
-
       aboutTitle: "About FIBUCA",
       aboutText1:
-        "FIBUCA is a bona fide, independent trade union established by workers to defend and advance their social and economic interests.",
+        "FIBUCA is an independent trade union established by workers to defend and advance social and economic interests.",
       aboutText2:
-        "The union advocates for fair treatment at work, stronger labour protection and practical member support across key employment sectors.",
-
+        "We advocate fair treatment at work, stronger labour protection and practical support.",
       servicesTitle: "Our Core Services",
       services: [
         {
           title: "Collective Bargaining",
-          text: "We negotiate with employers on pay, working conditions and workplace fairness.",
+          text: "Negotiation on pay, conditions and workplace fairness.",
         },
         {
           title: "Legal & Labour Advice",
-          text: "Members receive guidance and support on labour matters, disputes and workplace rights.",
+          text: "Guidance on labour matters, disputes and workplace rights.",
         },
         {
           title: "Welfare & Education",
-          text: "FIBUCA promotes member welfare through support services, education opportunities and union awareness.",
+          text: "Support services, education opportunities and union awareness.",
         },
       ],
-
       benefitsTitle: "Why Workers Join FIBUCA",
       benefits: [
         "Stronger voice through collective action",
         "Protection of workers’ rights and interests",
-        "Guidance on labour disputes and employer relations",
-        "Support on terms, conditions and workplace concerns",
-        "Union identity, coordination and organized representation",
-        "Access to union communication and member support",
+        "Guidance on disputes and employer relations",
+        "Support on terms and workplace concerns",
       ],
-
       leadershipTitle: "Professional Union Leadership",
       leadershipText:
-        "FIBUCA presents its team as professionals ready to help, with a mission centered on defending workers’ social and economic rights.",
-
-      ctaTitle: "Ready to Connect With FIBUCA?",
-      ctaText:
-        "Log in if you are already registered, or contact the union office if you need assistance, onboarding or a valid staff submission link.",
-
+        "A professional team focused on defending workers’ social and economic rights.",
       contactTitle: "Contact Us",
       contactItems: [
         "Email: info@fibucatradeunion.or.tz",
         "Phone: +255 784 475 333",
         "Address: Mahiwa/Lumumba Street, Plot No. 17 Block 73",
       ],
-
       footer:
         "FIBUCA — Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union",
     },
-
     sw: {
       navAbout: "Kuhusu",
       navServices: "Huduma",
       navBenefits: "Faida",
       navLeadership: "Uongozi",
       navContact: "Mawasiliano",
-
       badge: "Tovuti Rasmi ya Chama",
-      title: "Kulinda Haki za Wafanyakazi Kupitia Umoja,",
-      title2: "Uwakilishi na Hatua",
+      title: "Kulinda Haki za Wafanyakazi",
+      title2: "Kupitia Umoja, Uwakilishi na Hatua",
       subtitle:
-        "FIBUCA inasaidia wafanyakazi wa sekta za kifedha, viwanda, benki, huduma, biashara na usindikaji wa mazao kupitia uwakilishi, majadiliano na huduma za wanachama.",
-
-      heroPoints: [
-        "Majadiliano ya pamoja na uwakilishi",
-        "Msaada wa kisheria na haki za kazi",
-        "Huduma za ustawi na elimu kwa wanachama",
-      ],
-
+        "FIBUCA inasaidia wafanyakazi wa sekta za kifedha, viwanda, benki, huduma, biashara na usindikaji wa mazao.",
       btnForm: "Wasilisha Fomu ya Chama",
       btnLogin: "Ingia kwa Mwanachama",
       btnContact: "Wasiliana na Ofisi ya Chama",
-
       aboutTitle: "Kuhusu FIBUCA",
       aboutText1:
-        "FIBUCA ni chama halali na huru cha wafanyakazi kilichoanzishwa na wafanyakazi wenyewe kulinda na kuendeleza maslahi yao ya kijamii na kiuchumi.",
+        "FIBUCA ni chama huru cha wafanyakazi kilichoanzishwa kulinda maslahi ya kijamii na kiuchumi.",
       aboutText2:
-        "Chama kinatetea haki mahali pa kazi, ulinzi bora wa wafanyakazi na msaada wa vitendo kwa wanachama katika sekta mbalimbali za ajira.",
-
+        "Tunatetea haki kazini, ulinzi bora wa wafanyakazi na msaada wa vitendo.",
       servicesTitle: "Huduma Kuu za Chama",
       services: [
         {
           title: "Majadiliano ya Pamoja",
-          text: "Tunafanya mazungumzo na waajiri kuhusu mishahara, mazingira ya kazi na haki kazini.",
+          text: "Mazungumzo kuhusu mishahara na mazingira ya kazi.",
         },
         {
           title: "Ushauri wa Kisheria na Kazi",
-          text: "Wanachama hupata mwongozo na msaada kwenye migogoro ya kazi na haki za wafanyakazi.",
+          text: "Mwongozo kuhusu haki za wafanyakazi na migogoro.",
         },
         {
           title: "Ustawi na Elimu",
-          text: "FIBUCA inaendeleza ustawi wa wanachama kupitia huduma za msaada, elimu na uhamasishaji wa chama.",
+          text: "Huduma za msaada, elimu na uhamasishaji wa chama.",
         },
       ],
-
       benefitsTitle: "Kwa Nini Wafanyakazi Hujiunga na FIBUCA",
       benefits: [
         "Sauti yenye nguvu kupitia umoja",
         "Ulinzi wa haki na maslahi ya wafanyakazi",
-        "Mwongozo kwenye migogoro ya kazi na mahusiano na waajiri",
+        "Mwongozo kwenye migogoro ya kazi",
         "Msaada kuhusu masharti na mazingira ya kazi",
-        "Utambulisho wa chama na uwakilishi ulioratibiwa",
-        "Mawasiliano na msaada kwa wanachama",
       ],
-
       leadershipTitle: "Uongozi wa Kitaalamu wa Chama",
       leadershipText:
-        "FIBUCA inaonyesha timu ya wataalamu walio tayari kusaidia kwa lengo la kutetea haki na maslahi ya kijamii na kiuchumi ya wafanyakazi.",
-
-      ctaTitle: "Uko Tayari Kuunganishwa na FIBUCA?",
-      ctaText:
-        "Ingia kama tayari umesajiliwa, au wasiliana na ofisi ya chama kama unahitaji msaada, usajili au staff link halali.",
-
+        "Timu ya wataalamu tayari kusaidia kulinda haki za kijamii na kiuchumi za wafanyakazi.",
       contactTitle: "Wasiliana Nasi",
       contactItems: [
         "Barua Pepe: info@fibucatradeunion.or.tz",
         "Simu: +255 784 475 333",
         "Anwani: Mahiwa/Lumumba Street, Plot No. 17 Block 73",
       ],
-
       footer:
         "FIBUCA — Chama cha Wafanyakazi wa Sekta za Fedha, Viwanda, Benki, Huduma, Biashara na Usindikaji wa Mazao",
     },
@@ -216,8 +179,8 @@ export default function Landing() {
       title: lang === "en" ? "Use Your Staff Link" : "Tumia Staff Link Yako",
       text:
         lang === "en"
-          ? "Open the exact submission link you received from union staff. This homepage button does not replace the tokenized submission URL."
-          : "Fungua kiungo maalum cha uwasilishaji ulichopewa na staff wa chama. Kitufe hiki cha homepage hakibadilishi URL yenye token.",
+          ? "Open the exact submission link received from union staff."
+          : "Fungua kiungo maalum cha uwasilishaji ulichopewa na staff wa chama.",
       icon: "info",
       confirmButtonText: "OK",
     });
@@ -234,91 +197,30 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-100 text-slate-800">
-      <style>{`
-        @keyframes fibuca-slide-left {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-
-        .fibuca-slide-wrap {
-          overflow: hidden;
-          width: 100%;
-        }
-
-        .fibuca-slide-track {
-          display: flex;
-          width: max-content;
-          animation: fibuca-slide-left 30s linear infinite;
-        }
-
-        .fibuca-slide-track:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-slate-100">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3 min-w-0">
-            <img
-              src="/images/newFibucaLogo.png"
-              alt="FIBUCA logo"
-              className="h-10 w-10 shrink-0 object-contain"
-            />
-            <div className="min-w-0">
-              <h1 className="truncate text-lg sm:text-xl font-bold text-blue-700">
-                FIBUCA
-              </h1>
-              <p className="hidden sm:block text-[11px] text-slate-500">
-                Official Trade Union Portal
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <img src="/images/newFibucaLogo.png" alt="FIBUCA logo" className="h-10 w-10 object-contain" />
+            <h1 className="text-lg font-bold text-sky-300">FIBUCA</h1>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-blue-800">
-            <a href="#about" className="hover:text-blue-600 transition">{t.navAbout}</a>
-            <a href="#services" className="hover:text-blue-600 transition">{t.navServices}</a>
-            <a href="#benefits" className="hover:text-blue-600 transition">{t.navBenefits}</a>
-            <a href="#leadership" className="hover:text-blue-600 transition">{t.navLeadership}</a>
-            <a href="#contact" className="hover:text-blue-600 transition">{t.navContact}</a>
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-slate-200">
+            <a href="#about" className="hover:text-sky-300">{t.navAbout}</a>
+            <a href="#services" className="hover:text-sky-300">{t.navServices}</a>
+            <a href="#benefits" className="hover:text-sky-300">{t.navBenefits}</a>
+            <a href="#leadership" className="hover:text-sky-300">{t.navLeadership}</a>
+            <a href="#contact" className="hover:text-sky-300">{t.navContact}</a>
           </nav>
 
-          <button
-            onClick={toggleLang}
-            className="hidden md:block rounded-lg border border-blue-500 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 transition"
-          >
-            {lang === "en" ? "Swahili" : "English"}
-          </button>
-
-          <div className="flex md:hidden items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleLang}
-              className="rounded border border-blue-500 px-2 py-1 text-sm text-blue-700"
+              className="rounded-md border border-sky-400/60 px-3 py-1.5 text-sm text-sky-200 hover:bg-sky-500/10"
             >
               {lang === "en" ? "SW" : "EN"}
             </button>
-
-            <button
-              onClick={toggleMenu}
-              className="relative flex h-8 w-8 flex-col items-center justify-center"
-              aria-label="Toggle menu"
-            >
-              <span
-                className={`block h-0.5 w-6 bg-blue-700 transition ${
-                  menuOpen ? "translate-y-1.5 rotate-45" : ""
-                }`}
-              />
-              <span
-                className={`my-1 block h-0.5 w-6 bg-blue-700 transition ${
-                  menuOpen ? "opacity-0" : ""
-                }`}
-              />
-              <span
-                className={`block h-0.5 w-6 bg-blue-700 transition ${
-                  menuOpen ? "-translate-y-1.5 -rotate-45" : ""
-                }`}
-              />
-            </button>
+            <button onClick={toggleMenu} className="md:hidden rounded p-2 border border-white/20">☰</button>
           </div>
         </div>
       </header>
@@ -327,13 +229,12 @@ export default function Landing() {
         {menuOpen && (
           <motion.div
             ref={menuRef}
-            initial={{ y: -18, opacity: 0 }}
+            initial={{ y: -16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -18, opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            className="fixed top-16 left-0 right-0 z-40 border-b border-slate-200 bg-white shadow-lg md:hidden"
+            exit={{ y: -16, opacity: 0 }}
+            className="fixed top-16 left-0 right-0 z-40 border-b border-white/10 bg-slate-950/95 px-6 py-6 md:hidden"
           >
-            <nav className="flex flex-col gap-4 px-6 py-6 text-blue-800 font-medium">
+            <nav className="flex flex-col gap-4 text-slate-200">
               <a href="#about" onClick={closeMenu}>{t.navAbout}</a>
               <a href="#services" onClick={closeMenu}>{t.navServices}</a>
               <a href="#benefits" onClick={closeMenu}>{t.navBenefits}</a>
@@ -346,271 +247,144 @@ export default function Landing() {
 
       <div className="h-16" />
 
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.14),transparent_35%)]" />
+      <section className="relative">
+        <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={heroSlides[activeSlide]}
+              src={heroSlides[activeSlide]}
+              alt={`slide-${activeSlide + 1}`}
+              initial={{ scale: 1.06, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </AnimatePresence>
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 lg:py-24">
-          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
-            <div className="order-2 lg:order-1">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-xs sm:text-sm font-semibold text-blue-800 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/70 to-slate-900/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+
+          <div className="relative mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 sm:pb-14">
+            <div className="max-w-3xl">
+              <p className="mb-3 inline-block rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-200">
                 {t.badge}
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-black leading-tight text-slate-900">
-                {t.title}
-                <span className="mt-2 block bg-gradient-to-r from-blue-700 via-sky-600 to-emerald-500 bg-clip-text text-transparent">
-                  {t.title2}
-                </span>
-              </h2>
-
-              <p className="mt-5 max-w-2xl text-base sm:text-lg leading-7 sm:leading-8 text-slate-600">
-                {t.subtitle}
               </p>
+              <h2 className="text-3xl font-black leading-tight sm:text-5xl">{t.title}</h2>
+              <p className="mt-2 text-xl sm:text-2xl text-sky-200">{t.title2}</p>
+              <p className="mt-4 max-w-2xl text-sm sm:text-base text-slate-200">{t.subtitle}</p>
 
-              <div className="mt-6 fibuca-slide-wrap rounded-3xl border border-slate-200 bg-white/90 p-3 shadow-lg">
-                <div className="fibuca-slide-track gap-3">
-                  {[...heroSlides, ...heroSlides].map((src, index) => (
-                    <div
-                      key={`${src}-${index}`}
-                      className="shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-                    >
-                      <img
-                        src={src}
-                        alt={`FIBUCA activity ${index + 1}`}
-                        className="h-24 w-36 object-cover sm:h-28 sm:w-44 md:h-32 md:w-48 xl:h-36 xl:w-52"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {t.heroPoints.map((item, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700 shadow-sm hover:shadow-md transition"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  to="/login"
+                  className="rounded-xl bg-sky-500 px-7 py-3 text-base font-bold text-white shadow-lg shadow-sky-500/30 hover:bg-sky-400"
+                >
+                  {t.btnLogin}
+                </Link>
                 <Link
                   to="/client-form"
                   onClick={handleClientFormClick}
-                  className={`rounded-xl px-6 py-3 text-center font-semibold shadow transition ${
+                  className={`rounded-xl px-6 py-3 font-semibold ${
                     isClientFormAccessible()
-                      ? "bg-blue-700 text-white hover:bg-blue-800"
-                      : "cursor-not-allowed bg-slate-300 text-slate-500"
+                      ? "bg-white/15 text-white hover:bg-white/25"
+                      : "cursor-not-allowed bg-white/10 text-slate-400"
                   }`}
                 >
                   {t.btnForm}
                 </Link>
-
-                <Link
-                  to="/login"
-                  className="rounded-xl border border-blue-700 px-6 py-3 text-center font-semibold text-blue-700 transition hover:bg-blue-50"
-                >
-                  {t.btnLogin}
-                </Link>
-
                 <button
                   onClick={handleContactClick}
-                  className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 shadow-sm"
+                  className="rounded-xl border border-emerald-400/60 bg-emerald-500/20 px-6 py-3 font-semibold text-emerald-200 hover:bg-emerald-500/30"
                 >
                   {t.btnContact}
                 </button>
               </div>
-            </div>
 
-            <div className="order-1 lg:order-2">
-              <div className="rounded-[28px] border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl">
-                <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-blue-800 via-blue-600 to-sky-400 p-5 sm:p-6 text-white">
-                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_35%),radial-gradient(circle_at_bottom_left,white,transparent_30%)]" />
-
-                  <div className="relative">
-                    <img
-                      src="/images/newFibucaLogo.png"
-                      alt="FIBUCA emblem"
-                      className="mb-4 h-14 w-14 sm:h-16 sm:w-16 object-contain"
-                    />
-
-                    <h3 className="text-2xl sm:text-3xl font-bold">FIBUCA</h3>
-                    <p className="mt-3 text-sm sm:text-base leading-7 text-blue-50">
-                      Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union.
-                    </p>
-
-                    <div className="mt-6 grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
-                        <p className="text-sm font-semibold text-white">Workers’ Rights</p>
-                      </div>
-                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
-                        <p className="text-sm font-semibold text-white">Union Representation</p>
-                      </div>
-                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
-                        <p className="text-sm font-semibold text-white">Collective Action</p>
-                      </div>
-                      <div className="rounded-2xl bg-white/12 px-4 py-4 backdrop-blur-sm">
-                        <p className="text-sm font-semibold text-white">Member Support</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4">
-                      <p className="text-sm leading-7 text-blue-50">
-                        A clear digital entry point for union information, member access and worker support.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-6 flex items-center gap-2">
+                {heroSlides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveSlide(i)}
+                    className={`h-2.5 rounded-full transition-all ${
+                      i === activeSlide ? "w-8 bg-sky-300" : "w-2.5 bg-white/40"
+                    }`}
+                  />
+                ))}
               </div>
             </div>
           </div>
+
+          <button
+            onClick={() => setActiveSlide((p) => (p - 1 + heroSlides.length) % heroSlides.length)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white hover:bg-black/60"
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => setActiveSlide((p) => (p + 1) % heroSlides.length)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white hover:bg-black/60"
+          >
+            ›
+          </button>
         </div>
       </section>
 
-      <section id="about" className="bg-white px-4 sm:px-6 py-16 sm:py-20">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
-          <div>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
-              {t.navAbout}
-            </p>
-            <h3 className="mb-5 text-3xl md:text-4xl font-bold text-slate-900">
-              {t.aboutTitle}
-            </h3>
-            <p className="mb-4 leading-8 text-slate-600">{t.aboutText1}</p>
-            <p className="leading-8 text-slate-600">{t.aboutText2}</p>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
-              <h4 className="mb-2 font-bold text-blue-900">Representation</h4>
-              <p className="text-slate-600">
-                We help workers organize and strengthen their position through collective voice and formal union structures.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-              <h4 className="mb-2 font-bold text-slate-900">Protection</h4>
-              <p className="text-slate-600">
-                We support members on rights, fairness, labour relations and work-related concerns.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm">
-              <h4 className="mb-2 font-bold text-emerald-900">Coordination</h4>
-              <p className="text-slate-600">
-                We connect members, staff and union processes through structured submission and communication systems.
-              </p>
-            </div>
-          </div>
+      <section id="about" className="px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-10">
+          <h3 className="text-2xl font-bold text-sky-300">{t.aboutTitle}</h3>
+          <p className="mt-4 text-slate-200">{t.aboutText1}</p>
+          <p className="mt-2 text-slate-300">{t.aboutText2}</p>
         </div>
       </section>
 
-      <section id="services" className="bg-slate-50 px-4 sm:px-6 py-16 sm:py-20">
+      <section id="services" className="px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
-              {t.navServices}
-            </p>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900">
-              {t.servicesTitle}
-            </h3>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <h3 className="mb-6 text-2xl font-bold text-sky-300">{t.servicesTitle}</h3>
+          <div className="grid gap-4 md:grid-cols-3">
             {t.services.map((service, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -4 }}
-                className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm hover:shadow-lg transition"
-              >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-lg font-bold text-blue-700">
-                  {i + 1}
-                </div>
-                <h4 className="mb-3 text-xl font-bold text-slate-900">{service.title}</h4>
-                <p className="leading-7 text-slate-600">{service.text}</p>
-              </motion.div>
+              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                <h4 className="font-bold text-white">{service.title}</h4>
+                <p className="mt-2 text-slate-300">{service.text}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="benefits" className="bg-white px-4 sm:px-6 py-16 sm:py-20">
+      <section id="benefits" className="px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
-              {t.navBenefits}
-            </p>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900">
-              {t.benefitsTitle}
-            </h3>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <h3 className="mb-6 text-2xl font-bold text-sky-300">{t.benefitsTitle}</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
             {t.benefits.map((b, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.02 }}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm hover:shadow-md transition"
-              >
-                <h4 className="font-semibold leading-7 text-blue-700">✓ {b}</h4>
-              </motion.div>
+              <div key={i} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-200">
+                ✓ {b}
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="leadership" className="bg-blue-50 px-4 sm:px-6 py-16 sm:py-20">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
-            {t.navLeadership}
-          </p>
-          <h3 className="mb-5 text-3xl md:text-4xl font-bold text-slate-900">
-            {t.leadershipTitle}
-          </h3>
-          <p className="mx-auto max-w-3xl leading-8 text-slate-600">
-            {t.leadershipText}
-          </p>
+      <section id="leadership" className="px-4 py-12 sm:px-6">
+        <div className="mx-auto max-w-5xl rounded-3xl border border-sky-400/20 bg-sky-500/10 p-8 text-center">
+          <h3 className="text-2xl font-bold text-sky-200">{t.leadershipTitle}</h3>
+          <p className="mt-3 text-slate-200">{t.leadershipText}</p>
         </div>
       </section>
 
-      <section className="bg-slate-900 px-4 sm:px-6 py-16 sm:py-20 text-white">
-        <div className="mx-auto max-w-4xl text-center">
-          <h3 className="mb-4 text-3xl md:text-4xl font-bold">{t.ctaTitle}</h3>
-          <p className="mb-8 leading-8 text-slate-300">{t.ctaText}</p>
-
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Link
-              to="/login"
-              className="rounded-xl bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-700 transition"
-            >
-              {t.btnLogin}
-            </Link>
-            <button
-              onClick={handleContactClick}
-              className="rounded-xl border border-slate-500 px-6 py-3 font-semibold transition hover:border-white hover:bg-white hover:text-slate-900"
-            >
-              {t.btnContact}
-            </button>
+      <section id="contact" className="px-4 py-12 sm:px-6">
+        <div className="mx-auto max-w-5xl">
+          <h3 className="mb-5 text-2xl font-bold text-sky-300">{t.contactTitle}</h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            {t.contactItems.map((item, i) => (
+              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-200">
+                {item}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="contact" className="bg-white px-4 sm:px-6 py-16 text-center">
-        <h3 className="mb-6 text-2xl font-bold text-slate-900">{t.contactTitle}</h3>
-
-        <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-3">
-          {t.contactItems.map((item, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 text-slate-700 shadow-sm"
-            >
-              {item}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <footer className="bg-blue-800 px-4 sm:px-6 py-5 text-center text-sm text-white">
+      <footer className="mt-10 border-t border-white/10 bg-slate-950/60 px-4 py-5 text-center text-xs text-slate-300">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
