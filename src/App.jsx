@@ -15,6 +15,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminReports from './pages/AdminReports';
 import ClientDashboard from './pages/ClientDashboard';
 import StaffDashboard from './pages/staffDashboard';
+import AdminIdCards from './pages/AdminIdCards';
 
 import PrivateRoute from './components/PrivateRoute';
 import DashboardLayout from './components/DashboardLayout';
@@ -33,6 +34,7 @@ const clientMenus = [
 const adminMenus = [
   { href: '/admin/submissions', label: 'Dashboard' },
   { href: '/admin/scan-paper', label: 'Scan Paper' },
+  { href: '/admin/idcards', label: 'ID Cards' },
   { href: '/admin/reports', label: 'Reports' },
 ];
 
@@ -85,6 +87,7 @@ export default function App() {
               <Route path="/admin/submissions" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminDashboard />} />
               <Route path="/admin/leaderboard" element={<AdminDashboard />} />
+              <Route path="/admin/idcards" element={<AdminIdCards />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/scan-paper" element={<ScanPaperForm />} />
             </Route>
