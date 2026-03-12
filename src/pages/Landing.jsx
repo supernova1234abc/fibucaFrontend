@@ -33,6 +33,7 @@ export default function Landing() {
 
   const content = {
     en: {
+      navHome: "Home",
       navAbout: "About",
       navServices: "Services",
       navBenefits: "Benefits",
@@ -41,11 +42,22 @@ export default function Landing() {
       btnForm: "Submit Union Form",
       btnLogin: "Member Login",
       btnContact: "Contact Union Office",
+      heroBadge: "Official Trade Union Portal",
       aboutTitle: "About FIBUCA",
       aboutText1:
         "FIBUCA is an independent trade union established by workers to defend and advance social and economic interests.",
       aboutText2:
         "We advocate fair treatment at work, stronger labour protection and practical support for workers across multiple sectors.",
+      aboutCards: [
+        {
+          title: "Worker Representation",
+          text: "Strong representation for employees across finance, industry, banking and utilities.",
+        },
+        {
+          title: "Reliable Support",
+          text: "Clear guidance, practical assistance and modern access to union services.",
+        },
+      ],
       servicesTitle: "Our Core Services",
       services: [
         {
@@ -71,17 +83,36 @@ export default function Landing() {
       leadershipTitle: "Professional Union Leadership",
       leadershipText:
         "A professional team focused on defending workers’ social and economic rights through unity, guidance and representation.",
+      leadershipPoints: [
+        "Transparent worker-focused leadership",
+        "Organized support and representation",
+        "Practical action on labour matters",
+      ],
       contactTitle: "Contact Us",
       contactItems: [
-        "Email: info@fibucatradeunion.or.tz",
-        "Phone: +255 784 475 333",
-        "Address: Mahiwa/Lumumba Street, Plot No. 17 Block 73",
+        {
+          title: "Email",
+          value: "info@fibucatradeunion.or.tz",
+        },
+        {
+          title: "Phone",
+          value: "+255 784 475 333",
+        },
+        {
+          title: "Address",
+          value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73",
+        },
       ],
       highlightsTitle: "Union Highlights",
       highlights: [
         "Clear worker representation across key sectors.",
         "Fast access to login, support and union contact.",
         "Modern responsive experience for all devices.",
+      ],
+      stats: [
+        { value: "4+", label: "Key Service Areas" },
+        { value: "24/7", label: "Easy Access to Information" },
+        { value: "100%", label: "Worker-Focused Vision" },
       ],
       heroSlides: [
         {
@@ -121,6 +152,7 @@ export default function Landing() {
         "FIBUCA — Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union",
     },
     sw: {
+      navHome: "Nyumbani",
       navAbout: "Kuhusu",
       navServices: "Huduma",
       navBenefits: "Faida",
@@ -129,11 +161,22 @@ export default function Landing() {
       btnForm: "Wasilisha Fomu ya Chama",
       btnLogin: "Ingia kwa Mwanachama",
       btnContact: "Wasiliana na Ofisi ya Chama",
+      heroBadge: "Tovuti Rasmi ya Chama",
       aboutTitle: "Kuhusu FIBUCA",
       aboutText1:
         "FIBUCA ni chama huru cha wafanyakazi kilichoanzishwa kulinda na kuendeleza maslahi ya kijamii na kiuchumi.",
       aboutText2:
         "Tunatetea haki kazini, ulinzi bora wa wafanyakazi na msaada wa vitendo kwa sekta mbalimbali.",
+      aboutCards: [
+        {
+          title: "Uwakilishi wa Wafanyakazi",
+          text: "Uwakilishi imara kwa wafanyakazi wa sekta za fedha, viwanda, benki na huduma.",
+        },
+        {
+          title: "Msaada wa Kuaminika",
+          text: "Mwongozo wazi, msaada wa vitendo na ufikiaji wa kisasa wa huduma za chama.",
+        },
+      ],
       servicesTitle: "Huduma Kuu za Chama",
       services: [
         {
@@ -159,17 +202,36 @@ export default function Landing() {
       leadershipTitle: "Uongozi wa Kitaalamu wa Chama",
       leadershipText:
         "Timu ya wataalamu inayolenga kulinda haki za kijamii na kiuchumi za wafanyakazi kupitia umoja na uwakilishi.",
+      leadershipPoints: [
+        "Uongozi wa wazi unaoweka wafanyakazi mbele",
+        "Msaada na uwakilishi uliopangwa vizuri",
+        "Hatua za vitendo kwenye masuala ya kazi",
+      ],
       contactTitle: "Wasiliana Nasi",
       contactItems: [
-        "Barua Pepe: info@fibucatradeunion.or.tz",
-        "Simu: +255 784 475 333",
-        "Anwani: Mahiwa/Lumumba Street, Plot No. 17 Block 73",
+        {
+          title: "Barua Pepe",
+          value: "info@fibucatradeunion.or.tz",
+        },
+        {
+          title: "Simu",
+          value: "+255 784 475 333",
+        },
+        {
+          title: "Anwani",
+          value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73",
+        },
       ],
       highlightsTitle: "Mambo Muhimu ya Chama",
       highlights: [
         "Uwakilishi wazi wa wafanyakazi katika sekta muhimu.",
         "Ufikiaji wa haraka wa kuingia, msaada na mawasiliano.",
         "Muonekano wa kisasa unaofanya vizuri kwenye vifaa vyote.",
+      ],
+      stats: [
+        { value: "4+", label: "Maeneo Makuu ya Huduma" },
+        { value: "24/7", label: "Ufikiaji Rahisi wa Taarifa" },
+        { value: "100%", label: "Dira ya Wafanyakazi" },
       ],
       heroSlides: [
         {
@@ -265,19 +327,27 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 text-slate-900">
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-blue-200/60 bg-white/80 backdrop-blur-xl">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(191,219,254,0.45),transparent_24%),linear-gradient(135deg,#f7fbff_0%,#eef6ff_45%,#e9f2ff_100%)] text-slate-900">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-blue-200/70 bg-white/85 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+          <a href="#home" className="flex items-center gap-3">
             <img
               src="/images/newFibucaLogo.png"
               alt="FIBUCA logo"
               className="h-10 w-10 object-contain"
             />
-            <h1 className="text-lg font-bold text-blue-700">FIBUCA</h1>
-          </div>
+            <div>
+              <p className="text-lg font-bold tracking-tight text-blue-700">FIBUCA</p>
+              <p className="hidden text-[11px] text-slate-500 sm:block">
+                Trade Union Portal
+              </p>
+            </div>
+          </a>
 
-          <nav className="hidden items-center gap-6 text-sm text-slate-700 md:flex">
+          <nav className="hidden items-center gap-6 text-sm font-medium text-slate-700 lg:flex">
+            <a href="#home" className="hover:text-blue-600">
+              {t.navHome}
+            </a>
             <a href="#about" className="hover:text-blue-600">
               {t.navAbout}
             </a>
@@ -298,13 +368,22 @@ export default function Landing() {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleLang}
-              className="rounded-md border border-blue-300 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50"
+              className="rounded-lg border border-blue-300 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-50"
             >
               {lang === "en" ? "SW" : "EN"}
             </button>
+
+            <Link
+              to="/login"
+              className="hidden rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 hover:bg-blue-500 sm:inline-flex"
+            >
+              {t.btnLogin}
+            </Link>
+
             <button
               onClick={toggleMenu}
-              className="rounded border border-blue-200 p-2 text-slate-700 md:hidden"
+              className="rounded-lg border border-blue-200 p-2 text-slate-700 lg:hidden"
+              aria-label="Open menu"
             >
               ☰
             </button>
@@ -319,9 +398,12 @@ export default function Landing() {
             initial={{ y: -16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -16, opacity: 0 }}
-            className="fixed left-0 right-0 top-16 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 md:hidden"
+            className="fixed left-0 right-0 top-16 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 shadow-lg backdrop-blur-xl lg:hidden"
           >
             <nav className="flex flex-col gap-4 text-slate-700">
+              <a href="#home" onClick={closeMenu}>
+                {t.navHome}
+              </a>
               <a href="#about" onClick={closeMenu}>
                 {t.navAbout}
               </a>
@@ -337,6 +419,14 @@ export default function Landing() {
               <a href="#contact" onClick={closeMenu}>
                 {t.navContact}
               </a>
+
+              <Link
+                to="/login"
+                onClick={closeMenu}
+                className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 font-bold text-white"
+              >
+                {t.btnLogin}
+              </Link>
             </nav>
           </motion.div>
         )}
@@ -344,8 +434,8 @@ export default function Landing() {
 
       <div className="h-16" />
 
-      <section className="relative">
-        <div className="relative h-[74vh] min-h-[520px] w-full overflow-hidden rounded-b-[2rem] bg-[#0b1f4d] lg:h-[86vh]">
+      <section id="home" className="relative">
+        <div className="relative h-[78vh] min-h-[560px] w-full overflow-hidden rounded-b-[2.25rem] bg-[#0b1f4d] lg:h-[90vh]">
           <AnimatePresence mode="wait">
             <motion.img
               key={heroSlides[activeSlide].image}
@@ -359,87 +449,88 @@ export default function Landing() {
             />
           </AnimatePresence>
 
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.22),transparent_28%),linear-gradient(90deg,rgba(7,19,53,0.88)_0%,rgba(10,34,88,0.62)_40%,rgba(10,34,88,0.15)_70%,rgba(10,34,88,0.05)_100%)]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#081736]/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.22),transparent_28%),linear-gradient(90deg,rgba(7,19,53,0.88)_0%,rgba(10,34,88,0.62)_40%,rgba(10,34,88,0.16)_70%,rgba(10,34,88,0.06)_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#081736]/85 via-transparent to-transparent" />
 
-          <div className="relative mx-auto grid h-full max-w-7xl items-end gap-8 px-4 pb-8 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pb-0">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`hero-text-${activeSlide}`}
-                initial={{ opacity: 0, y: 26 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 3, ease: "easeOut" }}
-                className="max-w-3xl"
-              >
-                <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100 backdrop-blur-md">
-                  {heroSlides[activeSlide].eyebrow}
-                </p>
+          <div className="relative mx-auto grid h-full max-w-7xl items-end gap-8 px-4 pb-8 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pb-10">
+            <div className="max-w-3xl">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`hero-text-${activeSlide}`}
+                  initial={{ opacity: 0, y: 26 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 12 }}
+                  transition={{ duration: 3, ease: "easeOut" }}
+                >
+                  <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100 backdrop-blur-md">
+                    {t.heroBadge} • {heroSlides[activeSlide].eyebrow}
+                  </p>
 
-                <h2 className="max-w-3xl text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl lg:text-6xl">
-                  {heroSlides[activeSlide].title}
-                </h2>
+                  <h2 className="max-w-3xl text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl lg:text-6xl">
+                    {heroSlides[activeSlide].title}
+                  </h2>
 
-                <p className="mt-3 text-lg font-semibold text-blue-100 sm:text-2xl">
-                  {heroSlides[activeSlide].subtitle}
-                </p>
+                  <p className="mt-3 text-lg font-semibold text-blue-100 sm:text-2xl">
+                    {heroSlides[activeSlide].subtitle}
+                  </p>
 
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-100 sm:text-base">
-                  {heroSlides[activeSlide].description}
-                </p>
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-100 sm:text-base">
+                    {heroSlides[activeSlide].description}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
 
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <Link
-                    to="/login"
-                    className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-900/30 hover:bg-blue-500"
-                  >
-                    {t.btnLogin}
-                  </Link>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  to="/login"
+                  className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-900/30 hover:bg-blue-500"
+                >
+                  {t.btnLogin}
+                </Link>
 
-                  <Link
-                    to="/client-form"
-                    onClick={handleClientFormClick}
-                    className={`rounded-xl px-6 py-3 font-semibold backdrop-blur-sm ${
-                      isClientFormAccessible()
-                        ? "bg-white/85 text-blue-800 hover:bg-white"
-                        : "cursor-not-allowed bg-white/60 text-slate-500"
-                    }`}
-                  >
-                    {t.btnForm}
-                  </Link>
+                <Link
+                  to="/client-form"
+                  onClick={handleClientFormClick}
+                  className={`rounded-xl px-6 py-3 font-semibold backdrop-blur-sm ${
+                    isClientFormAccessible()
+                      ? "bg-white/88 text-blue-800 hover:bg-white"
+                      : "cursor-not-allowed bg-white/60 text-slate-500"
+                  }`}
+                >
+                  {t.btnForm}
+                </Link>
 
+                <button
+                  onClick={handleContactClick}
+                  className="rounded-xl border border-white/30 bg-[#0d2d70]/60 px-6 py-3 font-semibold text-white hover:bg-[#123987]/75"
+                >
+                  {t.btnContact}
+                </button>
+              </div>
+
+              <div className="mt-7 flex items-center gap-3">
+                {heroSlides.map((slide, i) => (
                   <button
-                    onClick={handleContactClick}
-                    className="rounded-xl border border-white/30 bg-[#0d2d70]/50 px-6 py-3 font-semibold text-white hover:bg-[#123987]/70"
-                  >
-                    {t.btnContact}
-                  </button>
-                </div>
-
-                <div className="mt-7 flex items-center gap-3">
-                  {heroSlides.map((slide, i) => (
-                    <button
-                      key={slide.image}
-                      onClick={() => setActiveSlide(i)}
-                      aria-label={`Go to slide ${i + 1}`}
-                      className={`h-2.5 rounded-full transition-all duration-300 ${
-                        i === activeSlide ? "w-10 bg-white" : "w-2.5 bg-white/45 hover:bg-white/70"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-4 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/20">
-                  <motion.div
-                    key={`progress-${activeSlide}`}
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 4.8, ease: "linear" }}
-                    className="h-full rounded-full bg-gradient-to-r from-sky-300 via-blue-400 to-blue-600"
+                    key={slide.image}
+                    onClick={() => setActiveSlide(i)}
+                    aria-label={`Go to slide ${i + 1}`}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                      i === activeSlide ? "w-10 bg-white" : "w-2.5 bg-white/45 hover:bg-white/70"
+                    }`}
                   />
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                ))}
+              </div>
+
+              <div className="mt-4 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/20">
+                <motion.div
+                  key={`progress-${activeSlide}`}
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 4.8, ease: "linear" }}
+                  className="h-full rounded-full bg-gradient-to-r from-sky-300 via-blue-400 to-blue-600"
+                />
+              </div>
+            </div>
 
             <div className="hidden lg:flex lg:justify-end">
               <div className="w-full max-w-md rounded-[1.75rem] border border-white/15 bg-white/10 p-5 text-white shadow-2xl backdrop-blur-xl">
@@ -449,11 +540,20 @@ export default function Landing() {
 
                 <div className="mt-5 space-y-4">
                   {t.highlights.map((item, index) => (
-                    <div key={item} className="rounded-2xl bg-white/10 p-4">
+                    <div key={item} className="rounded-2xl border border-white/10 bg-white/10 p-4">
                       <p className="text-2xl font-black text-white">
                         {String(index + 1).padStart(2, "0")}
                       </p>
-                      <p className="mt-1 text-sm text-blue-100">{item}</p>
+                      <p className="mt-1 text-sm leading-6 text-blue-100">{item}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  {t.stats.map((stat) => (
+                    <div key={stat.label} className="rounded-2xl bg-white/10 p-3 text-center">
+                      <p className="text-xl font-black text-white">{stat.value}</p>
+                      <p className="mt-1 text-[11px] leading-4 text-blue-100">{stat.label}</p>
                     </div>
                   ))}
                 </div>
@@ -463,85 +563,199 @@ export default function Landing() {
 
           <button
             onClick={() => setActiveSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
-            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/70 px-3 py-2 text-blue-800 backdrop-blur hover:bg-white"
+            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/75 px-3 py-2 text-blue-800 backdrop-blur hover:bg-white"
+            aria-label="Previous slide"
           >
             ‹
           </button>
 
           <button
             onClick={() => setActiveSlide((prev) => (prev + 1) % heroSlides.length)}
-            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/70 px-3 py-2 text-blue-800 backdrop-blur hover:bg-white"
+            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/75 px-3 py-2 text-blue-800 backdrop-blur hover:bg-white"
+            aria-label="Next slide"
           >
             ›
           </button>
         </div>
       </section>
 
-      <section id="about" className="px-4 py-14 sm:px-6">
-        <div className="mx-auto max-w-6xl rounded-3xl border border-blue-100 bg-white/85 p-6 shadow-sm sm:p-10">
-          <h3 className="text-2xl font-bold text-blue-700">{t.aboutTitle}</h3>
-          <p className="mt-4 text-slate-700">{t.aboutText1}</p>
-          <p className="mt-2 text-slate-600">{t.aboutText2}</p>
+      <section id="about" className="px-4 py-16 sm:px-6">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-[2rem] border border-blue-100 bg-white/90 p-7 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+              {t.navAbout}
+            </p>
+            <h3 className="mt-3 text-3xl font-black tracking-tight text-blue-900">
+              {t.aboutTitle}
+            </h3>
+            <p className="mt-5 text-slate-700">{t.aboutText1}</p>
+            <p className="mt-3 text-slate-600">{t.aboutText2}</p>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              {t.stats.map((stat) => (
+                <div key={stat.label} className="rounded-2xl bg-blue-50 p-4">
+                  <p className="text-2xl font-black text-blue-700">{stat.value}</p>
+                  <p className="mt-1 text-sm text-slate-600">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5">
+            {t.aboutCards.map((card, index) => (
+              <div
+                key={card.title}
+                className="rounded-[1.75rem] border border-blue-100 bg-white/85 p-6 shadow-[0_18px_40px_rgba(59,130,246,0.08)]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-400 text-lg font-black text-white">
+                    {index + 1}
+                  </div>
+                  <h4 className="text-lg font-bold text-slate-900">{card.title}</h4>
+                </div>
+                <p className="mt-4 text-slate-600">{card.text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section id="services" className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <h3 className="mb-6 text-2xl font-bold text-blue-700">{t.servicesTitle}</h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            {t.services.map((service) => (
+      <section id="services" className="px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+                {t.navServices}
+              </p>
+              <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">
+                {t.servicesTitle}
+              </h3>
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {t.services.map((service, index) => (
               <div
                 key={service.title}
-                className="rounded-2xl border border-blue-100 bg-white/85 p-6 shadow-sm"
+                className="group rounded-[1.75rem] border border-blue-100 bg-white/90 p-7 shadow-[0_18px_40px_rgba(59,130,246,0.08)] transition-transform duration-300 hover:-translate-y-1"
               >
-                <h4 className="font-bold text-slate-900">{service.title}</h4>
-                <p className="mt-2 text-slate-600">{service.text}</p>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700">
+                  0{index + 1}
+                </div>
+                <h4 className="mt-5 text-xl font-bold text-slate-900">{service.title}</h4>
+                <p className="mt-3 leading-7 text-slate-600">{service.text}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="benefits" className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <h3 className="mb-6 text-2xl font-bold text-blue-700">{t.benefitsTitle}</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {t.benefits.map((benefit) => (
+      <section id="benefits" className="px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-7xl rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white to-blue-50/80 p-7 shadow-[0_18px_50px_rgba(59,130,246,0.08)] sm:p-10">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+            {t.navBenefits}
+          </p>
+          <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">
+            {t.benefitsTitle}
+          </h3>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {t.benefits.map((benefit, index) => (
               <div
                 key={benefit}
-                className="rounded-xl border border-blue-100 bg-white/85 px-4 py-3 text-slate-700 shadow-sm"
+                className="flex items-start gap-4 rounded-2xl border border-blue-100 bg-white/90 p-5"
               >
-                ✓ {benefit}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 font-black text-white">
+                  {index + 1}
+                </div>
+                <p className="text-slate-700">{benefit}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="leadership" className="px-4 py-12 sm:px-6">
-        <div className="mx-auto max-w-5xl rounded-3xl border border-blue-200 bg-blue-100/70 p-8 text-center">
-          <h3 className="text-2xl font-bold text-blue-700">{t.leadershipTitle}</h3>
-          <p className="mt-3 text-slate-700">{t.leadershipText}</p>
+      <section id="leadership" className="px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 p-8 text-white shadow-[0_25px_60px_rgba(8,47,73,0.3)] sm:p-10">
+          <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-200">
+                {t.navLeadership}
+              </p>
+              <h3 className="mt-2 text-3xl font-black tracking-tight">
+                {t.leadershipTitle}
+              </h3>
+              <p className="mt-4 max-w-2xl text-blue-100">{t.leadershipText}</p>
+            </div>
+
+            <div className="grid gap-4">
+              {t.leadershipPoints.map((point) => (
+                <div
+                  key={point}
+                  className="rounded-2xl border border-white/10 bg-white/10 p-4 text-blue-50 backdrop-blur-sm"
+                >
+                  {point}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="contact" className="px-4 py-12 sm:px-6">
-        <div className="mx-auto max-w-5xl">
-          <h3 className="mb-5 text-2xl font-bold text-blue-700">{t.contactTitle}</h3>
-          <div className="grid gap-4 md:grid-cols-3">
+      <section id="contact" className="px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+              {t.navContact}
+            </p>
+            <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">
+              {t.contactTitle}
+            </h3>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
             {t.contactItems.map((item) => (
               <div
-                key={item}
-                className="rounded-2xl border border-blue-100 bg-white/85 p-4 text-slate-700 shadow-sm"
+                key={item.title}
+                className="rounded-[1.75rem] border border-blue-100 bg-white/90 p-6 shadow-[0_18px_40px_rgba(59,130,246,0.08)]"
               >
-                {item}
+                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
+                  {item.title}
+                </p>
+                <p className="mt-3 text-slate-700">{item.value}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              to="/login"
+              className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-500"
+            >
+              {t.btnLogin}
+            </Link>
+            <Link
+              to="/client-form"
+              onClick={handleClientFormClick}
+              className={`rounded-xl px-6 py-3 font-semibold ${
+                isClientFormAccessible()
+                  ? "bg-white text-blue-800 shadow-sm ring-1 ring-blue-200 hover:bg-blue-50"
+                  : "cursor-not-allowed bg-slate-100 text-slate-400"
+              }`}
+            >
+              {t.btnForm}
+            </Link>
+            <button
+              onClick={handleContactClick}
+              className="rounded-xl border border-blue-200 bg-blue-50 px-6 py-3 font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              {t.btnContact}
+            </button>
           </div>
         </div>
       </section>
 
-      <footer className="mt-10 border-t border-blue-950 bg-blue-950 px-4 py-5 text-center text-xs text-white">
+      <footer className="mt-10 border-t border-blue-950 bg-blue-950 px-4 py-6 text-center text-xs text-white">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
