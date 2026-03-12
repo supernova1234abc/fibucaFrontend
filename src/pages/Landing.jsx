@@ -35,10 +35,11 @@ export default function Landing() {
     "/images/slide4.jpg",
   ];
 
+  // under 5s per cycle
   useEffect(() => {
     const id = setInterval(() => {
       setActiveSlide((p) => (p + 1) % heroSlides.length);
-    }, 4500);
+    }, 4800);
     return () => clearInterval(id);
   }, [heroSlides.length]);
 
@@ -262,61 +263,70 @@ export default function Landing() {
               initial={{ scale: 1.06, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 2, ease: "easeInOut" }} // image in 2s
               className="absolute inset-0 h-full w-full object-cover object-center lg:object-contain"
             />
           </AnimatePresence>
 
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/35 via-blue-700/20 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-blue-950/35 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/45 via-blue-900/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-950/40 via-transparent to-transparent" />
 
           <div className="relative mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 sm:pb-14">
-            <div className="max-w-3xl">
-              <p className="mb-3 inline-block rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-blue-700">
-                {t.badge}
-              </p>
-              <h2 className="text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl">{t.title}</h2>
-              <p className="mt-2 text-xl sm:text-2xl text-blue-100">{t.title2}</p>
-              <p className="mt-4 max-w-2xl text-sm sm:text-base text-blue-50">{t.subtitle}</p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`hero-text-${activeSlide}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 3, ease: "easeOut" }} // paragraphs in 3s
+                className="max-w-3xl"
+              >
+                <p className="mb-3 inline-block rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-blue-700">
+                  {t.badge}
+                </p>
+                <h2 className="text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl">{t.title}</h2>
+                <p className="mt-2 text-xl sm:text-2xl text-blue-100">{t.title2}</p>
+                <p className="mt-4 max-w-2xl text-sm sm:text-base text-blue-50">{t.subtitle}</p>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  to="/login"
-                  className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500"
-                >
-                  {t.btnLogin}
-                </Link>
-                <Link
-                  to="/client-form"
-                  onClick={handleClientFormClick}
-                  className={`rounded-xl px-6 py-3 font-semibold ${
-                    isClientFormAccessible()
-                      ? "bg-white/80 text-blue-700 hover:bg-white"
-                      : "cursor-not-allowed bg-white/60 text-slate-400"
-                  }`}
-                >
-                  {t.btnForm}
-                </Link>
-                <button
-                  onClick={handleContactClick}
-                  className="rounded-xl border border-emerald-500/50 bg-emerald-100/80 px-6 py-3 font-semibold text-emerald-700 hover:bg-emerald-100"
-                >
-                  {t.btnContact}
-                </button>
-              </div>
-
-              <div className="mt-6 flex items-center gap-2">
-                {heroSlides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveSlide(i)}
-                    className={`h-2.5 rounded-full transition-all ${
-                      i === activeSlide ? "w-8 bg-white" : "w-2.5 bg-white/65"
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    to="/login"
+                    className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500"
+                  >
+                    {t.btnLogin}
+                  </Link>
+                  <Link
+                    to="/client-form"
+                    onClick={handleClientFormClick}
+                    className={`rounded-xl px-6 py-3 font-semibold ${
+                      isClientFormAccessible()
+                        ? "bg-white/80 text-blue-700 hover:bg-white"
+                        : "cursor-not-allowed bg-white/60 text-slate-400"
                     }`}
-                  />
-                ))}
-              </div>
-            </div>
+                  >
+                    {t.btnForm}
+                  </Link>
+                  <button
+                    onClick={handleContactClick}
+                    className="rounded-xl border border-emerald-500/50 bg-emerald-100/80 px-6 py-3 font-semibold text-emerald-700 hover:bg-emerald-100"
+                  >
+                    {t.btnContact}
+                  </button>
+                </div>
+
+                <div className="mt-6 flex items-center gap-2">
+                  {heroSlides.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveSlide(i)}
+                      className={`h-2.5 rounded-full transition-all ${
+                        i === activeSlide ? "w-8 bg-white" : "w-2.5 bg-white/65"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <button
