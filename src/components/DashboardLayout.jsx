@@ -39,7 +39,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showChangePwModal, setShowChangePwModal] = useState(false);
-  const [, setSectionMenus] = useState([]);
+  const [sectionMenus, setSectionMenus] = useState([]);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -98,9 +98,14 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
-  const renderMenuButton = (menu, idx) => {
+  const renderMenuButton = (menu, idx, type = "main") => {
     const active = isActive(menu.href);
     const Icon = menu.icon;
+
+    const activeClass =
+      type === "section"
+        ? "bg-gradient-to-r from-red-500 to-rose-500 text-white font-semibold shadow-md"
+        : "bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow-md";
 
     return (
       <button
@@ -110,9 +115,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
           setSidebarOpen(false);
         }}
         className={`no-force-dark group flex items-center w-full text-left rounded-xl transition-all duration-200 px-4 py-3 text-sm ${
-          active
-            ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow-md"
-            : "text-slate-700 hover:bg-slate-100"
+          active ? activeClass : "text-slate-700 hover:bg-slate-100"
         }`}
       >
         <div className="flex items-center gap-3">
@@ -163,15 +166,26 @@ export default function DashboardLayout({ children, menus = [], user }) {
               </button>
             </div>
 
-            <nav className="p-4 space-y-2">
-              <div className="mb-5">
+            <nav className="p-4 space-y-4">
+              <div>
                 <div className="px-2 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
                   Main Menu
                 </div>
                 <div className="space-y-2">
-                  {menus.map((menu, idx) => renderMenuButton(menu, idx))}
+                  {menus.map((menu, idx) => renderMenuButton(menu, idx, "main"))}
                 </div>
               </div>
+
+              {sectionMenus.length > 0 && (
+                <div className="hidden md:block">
+                  <div className="px-2 pb-2 pt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 border-t border-slate-200">
+                    Sections
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    {sectionMenus.map((menu, idx) => renderMenuButton(menu, idx, "section"))}
+                  </div>
+                </div>
+              )}
             </nav>
           </aside>
 
