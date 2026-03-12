@@ -7,7 +7,9 @@ export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lang, setLang] = useState("en");
   const [activeSlide, setActiveSlide] = useState(0);
+
   const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu = () => setMenuOpen(false);
@@ -22,9 +24,9 @@ export default function Landing() {
 
   useEffect(() => {
     const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        closeMenu();
-      }
+      const clickedInsideMenu = menuRef.current?.contains(e.target);
+      const clickedMenuButton = menuButtonRef.current?.contains(e.target);
+      if (!clickedInsideMenu && !clickedMenuButton) closeMenu();
     };
 
     document.addEventListener("mousedown", handler);
@@ -37,6 +39,7 @@ export default function Landing() {
       navAbout: "About",
       navServices: "Services",
       navBenefits: "Benefits",
+      navGallery: "Gallery",
       navLeadership: "Leadership",
       navContact: "Contact",
       btnForm: "Submit Union Form",
@@ -60,18 +63,9 @@ export default function Landing() {
       ],
       servicesTitle: "Our Core Services",
       services: [
-        {
-          title: "Collective Bargaining",
-          text: "Negotiation on pay, conditions and workplace fairness.",
-        },
-        {
-          title: "Legal & Labour Advice",
-          text: "Guidance on labour matters, disputes and workplace rights.",
-        },
-        {
-          title: "Welfare & Education",
-          text: "Support services, education opportunities and union awareness.",
-        },
+        { title: "Collective Bargaining", text: "Negotiation on pay, conditions and workplace fairness." },
+        { title: "Legal & Labour Advice", text: "Guidance on labour matters, disputes and workplace rights." },
+        { title: "Welfare & Education", text: "Support services, education opportunities and union awareness." },
       ],
       benefitsTitle: "Why Workers Join FIBUCA",
       benefits: [
@@ -79,6 +73,16 @@ export default function Landing() {
         "Protection of workers’ rights and interests",
         "Guidance on disputes and employer relations",
         "Support on terms and workplace concerns",
+      ],
+      galleryTitle: "Company Gallery",
+      gallerySubtitle: "Moments from union activities, meetings, field visits and community engagement.",
+      galleryPhotos: [
+        { src: "/images/gallery1.jpg", title: "Union Meeting" },
+        { src: "/images/gallery2.jpg", title: "Workplace Visit" },
+        { src: "/images/gallery3.jpg", title: "Member Training" },
+        { src: "/images/gallery4.jpg", title: "Community Engagement" },
+        { src: "/images/gallery5.jpg", title: "Labour Awareness Session" },
+        { src: "/images/gallery6.jpg", title: "Leadership Forum" },
       ],
       leadershipTitle: "Professional Union Leadership",
       leadershipText:
@@ -90,18 +94,9 @@ export default function Landing() {
       ],
       contactTitle: "Contact Us",
       contactItems: [
-        {
-          title: "Email",
-          value: "info@fibucatradeunion.or.tz",
-        },
-        {
-          title: "Phone",
-          value: "+255 784 475 333",
-        },
-        {
-          title: "Address",
-          value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73",
-        },
+        { title: "Email", value: "info@fibucatradeunion.or.tz" },
+        { title: "Phone", value: "+255 784 475 333" },
+        { title: "Address", value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73" },
       ],
       highlightsTitle: "Union Highlights",
       highlights: [
@@ -156,6 +151,7 @@ export default function Landing() {
       navAbout: "Kuhusu",
       navServices: "Huduma",
       navBenefits: "Faida",
+      navGallery: "Picha",
       navLeadership: "Uongozi",
       navContact: "Mawasiliano",
       btnForm: "Wasilisha Fomu ya Chama",
@@ -179,18 +175,9 @@ export default function Landing() {
       ],
       servicesTitle: "Huduma Kuu za Chama",
       services: [
-        {
-          title: "Majadiliano ya Pamoja",
-          text: "Mazungumzo kuhusu mishahara, mazingira na haki za kazi.",
-        },
-        {
-          title: "Ushauri wa Kisheria na Kazi",
-          text: "Mwongozo kuhusu migogoro, haki za kazi na masuala ya ajira.",
-        },
-        {
-          title: "Ustawi na Elimu",
-          text: "Huduma za msaada, elimu na uhamasishaji wa chama.",
-        },
+        { title: "Majadiliano ya Pamoja", text: "Mazungumzo kuhusu mishahara, mazingira na haki za kazi." },
+        { title: "Ushauri wa Kisheria na Kazi", text: "Mwongozo kuhusu migogoro, haki za kazi na masuala ya ajira." },
+        { title: "Ustawi na Elimu", text: "Huduma za msaada, elimu na uhamasishaji wa chama." },
       ],
       benefitsTitle: "Kwa Nini Wafanyakazi Hujiunga na FIBUCA",
       benefits: [
@@ -198,6 +185,16 @@ export default function Landing() {
         "Ulinzi wa haki na maslahi ya wafanyakazi",
         "Mwongozo kwenye migogoro ya kazi",
         "Msaada kuhusu masharti na mazingira ya kazi",
+      ],
+      galleryTitle: "Galari ya Kampuni",
+      gallerySubtitle: "Matukio ya chama, mikutano, ziara za kazini na ushirikiano wa jamii.",
+      galleryPhotos: [
+        { src: "/images/gallery1.jpg", title: "Mkutano wa Chama" },
+        { src: "/images/gallery2.jpg", title: "Ziara Kazini" },
+        { src: "/images/gallery3.jpg", title: "Mafunzo ya Wanachama" },
+        { src: "/images/gallery4.jpg", title: "Ushirikiano wa Jamii" },
+        { src: "/images/gallery5.jpg", title: "Kikao cha Uhamasishaji wa Kazi" },
+        { src: "/images/gallery6.jpg", title: "Jukwaa la Uongozi" },
       ],
       leadershipTitle: "Uongozi wa Kitaalamu wa Chama",
       leadershipText:
@@ -209,18 +206,9 @@ export default function Landing() {
       ],
       contactTitle: "Wasiliana Nasi",
       contactItems: [
-        {
-          title: "Barua Pepe",
-          value: "info@fibucatradeunion.or.tz",
-        },
-        {
-          title: "Simu",
-          value: "+255 784 475 333",
-        },
-        {
-          title: "Anwani",
-          value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73",
-        },
+        { title: "Barua Pepe", value: "info@fibucatradeunion.or.tz" },
+        { title: "Simu", value: "+255 784 475 333" },
+        { title: "Anwani", value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73" },
       ],
       highlightsTitle: "Mambo Muhimu ya Chama",
       highlights: [
@@ -279,7 +267,6 @@ export default function Landing() {
     const id = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % heroSlides.length);
     }, 4800);
-
     return () => clearInterval(id);
   }, [heroSlides.length]);
 
@@ -331,38 +318,21 @@ export default function Landing() {
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-blue-200/70 bg-white/85 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <a href="#home" className="flex items-center gap-3">
-            <img
-              src="/images/logo-watermark.png"
-              alt="FIBUCA logo"
-              className="h-10 w-10 object-contain"
-            />
+            <img src="/images/logo-watermark.png" alt="FIBUCA logo" className="h-10 w-10 object-contain" />
             <div>
               <p className="text-lg font-bold tracking-tight text-blue-700">FIBUCA</p>
-              <p className="hidden text-[11px] text-slate-500 sm:block">
-                Trade Union Portal
-              </p>
+              <p className="hidden text-[11px] text-slate-500 sm:block">Trade Union Portal</p>
             </div>
           </a>
 
           <nav className="hidden items-center gap-6 text-sm font-medium text-slate-700 lg:flex">
-            <a href="#home" className="hover:text-blue-600">
-              {t.navHome}
-            </a>
-            <a href="#about" className="hover:text-blue-600">
-              {t.navAbout}
-            </a>
-            <a href="#services" className="hover:text-blue-600">
-              {t.navServices}
-            </a>
-            <a href="#benefits" className="hover:text-blue-600">
-              {t.navBenefits}
-            </a>
-            <a href="#leadership" className="hover:text-blue-600">
-              {t.navLeadership}
-            </a>
-            <a href="#contact" className="hover:text-blue-600">
-              {t.navContact}
-            </a>
+            <a href="#home" className="hover:text-blue-600">{t.navHome}</a>
+            <a href="#about" className="hover:text-blue-600">{t.navAbout}</a>
+            <a href="#services" className="hover:text-blue-600">{t.navServices}</a>
+            <a href="#benefits" className="hover:text-blue-600">{t.navBenefits}</a>
+            <a href="#gallery" className="hover:text-blue-600">{t.navGallery}</a>
+            <a href="#leadership" className="hover:text-blue-600">{t.navLeadership}</a>
+            <a href="#contact" className="hover:text-blue-600">{t.navContact}</a>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -381,6 +351,7 @@ export default function Landing() {
             </Link>
 
             <button
+              ref={menuButtonRef}
               onClick={toggleMenu}
               className="rounded-lg border border-blue-200 p-2 text-slate-700 lg:hidden"
               aria-label="Open menu"
@@ -401,24 +372,13 @@ export default function Landing() {
             className="fixed left-0 right-0 top-16 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 shadow-lg backdrop-blur-xl lg:hidden"
           >
             <nav className="flex flex-col gap-4 text-slate-700">
-              <a href="#home" onClick={closeMenu}>
-                {t.navHome}
-              </a>
-              <a href="#about" onClick={closeMenu}>
-                {t.navAbout}
-              </a>
-              <a href="#services" onClick={closeMenu}>
-                {t.navServices}
-              </a>
-              <a href="#benefits" onClick={closeMenu}>
-                {t.navBenefits}
-              </a>
-              <a href="#leadership" onClick={closeMenu}>
-                {t.navLeadership}
-              </a>
-              <a href="#contact" onClick={closeMenu}>
-                {t.navContact}
-              </a>
+              <a href="#home" onClick={closeMenu}>{t.navHome}</a>
+              <a href="#about" onClick={closeMenu}>{t.navAbout}</a>
+              <a href="#services" onClick={closeMenu}>{t.navServices}</a>
+              <a href="#benefits" onClick={closeMenu}>{t.navBenefits}</a>
+              <a href="#gallery" onClick={closeMenu}>{t.navGallery}</a>
+              <a href="#leadership" onClick={closeMenu}>{t.navLeadership}</a>
+              <a href="#contact" onClick={closeMenu}>{t.navContact}</a>
 
               <Link
                 to="/login"
@@ -534,16 +494,12 @@ export default function Landing() {
 
             <div className="hidden lg:flex lg:justify-end">
               <div className="w-full max-w-md rounded-[1.75rem] border border-white/15 bg-white/10 p-5 text-white shadow-2xl backdrop-blur-xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-100">
-                  {t.highlightsTitle}
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-100">{t.highlightsTitle}</p>
 
                 <div className="mt-5 space-y-4">
                   {t.highlights.map((item, index) => (
                     <div key={item} className="rounded-2xl border border-white/10 bg-white/10 p-4">
-                      <p className="text-2xl font-black text-white">
-                        {String(index + 1).padStart(2, "0")}
-                      </p>
+                      <p className="text-2xl font-black text-white">{String(index + 1).padStart(2, "0")}</p>
                       <p className="mt-1 text-sm leading-6 text-blue-100">{item}</p>
                     </div>
                   ))}
@@ -582,12 +538,8 @@ export default function Landing() {
       <section id="about" className="px-4 py-16 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-[2rem] border border-blue-100 bg-white/90 p-7 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-10">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-              {t.navAbout}
-            </p>
-            <h3 className="mt-3 text-3xl font-black tracking-tight text-blue-900">
-              {t.aboutTitle}
-            </h3>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">{t.navAbout}</p>
+            <h3 className="mt-3 text-3xl font-black tracking-tight text-blue-900">{t.aboutTitle}</h3>
             <p className="mt-5 text-slate-700">{t.aboutText1}</p>
             <p className="mt-3 text-slate-600">{t.aboutText2}</p>
 
@@ -622,15 +574,9 @@ export default function Landing() {
 
       <section id="services" className="px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-                {t.navServices}
-              </p>
-              <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">
-                {t.servicesTitle}
-              </h3>
-            </div>
+          <div className="mb-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">{t.navServices}</p>
+            <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">{t.servicesTitle}</h3>
           </div>
 
           <div className="grid gap-5 md:grid-cols-3">
@@ -652,19 +598,12 @@ export default function Landing() {
 
       <section id="benefits" className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-7xl rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white to-blue-50/80 p-7 shadow-[0_18px_50px_rgba(59,130,246,0.08)] sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-            {t.navBenefits}
-          </p>
-          <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">
-            {t.benefitsTitle}
-          </h3>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">{t.navBenefits}</p>
+          <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">{t.benefitsTitle}</h3>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {t.benefits.map((benefit, index) => (
-              <div
-                key={benefit}
-                className="flex items-start gap-4 rounded-2xl border border-blue-100 bg-white/90 p-5"
-              >
+              <div key={benefit} className="flex items-start gap-4 rounded-2xl border border-blue-100 bg-white/90 p-5">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 font-black text-white">
                   {index + 1}
                 </div>
@@ -675,16 +614,43 @@ export default function Landing() {
         </div>
       </section>
 
+      <section id="gallery" className="px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">{t.navGallery}</p>
+            <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">{t.galleryTitle}</h3>
+            <p className="mt-2 text-slate-600">{t.gallerySubtitle}</p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {t.galleryPhotos.map((photo, i) => (
+              <article
+                key={`${photo.src}-${i}`}
+                className="group overflow-hidden rounded-[1.5rem] border border-blue-100 bg-white shadow-[0_18px_40px_rgba(59,130,246,0.08)]"
+              >
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    src={photo.src}
+                    alt={photo.title}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-blue-950/45 via-transparent to-transparent" />
+                </div>
+                <div className="p-4">
+                  <h4 className="text-base font-bold text-slate-900">{photo.title}</h4>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="leadership" className="px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 p-8 text-white shadow-[0_25px_60px_rgba(8,47,73,0.3)] sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-200">
-                {t.navLeadership}
-              </p>
-              <h3 className="mt-2 text-3xl font-black tracking-tight">
-                {t.leadershipTitle}
-              </h3>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-200">{t.navLeadership}</p>
+              <h3 className="mt-2 text-3xl font-black tracking-tight">{t.leadershipTitle}</h3>
               <p className="mt-4 max-w-2xl text-blue-100">{t.leadershipText}</p>
             </div>
 
@@ -705,12 +671,8 @@ export default function Landing() {
       <section id="contact" className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-              {t.navContact}
-            </p>
-            <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">
-              {t.contactTitle}
-            </h3>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">{t.navContact}</p>
+            <h3 className="mt-2 text-3xl font-black tracking-tight text-blue-900">{t.contactTitle}</h3>
           </div>
 
           <div className="grid gap-5 md:grid-cols-3">
@@ -719,19 +681,14 @@ export default function Landing() {
                 key={item.title}
                 className="rounded-[1.75rem] border border-blue-100 bg-white/90 p-6 shadow-[0_18px_40px_rgba(59,130,246,0.08)]"
               >
-                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-                  {item.title}
-                </p>
+                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">{item.title}</p>
                 <p className="mt-3 text-slate-700">{item.value}</p>
               </div>
             ))}
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to="/login"
-              className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-500"
-            >
+            <Link to="/login" className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-500">
               {t.btnLogin}
             </Link>
             <Link
