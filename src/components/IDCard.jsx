@@ -335,7 +335,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
             {/* organization label */}
             <div className="absolute top-[54px] right-[14px] z-30 text-right">
-              <p className="m-0 text-[9px] font-semibold text-blue-900 tracking-[0.6px]">
+              <p className="m-0 text-[9px] text-center font-semibold text-blue-900 tracking-[0.6px]">
                 FIBUCA
               </p>
               <p className="m-0 text-[8px] text-slate-600">TRADE UNION CARD</p>
