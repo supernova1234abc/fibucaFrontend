@@ -35,10 +35,10 @@ const IDCard = forwardRef(({ card }, ref) => {
 
   const formattedDate = card?.issuedAt
     ? new Date(card.issuedAt).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "N/A";
 
   const getFirstAndLastName = (fullName) => {
@@ -73,15 +73,21 @@ const IDCard = forwardRef(({ card }, ref) => {
       if (!candidate) continue;
 
       if (isUrl(candidate)) {
-        if (candidate.includes("res.cloudinary.com") && candidate.includes("/upload/")) {
-          return toCloudinaryTransparentUrl(candidate, { height: 240 });
+        if (
+          candidate.includes("res.cloudinary.com") &&
+          candidate.includes("/upload/")
+        ) {
+          return toCloudinaryTransparentUrl(candidate, { height: 260 });
         }
         return candidate;
       }
 
       if (isLikelyUuid(candidate)) return `https://ucarecdn.com/${candidate}/`;
 
-      return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(/^\/+/, "")}`;
+      return `${baseURL?.replace(/\/$/, "")}/${String(candidate).replace(
+        /^\/+/,
+        ""
+      )}`;
     }
 
     return null;
@@ -219,21 +225,21 @@ const IDCard = forwardRef(({ card }, ref) => {
                 "linear-gradient(135deg, #eff6ff 0%, #dbeafe 18%, #ffffff 42%, #e0f2fe 68%, #bfdbfe 100%)",
             }}
           >
-            {/* decorative background blobs */}
             <div
               className="absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl opacity-50"
               style={{
-                background: "radial-gradient(circle, rgba(37,99,235,0.38), transparent 70%)",
+                background:
+                  "radial-gradient(circle, rgba(37,99,235,0.38), transparent 70%)",
               }}
             />
             <div
               className="absolute bottom-0 right-0 w-44 h-44 rounded-full blur-3xl opacity-50"
               style={{
-                background: "radial-gradient(circle, rgba(14,165,233,0.28), transparent 70%)",
+                background:
+                  "radial-gradient(circle, rgba(14,165,233,0.28), transparent 70%)",
               }}
             />
 
-            {/* pattern */}
             <div
               className="absolute inset-0 pointer-events-none opacity-[0.12]"
               style={{
@@ -242,7 +248,6 @@ const IDCard = forwardRef(({ card }, ref) => {
               }}
             />
 
-            {/* watermark */}
             <div className="absolute inset-0 flex items-center justify-center opacity-[0.16] z-10 pointer-events-none">
               <img
                 src="/images/logo-watermark.png"
@@ -252,11 +257,11 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* top band */}
             <div
               className="absolute top-0 left-0 right-0 h-9 z-30"
               style={{
-                background: "linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 48%, #2563eb 100%)",
+                background:
+                  "linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 48%, #2563eb 100%)",
               }}
             />
             <div className="absolute top-0 left-0 right-0 h-9 z-40 flex items-center justify-center">
@@ -271,16 +276,18 @@ const IDCard = forwardRef(({ card }, ref) => {
             <div
               className="absolute top-9 left-0 right-0 h-[4px] z-30"
               style={{
-                background: "linear-gradient(90deg, #93c5fd 0%, #e0f2fe 50%, #60a5fa 100%)",
+                background:
+                  "linear-gradient(90deg, #93c5fd 0%, #e0f2fe 50%, #60a5fa 100%)",
               }}
             />
 
             {/* photo */}
             <div className="absolute top-[48px] left-[12px] z-30">
               <div
-                className="relative w-[106px] h-[106px] rounded-full overflow-hidden"
+                className="relative w-[110px] h-[110px] rounded-full overflow-hidden"
                 style={{
-                  background: "radial-gradient(circle at 30% 30%, #f8fafc 0%, #dbeafe 100%)",
+                  background:
+                    "radial-gradient(circle at 30% 30%, #f8fafc 0%, #dbeafe 100%)",
                   border: "4px solid rgba(255,255,255,0.95)",
                   boxShadow:
                     "0 6px 18px rgba(30,64,175,0.22), inset 0 0 0 1px rgba(30,64,175,0.14)",
@@ -295,7 +302,7 @@ const IDCard = forwardRef(({ card }, ref) => {
                       className="absolute inset-0 w-full h-full object-cover object-top"
                       style={{
                         imageRendering: "high-quality",
-                        filter: "saturate(1.1) contrast(1.08) sharpness(1.02)",
+                        filter: "saturate(1.1) contrast(1.08)",
                         transform: "translateZ(0)",
                         backfaceVisibility: "hidden",
                       }}
@@ -331,9 +338,7 @@ const IDCard = forwardRef(({ card }, ref) => {
               <p className="m-0 text-[9px] font-semibold text-blue-900 tracking-[0.6px]">
                 FIBUCA
               </p>
-              <p className="m-0 text-[8px] text-slate-600">
-                TRADE UNION CARD
-              </p>
+              <p className="m-0 text-[8px] text-slate-600">TRADE UNION CARD</p>
             </div>
 
             {/* qr */}
@@ -383,98 +388,99 @@ const IDCard = forwardRef(({ card }, ref) => {
                 {String(card?.company || "FIBUCA").toUpperCase()}
               </p>
             </div>
+          </div>
 
-            {/* BACK */}
+          {/* BACK */}
+          <div
+            ref={backRef}
+            className={`${cardStyle} print-container print-bg`}
+            style={{
+              width: `${CARD_W}px`,
+              height: `${CARD_H}px`,
+              background:
+                "linear-gradient(160deg, #eff6ff 0%, #ffffff 28%, #dbeafe 58%, #e0f2fe 100%)",
+            }}
+          >
             <div
-              ref={backRef}
-              className={`${cardStyle} print-container print-bg`}
+              className="absolute inset-0 opacity-[0.08]"
               style={{
-                width: `${CARD_W}px`,
-                height: `${CARD_H}px`,
-                background:
-                  "linear-gradient(160deg, #eff6ff 0%, #ffffff 28%, #dbeafe 58%, #e0f2fe 100%)",
+                backgroundImage:
+                  "radial-gradient(circle at 16px 16px, rgba(30,64,175,0.35) 2px, transparent 2.5px)",
+                backgroundSize: "22px 22px",
               }}
-            >
-              <div
-                className="absolute inset-0 opacity-[0.08]"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(circle at 16px 16px, rgba(30,64,175,0.35) 2px, transparent 2.5px)",
-                  backgroundSize: "22px 22px",
-                }}
+            />
+
+            <div
+              className="absolute top-0 left-0 right-0 h-9 z-20"
+              style={{
+                background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
+              }}
+            />
+            <div className="absolute top-[10px] left-0 right-0 z-30 text-center">
+              <span className="text-white font-bold tracking-[1px] text-[14px]">
+                FIBUCA
+              </span>
+            </div>
+
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.09] z-10 pointer-events-none">
+              <img
+                src="/images/logo-watermark.png"
+                alt="Watermark"
+                crossOrigin="anonymous"
+                className="w-[160px] object-contain saturate-150 contrast-125"
               />
+            </div>
+
+            <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
+              <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
+                THIS STAFF IDENTITY IS THE PROPERTY OF
+              </p>
+
+              <p className="font-bold text-[9px] uppercase mb-3 leading-snug text-blue-950">
+                THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
+              </p>
 
               <div
-                className="absolute top-0 left-0 right-0 h-9 z-20"
+                className="px-1 py-1"
                 style={{
-                  background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
+                  background: "transparent",
+                  border: "none",
+                  boxShadow: "none",
+                  backdropFilter: "none",
                 }}
-              />
-              <div className="absolute top-[10px] left-0 right-0 z-30 text-center">
-                <span className="text-white font-bold tracking-[1px] text-[14px]">
-                  FIBUCA
-                </span>
-              </div>
-
-              <div className="absolute inset-0 flex items-center justify-center opacity-[0.09] z-10 pointer-events-none">
-                <img
-                  src="/images/logo-watermark.png"
-                  alt="Watermark"
-                  crossOrigin="anonymous"
-                  className="w-[160px] object-contain saturate-150 contrast-125"
-                />
-              </div>
-
-              <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
-                <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
-                  THIS STAFF IDENTITY IS THE PROPERTY OF
-                </p>
-
-                <p className="font-bold text-[9px] uppercase mb-3 leading-snug text-blue-950">
-                  THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
-                </p>
-
-                <div
-                  className="px-1 py-1"
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    boxShadow: "none",
-                    backdropFilter: "none",
-                  }}
+              >
+                <p
+                  className="text-[10px] text-slate-900 m-0 leading-snug font-medium"
+                  style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
                 >
-                  <p
-                    className="text-[10px] text-slate-900 m-0 leading-snug font-medium"
-                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
-                  >
-                    5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam
-                  </p>
-                  <p
-                    className="text-[10px] text-slate-900 m-0 mt-[4px] leading-snug font-medium"
-                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
-                  >
-                    Tel: +255732999782
-                  </p>
-                  <p
-                    className="text-[10px] text-slate-900 m-0 mt-[4px] leading-snug break-all font-medium"
-                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
-                  >
-                    fibucatradeunion@gmail.com
-                  </p>
-                </div>
-              </div>
-
-              <div className="absolute bottom-[14px] left-0 right-0 text-center z-30">
-                <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
-                <p className="italic text-slate-600 text-[10px] leading-none">
-                  General Secretary Signature
+                  5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam
+                </p>
+                <p
+                  className="text-[10px] text-slate-900 m-0 mt-[4px] leading-snug font-medium"
+                  style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
+                >
+                  Tel: +255732999782
+                </p>
+                <p
+                  className="text-[10px] text-slate-900 m-0 mt-[4px] leading-snug break-all font-medium"
+                  style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
+                >
+                  fibucatradeunion@gmail.com
                 </p>
               </div>
             </div>
+
+            <div className="absolute bottom-[14px] left-0 right-0 text-center z-30">
+              <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
+              <p className="italic text-slate-600 text-[10px] leading-none">
+                General Secretary Signature
+              </p>
+            </div>
           </div>
         </div>
-      </>
-      );
+      </div>
+    </>
+  );
 });
 
-      export default IDCard;
+export default IDCard;
