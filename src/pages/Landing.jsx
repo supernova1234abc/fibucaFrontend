@@ -332,7 +332,7 @@ export default function Landing() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <a href="#home" className="flex items-center gap-3">
             <img
-              src="/images/newFibucaLogo.png"
+              src="/images/logo-watermark.png"
               alt="FIBUCA logo"
               className="h-10 w-10 object-contain"
             />
