@@ -9,9 +9,9 @@ export default function Landing() {
   const [activeSlide, setActiveSlide] = useState(0);
   const menuRef = useRef(null);
 
-  const toggleMenu = () => setMenuOpen((p) => !p);
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu = () => setMenuOpen(false);
-  const toggleLang = () => setLang((p) => (p === "en" ? "sw" : "en"));
+  const toggleLang = () => setLang((prev) => (prev === "en" ? "sw" : "en"));
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto";
@@ -22,26 +22,14 @@ export default function Landing() {
 
   useEffect(() => {
     const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) closeMenu();
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        closeMenu();
+      }
     };
+
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  const heroSlides = [
-    "/images/slide1.jpg",
-    "/images/slide2.jpeg",
-    "/images/slide3.jpeg",
-    "/images/slide4.jpg",
-  ];
-
-  // under 5s per cycle
-  useEffect(() => {
-    const id = setInterval(() => {
-      setActiveSlide((p) => (p + 1) % heroSlides.length);
-    }, 4800);
-    return () => clearInterval(id);
-  }, [heroSlides.length]);
 
   const content = {
     en: {
@@ -50,11 +38,6 @@ export default function Landing() {
       navBenefits: "Benefits",
       navLeadership: "Leadership",
       navContact: "Contact",
-      badge: "Official Trade Union Portal",
-      title: "Protecting Workers’ Rights",
-      title2: "Through Unity, Representation and Action",
-      subtitle:
-        "FIBUCA supports workers in financial, industrial, banking, utilities, commercial and agro-processing sectors.",
       btnForm: "Submit Union Form",
       btnLogin: "Member Login",
       btnContact: "Contact Union Office",
@@ -62,7 +45,7 @@ export default function Landing() {
       aboutText1:
         "FIBUCA is an independent trade union established by workers to defend and advance social and economic interests.",
       aboutText2:
-        "We advocate fair treatment at work, stronger labour protection and practical support.",
+        "We advocate fair treatment at work, stronger labour protection and practical support for workers across multiple sectors.",
       servicesTitle: "Our Core Services",
       services: [
         {
@@ -87,12 +70,52 @@ export default function Landing() {
       ],
       leadershipTitle: "Professional Union Leadership",
       leadershipText:
-        "A professional team focused on defending workers’ social and economic rights.",
+        "A professional team focused on defending workers’ social and economic rights through unity, guidance and representation.",
       contactTitle: "Contact Us",
       contactItems: [
         "Email: info@fibucatradeunion.or.tz",
         "Phone: +255 784 475 333",
         "Address: Mahiwa/Lumumba Street, Plot No. 17 Block 73",
+      ],
+      highlightsTitle: "Union Highlights",
+      highlights: [
+        "Clear worker representation across key sectors.",
+        "Fast access to login, support and union contact.",
+        "Modern responsive experience for all devices.",
+      ],
+      heroSlides: [
+        {
+          image: "/images/slide1.jpg",
+          eyebrow: "Workers First",
+          title: "Protecting Workers’ Rights",
+          subtitle: "Through Unity, Representation and Action",
+          description:
+            "FIBUCA supports workers in financial, industrial, banking, utilities, commercial and agro-processing sectors.",
+        },
+        {
+          image: "/images/slide2.jpeg",
+          eyebrow: "Legal Support",
+          title: "Professional Labour Guidance",
+          subtitle: "Advice for disputes, contracts and fairness",
+          description:
+            "Get practical support on labour relations, workplace conflicts and worker protection.",
+        },
+        {
+          image: "/images/slide3.jpeg",
+          eyebrow: "Collective Strength",
+          title: "Stronger Voice Through Unity",
+          subtitle: "Collective bargaining that delivers results",
+          description:
+            "We help improve pay, workplace conditions and long-term employee representation.",
+        },
+        {
+          image: "/images/slide4.jpg",
+          eyebrow: "Member Access",
+          title: "Easy Login and Union Access",
+          subtitle: "Simple access to forms, support and communication",
+          description:
+            "Login quickly, submit forms when allowed and contact the union office with ease.",
+        },
       ],
       footer:
         "FIBUCA — Financial, Industrial, Banking, Utilities, Commercial and Agro-Processing Industries Trade Union",
@@ -103,28 +126,23 @@ export default function Landing() {
       navBenefits: "Faida",
       navLeadership: "Uongozi",
       navContact: "Mawasiliano",
-      badge: "Tovuti Rasmi ya Chama",
-      title: "Kulinda Haki za Wafanyakazi",
-      title2: "Kupitia Umoja, Uwakilishi na Hatua",
-      subtitle:
-        "FIBUCA inasaidia wafanyakazi wa sekta za kifedha, viwanda, benki, huduma, biashara na usindikaji wa mazao.",
       btnForm: "Wasilisha Fomu ya Chama",
       btnLogin: "Ingia kwa Mwanachama",
       btnContact: "Wasiliana na Ofisi ya Chama",
       aboutTitle: "Kuhusu FIBUCA",
       aboutText1:
-        "FIBUCA ni chama huru cha wafanyakazi kilichoanzishwa kulinda maslahi ya kijamii na kiuchumi.",
+        "FIBUCA ni chama huru cha wafanyakazi kilichoanzishwa kulinda na kuendeleza maslahi ya kijamii na kiuchumi.",
       aboutText2:
-        "Tunatetea haki kazini, ulinzi bora wa wafanyakazi na msaada wa vitendo.",
+        "Tunatetea haki kazini, ulinzi bora wa wafanyakazi na msaada wa vitendo kwa sekta mbalimbali.",
       servicesTitle: "Huduma Kuu za Chama",
       services: [
         {
           title: "Majadiliano ya Pamoja",
-          text: "Mazungumzo kuhusu mishahara na mazingira ya kazi.",
+          text: "Mazungumzo kuhusu mishahara, mazingira na haki za kazi.",
         },
         {
           title: "Ushauri wa Kisheria na Kazi",
-          text: "Mwongozo kuhusu haki za wafanyakazi na migogoro.",
+          text: "Mwongozo kuhusu migogoro, haki za kazi na masuala ya ajira.",
         },
         {
           title: "Ustawi na Elimu",
@@ -140,12 +158,52 @@ export default function Landing() {
       ],
       leadershipTitle: "Uongozi wa Kitaalamu wa Chama",
       leadershipText:
-        "Timu ya wataalamu tayari kusaidia kulinda haki za kijamii na kiuchumi za wafanyakazi.",
+        "Timu ya wataalamu inayolenga kulinda haki za kijamii na kiuchumi za wafanyakazi kupitia umoja na uwakilishi.",
       contactTitle: "Wasiliana Nasi",
       contactItems: [
         "Barua Pepe: info@fibucatradeunion.or.tz",
         "Simu: +255 784 475 333",
         "Anwani: Mahiwa/Lumumba Street, Plot No. 17 Block 73",
+      ],
+      highlightsTitle: "Mambo Muhimu ya Chama",
+      highlights: [
+        "Uwakilishi wazi wa wafanyakazi katika sekta muhimu.",
+        "Ufikiaji wa haraka wa kuingia, msaada na mawasiliano.",
+        "Muonekano wa kisasa unaofanya vizuri kwenye vifaa vyote.",
+      ],
+      heroSlides: [
+        {
+          image: "/images/slide1.jpg",
+          eyebrow: "Wafanyakazi Kwanza",
+          title: "Kulinda Haki za Wafanyakazi",
+          subtitle: "Kupitia Umoja, Uwakilishi na Hatua",
+          description:
+            "FIBUCA inasaidia wafanyakazi wa sekta za kifedha, viwanda, benki, huduma, biashara na usindikaji wa mazao.",
+        },
+        {
+          image: "/images/slide2.jpeg",
+          eyebrow: "Msaada wa Kisheria",
+          title: "Mwongozo wa Kitaalamu wa Kazi",
+          subtitle: "Ushauri kuhusu migogoro, mikataba na haki",
+          description:
+            "Pata msaada wa vitendo kuhusu mahusiano ya kazi, migogoro ya kazini na ulinzi wa wafanyakazi.",
+        },
+        {
+          image: "/images/slide3.jpeg",
+          eyebrow: "Nguvu ya Umoja",
+          title: "Sauti Yenye Nguvu Kupitia Umoja",
+          subtitle: "Majadiliano ya pamoja yanayoleta matokeo",
+          description:
+            "Tunasaidia kuboresha mishahara, mazingira ya kazi na uwakilishi wa muda mrefu wa wafanyakazi.",
+        },
+        {
+          image: "/images/slide4.jpg",
+          eyebrow: "Huduma za Wanachama",
+          title: "Ingia Kirahisi na Fikia Huduma za Chama",
+          subtitle: "Ufikiaji rahisi wa fomu, msaada na mawasiliano",
+          description:
+            "Ingia haraka, wasilisha fomu unapokubaliwa na wasiliana kwa urahisi na ofisi ya chama.",
+        },
       ],
       footer:
         "FIBUCA — Chama cha Wafanyakazi wa Sekta za Fedha, Viwanda, Benki, Huduma, Biashara na Usindikaji wa Mazao",
@@ -153,6 +211,15 @@ export default function Landing() {
   };
 
   const t = content[lang];
+  const heroSlides = t.heroSlides;
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 4800);
+
+    return () => clearInterval(id);
+  }, [heroSlides.length]);
 
   const isClientFormAccessible = () => {
     const existingClient = localStorage.getItem("USER_ROLE") === "CLIENT";
@@ -199,19 +266,33 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 text-slate-900">
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-blue-200/60 bg-white/80 backdrop-blur-xl">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-blue-200/60 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <img src="/images/newFibucaLogo.png" alt="FIBUCA logo" className="h-10 w-10 object-contain" />
+            <img
+              src="/images/newFibucaLogo.png"
+              alt="FIBUCA logo"
+              className="h-10 w-10 object-contain"
+            />
             <h1 className="text-lg font-bold text-blue-700">FIBUCA</h1>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-700">
-            <a href="#about" className="hover:text-blue-600">{t.navAbout}</a>
-            <a href="#services" className="hover:text-blue-600">{t.navServices}</a>
-            <a href="#benefits" className="hover:text-blue-600">{t.navBenefits}</a>
-            <a href="#leadership" className="hover:text-blue-600">{t.navLeadership}</a>
-            <a href="#contact" className="hover:text-blue-600">{t.navContact}</a>
+          <nav className="hidden items-center gap-6 text-sm text-slate-700 md:flex">
+            <a href="#about" className="hover:text-blue-600">
+              {t.navAbout}
+            </a>
+            <a href="#services" className="hover:text-blue-600">
+              {t.navServices}
+            </a>
+            <a href="#benefits" className="hover:text-blue-600">
+              {t.navBenefits}
+            </a>
+            <a href="#leadership" className="hover:text-blue-600">
+              {t.navLeadership}
+            </a>
+            <a href="#contact" className="hover:text-blue-600">
+              {t.navContact}
+            </a>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -223,7 +304,7 @@ export default function Landing() {
             </button>
             <button
               onClick={toggleMenu}
-              className="md:hidden rounded p-2 border border-blue-200 text-slate-700"
+              className="rounded border border-blue-200 p-2 text-slate-700 md:hidden"
             >
               ☰
             </button>
@@ -238,14 +319,24 @@ export default function Landing() {
             initial={{ y: -16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -16, opacity: 0 }}
-            className="fixed top-16 left-0 right-0 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 md:hidden"
+            className="fixed left-0 right-0 top-16 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 md:hidden"
           >
             <nav className="flex flex-col gap-4 text-slate-700">
-              <a href="#about" onClick={closeMenu}>{t.navAbout}</a>
-              <a href="#services" onClick={closeMenu}>{t.navServices}</a>
-              <a href="#benefits" onClick={closeMenu}>{t.navBenefits}</a>
-              <a href="#leadership" onClick={closeMenu}>{t.navLeadership}</a>
-              <a href="#contact" onClick={closeMenu}>{t.navContact}</a>
+              <a href="#about" onClick={closeMenu}>
+                {t.navAbout}
+              </a>
+              <a href="#services" onClick={closeMenu}>
+                {t.navServices}
+              </a>
+              <a href="#benefits" onClick={closeMenu}>
+                {t.navBenefits}
+              </a>
+              <a href="#leadership" onClick={closeMenu}>
+                {t.navLeadership}
+              </a>
+              <a href="#contact" onClick={closeMenu}>
+                {t.navContact}
+              </a>
             </nav>
           </motion.div>
         )}
@@ -254,90 +345,132 @@ export default function Landing() {
       <div className="h-16" />
 
       <section className="relative">
-        <div className="relative h-[70vh] min-h-[480px] lg:h-[82vh] w-full overflow-hidden rounded-b-3xl bg-blue-950">
+        <div className="relative h-[74vh] min-h-[520px] w-full overflow-hidden rounded-b-[2rem] bg-[#0b1f4d] lg:h-[86vh]">
           <AnimatePresence mode="wait">
             <motion.img
-              key={heroSlides[activeSlide]}
-              src={heroSlides[activeSlide]}
-              alt={`slide-${activeSlide + 1}`}
-              initial={{ scale: 1.06, opacity: 0 }}
+              key={heroSlides[activeSlide].image}
+              src={heroSlides[activeSlide].image}
+              alt={heroSlides[activeSlide].title}
+              initial={{ scale: 1.04, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 2, ease: "easeInOut" }} // image in 2s
+              transition={{ duration: 2, ease: "easeInOut" }}
               className="absolute inset-0 h-full w-full object-cover object-center lg:object-contain"
             />
           </AnimatePresence>
 
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/45 via-blue-900/30 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-blue-950/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.22),transparent_28%),linear-gradient(90deg,rgba(7,19,53,0.88)_0%,rgba(10,34,88,0.62)_40%,rgba(10,34,88,0.15)_70%,rgba(10,34,88,0.05)_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#081736]/80 via-transparent to-transparent" />
 
-          <div className="relative mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 sm:pb-14">
+          <div className="relative mx-auto grid h-full max-w-7xl items-end gap-8 px-4 pb-8 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pb-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`hero-text-${activeSlide}`}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 26 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 3, ease: "easeOut" }} // paragraphs in 3s
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 3, ease: "easeOut" }}
                 className="max-w-3xl"
               >
-                <p className="mb-3 inline-block rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-blue-700">
-                  {t.badge}
+                <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100 backdrop-blur-md">
+                  {heroSlides[activeSlide].eyebrow}
                 </p>
-                <h2 className="text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl">{t.title}</h2>
-                <p className="mt-2 text-xl sm:text-2xl text-blue-100">{t.title2}</p>
-                <p className="mt-4 max-w-2xl text-sm sm:text-base text-blue-50">{t.subtitle}</p>
 
-                <div className="mt-6 flex flex-wrap gap-3">
+                <h2 className="max-w-3xl text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl lg:text-6xl">
+                  {heroSlides[activeSlide].title}
+                </h2>
+
+                <p className="mt-3 text-lg font-semibold text-blue-100 sm:text-2xl">
+                  {heroSlides[activeSlide].subtitle}
+                </p>
+
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-100 sm:text-base">
+                  {heroSlides[activeSlide].description}
+                </p>
+
+                <div className="mt-7 flex flex-wrap gap-3">
                   <Link
                     to="/login"
-                    className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500"
+                    className="rounded-xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-blue-900/30 hover:bg-blue-500"
                   >
                     {t.btnLogin}
                   </Link>
+
                   <Link
                     to="/client-form"
                     onClick={handleClientFormClick}
-                    className={`rounded-xl px-6 py-3 font-semibold ${
+                    className={`rounded-xl px-6 py-3 font-semibold backdrop-blur-sm ${
                       isClientFormAccessible()
-                        ? "bg-white/80 text-blue-700 hover:bg-white"
-                        : "cursor-not-allowed bg-white/60 text-slate-400"
+                        ? "bg-white/85 text-blue-800 hover:bg-white"
+                        : "cursor-not-allowed bg-white/60 text-slate-500"
                     }`}
                   >
                     {t.btnForm}
                   </Link>
+
                   <button
                     onClick={handleContactClick}
-                    className="rounded-xl border border-emerald-500/50 bg-emerald-100/80 px-6 py-3 font-semibold text-emerald-700 hover:bg-emerald-100"
+                    className="rounded-xl border border-white/30 bg-[#0d2d70]/50 px-6 py-3 font-semibold text-white hover:bg-[#123987]/70"
                   >
                     {t.btnContact}
                   </button>
                 </div>
 
-                <div className="mt-6 flex items-center gap-2">
-                  {heroSlides.map((_, i) => (
+                <div className="mt-7 flex items-center gap-3">
+                  {heroSlides.map((slide, i) => (
                     <button
-                      key={i}
+                      key={slide.image}
                       onClick={() => setActiveSlide(i)}
-                      className={`h-2.5 rounded-full transition-all ${
-                        i === activeSlide ? "w-8 bg-white" : "w-2.5 bg-white/65"
+                      aria-label={`Go to slide ${i + 1}`}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
+                        i === activeSlide ? "w-10 bg-white" : "w-2.5 bg-white/45 hover:bg-white/70"
                       }`}
                     />
                   ))}
                 </div>
+
+                <div className="mt-4 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/20">
+                  <motion.div
+                    key={`progress-${activeSlide}`}
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 4.8, ease: "linear" }}
+                    className="h-full rounded-full bg-gradient-to-r from-sky-300 via-blue-400 to-blue-600"
+                  />
+                </div>
               </motion.div>
             </AnimatePresence>
+
+            <div className="hidden lg:flex lg:justify-end">
+              <div className="w-full max-w-md rounded-[1.75rem] border border-white/15 bg-white/10 p-5 text-white shadow-2xl backdrop-blur-xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-100">
+                  {t.highlightsTitle}
+                </p>
+
+                <div className="mt-5 space-y-4">
+                  {t.highlights.map((item, index) => (
+                    <div key={item} className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-2xl font-black text-white">
+                        {String(index + 1).padStart(2, "0")}
+                      </p>
+                      <p className="mt-1 text-sm text-blue-100">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <button
-            onClick={() => setActiveSlide((p) => (p - 1 + heroSlides.length) % heroSlides.length)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/75 px-3 py-2 text-blue-700 hover:bg-white"
+            onClick={() => setActiveSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/70 px-3 py-2 text-blue-800 backdrop-blur hover:bg-white"
           >
             ‹
           </button>
+
           <button
-            onClick={() => setActiveSlide((p) => (p + 1) % heroSlides.length)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/75 px-3 py-2 text-blue-700 hover:bg-white"
+            onClick={() => setActiveSlide((prev) => (prev + 1) % heroSlides.length)}
+            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/70 px-3 py-2 text-blue-800 backdrop-blur hover:bg-white"
           >
             ›
           </button>
@@ -356,8 +489,11 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl">
           <h3 className="mb-6 text-2xl font-bold text-blue-700">{t.servicesTitle}</h3>
           <div className="grid gap-4 md:grid-cols-3">
-            {t.services.map((service, i) => (
-              <div key={i} className="rounded-2xl border border-blue-100 bg-white/85 p-6 shadow-sm">
+            {t.services.map((service) => (
+              <div
+                key={service.title}
+                className="rounded-2xl border border-blue-100 bg-white/85 p-6 shadow-sm"
+              >
                 <h4 className="font-bold text-slate-900">{service.title}</h4>
                 <p className="mt-2 text-slate-600">{service.text}</p>
               </div>
@@ -370,9 +506,12 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl">
           <h3 className="mb-6 text-2xl font-bold text-blue-700">{t.benefitsTitle}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            {t.benefits.map((b, i) => (
-              <div key={i} className="rounded-xl border border-blue-100 bg-white/85 px-4 py-3 text-slate-700 shadow-sm">
-                ✓ {b}
+            {t.benefits.map((benefit) => (
+              <div
+                key={benefit}
+                className="rounded-xl border border-blue-100 bg-white/85 px-4 py-3 text-slate-700 shadow-sm"
+              >
+                ✓ {benefit}
               </div>
             ))}
           </div>
@@ -390,8 +529,11 @@ export default function Landing() {
         <div className="mx-auto max-w-5xl">
           <h3 className="mb-5 text-2xl font-bold text-blue-700">{t.contactTitle}</h3>
           <div className="grid gap-4 md:grid-cols-3">
-            {t.contactItems.map((item, i) => (
-              <div key={i} className="rounded-2xl border border-blue-100 bg-white/85 p-4 text-slate-700 shadow-sm">
+            {t.contactItems.map((item) => (
+              <div
+                key={item}
+                className="rounded-2xl border border-blue-100 bg-white/85 p-4 text-slate-700 shadow-sm"
+              >
                 {item}
               </div>
             ))}
@@ -399,7 +541,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="mt-10 border-t border-blue-900 bg-blue-900 px-4 py-5 text-center text-xs text-white">
+      <footer className="mt-10 border-t border-blue-950 bg-blue-950 px-4 py-5 text-center text-xs text-white">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
