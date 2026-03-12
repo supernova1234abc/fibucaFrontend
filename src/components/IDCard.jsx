@@ -15,12 +15,12 @@ import Swal from "sweetalert2";
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
 // Cloudinary: background removal -> transparent PNG
-function toCloudinaryTransparentUrl(rawUrl, { height = 180 } = {}) {
+function toCloudinaryTransparentUrl(rawUrl, { height = 260 } = {}) {
   if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
   if (!rawUrl.includes("/upload/")) return rawUrl;
 
   const [prefix, rest] = rawUrl.split("/upload/");
-  const tr = `e_background_removal/c_scale,h_${height}/f_png,q_auto:best/`;
+  const tr = `e_background_removal/c_scale,h_${height}/f_png/q_auto:best,dpr_2.0/`;
   return `${prefix}/upload/${tr}${rest}`;
 }
 
@@ -35,10 +35,10 @@ const IDCard = forwardRef(({ card }, ref) => {
 
   const formattedDate = card?.issuedAt
     ? new Date(card.issuedAt).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "N/A";
 
   const getFirstAndLastName = (fullName) => {
@@ -74,7 +74,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
       if (isUrl(candidate)) {
         if (candidate.includes("res.cloudinary.com") && candidate.includes("/upload/")) {
-          return toCloudinaryTransparentUrl(candidate, { height: 180 });
+          return toCloudinaryTransparentUrl(candidate, { height: 240 });
         }
         return candidate;
       }
@@ -294,8 +294,10 @@ const IDCard = forwardRef(({ card }, ref) => {
                       crossOrigin="anonymous"
                       className="absolute inset-0 w-full h-full object-cover object-top"
                       style={{
-                        imageRendering: "auto",
-                        filter: "saturate(1.08) contrast(1.06)",
+                        imageRendering: "high-quality",
+                        filter: "saturate(1.1) contrast(1.08) sharpness(1.02)",
+                        transform: "translateZ(0)",
+                        backfaceVisibility: "hidden",
                       }}
                       onLoad={() => setPhotoLoaded(true)}
                       onError={(e) => {
@@ -354,107 +356,125 @@ const IDCard = forwardRef(({ card }, ref) => {
 
             {/* bottom info */}
             <div
-              className="absolute bottom-[12px] right-[12px] left-[150px] z-30 rounded-[12px] px-3 py-2"
+              className="absolute bottom-[12px] right-[12px] left-[150px] z-30 px-1 py-1"
               style={{
-                background: "rgba(255,255,255,0.8)",
-                backdropFilter: "blur(3px)",
-                border: "1px solid rgba(148,163,184,0.28)",
-                boxShadow: "0 4px 12px rgba(30,41,59,0.08)",
+                background: "transparent",
+                border: "none",
+                boxShadow: "none",
+                backdropFilter: "none",
               }}
             >
-              <p className="m-0 text-[10px] font-semibold text-slate-800 leading-tight">
-                ID: <span className="text-blue-900">{card?.cardNumber || "N/A"}</span>
+              <p
+                className="m-0 text-[10px] font-bold text-slate-900 leading-tight"
+                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.85)" }}
+              >
+                ID: <span className="text-blue-950">{card?.cardNumber || "N/A"}</span>
               </p>
-              <p className="m-0 mt-[3px] text-[9px] text-slate-700 leading-tight">
+              <p
+                className="m-0 mt-[3px] text-[9px] text-slate-800 leading-tight"
+                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.85)" }}
+              >
                 Issued: {formattedDate}
               </p>
-              <p className="m-0 mt-[3px] text-[9px] text-slate-700 leading-tight break-words">
+              <p
+                className="m-0 mt-[3px] text-[9px] text-slate-800 leading-tight break-words font-medium"
+                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.85)" }}
+              >
                 {String(card?.company || "FIBUCA").toUpperCase()}
               </p>
             </div>
-          </div>
 
-          {/* BACK */}
-          <div
-            ref={backRef}
-            className={`${cardStyle} print-container print-bg`}
-            style={{
-              width: `${CARD_W}px`,
-              height: `${CARD_H}px`,
-              background:
-                "linear-gradient(160deg, #eff6ff 0%, #ffffff 28%, #dbeafe 58%, #e0f2fe 100%)",
-            }}
-          >
+            {/* BACK */}
             <div
-              className="absolute inset-0 opacity-[0.08]"
+              ref={backRef}
+              className={`${cardStyle} print-container print-bg`}
               style={{
-                backgroundImage:
-                  "radial-gradient(circle at 16px 16px, rgba(30,64,175,0.35) 2px, transparent 2.5px)",
-                backgroundSize: "22px 22px",
+                width: `${CARD_W}px`,
+                height: `${CARD_H}px`,
+                background:
+                  "linear-gradient(160deg, #eff6ff 0%, #ffffff 28%, #dbeafe 58%, #e0f2fe 100%)",
               }}
-            />
-
-            <div
-              className="absolute top-0 left-0 right-0 h-9 z-20"
-              style={{
-                background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
-              }}
-            />
-            <div className="absolute top-[10px] left-0 right-0 z-30 text-center">
-              <span className="text-white font-bold tracking-[1px] text-[14px]">
-                FIBUCA
-              </span>
-            </div>
-
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.09] z-10 pointer-events-none">
-              <img
-                src="/images/logo-watermark.png"
-                alt="Watermark"
-                crossOrigin="anonymous"
-                className="w-[160px] object-contain saturate-150 contrast-125"
+            >
+              <div
+                className="absolute inset-0 opacity-[0.08]"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 16px 16px, rgba(30,64,175,0.35) 2px, transparent 2.5px)",
+                  backgroundSize: "22px 22px",
+                }}
               />
-            </div>
-
-            <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
-              <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
-                THIS STAFF IDENTITY IS THE PROPERTY OF
-              </p>
-
-              <p className="font-bold text-[9px] uppercase mb-3 leading-snug text-blue-950">
-                THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
-              </p>
 
               <div
-                className="rounded-[12px] px-3 py-3"
+                className="absolute top-0 left-0 right-0 h-9 z-20"
                 style={{
-                  background: "rgba(255,255,255,0.76)",
-                  border: "1px solid rgba(148,163,184,0.28)",
-                  boxShadow: "0 4px 14px rgba(30,41,59,0.08)",
+                  background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
                 }}
-              >
-                <p className="text-[10px] text-slate-800 m-0 leading-snug">
-                  5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam
+              />
+              <div className="absolute top-[10px] left-0 right-0 z-30 text-center">
+                <span className="text-white font-bold tracking-[1px] text-[14px]">
+                  FIBUCA
+                </span>
+              </div>
+
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.09] z-10 pointer-events-none">
+                <img
+                  src="/images/logo-watermark.png"
+                  alt="Watermark"
+                  crossOrigin="anonymous"
+                  className="w-[160px] object-contain saturate-150 contrast-125"
+                />
+              </div>
+
+              <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
+                <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
+                  THIS STAFF IDENTITY IS THE PROPERTY OF
                 </p>
-                <p className="text-[10px] text-slate-800 m-0 mt-[4px] leading-snug">
-                  Tel: +255732999782
+
+                <p className="font-bold text-[9px] uppercase mb-3 leading-snug text-blue-950">
+                  THE FINANCIAL, INDUSTRIAL, BANKING, UTILITIES, COMMERCIAL & AGRO-PROCESSING INDUSTRIES TRADE UNION
                 </p>
-                <p className="text-[10px] text-slate-800 m-0 mt-[4px] leading-snug break-all">
-                  fibucatradeunion@gmail.com
+
+                <div
+                  className="px-1 py-1"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    boxShadow: "none",
+                    backdropFilter: "none",
+                  }}
+                >
+                  <p
+                    className="text-[10px] text-slate-900 m-0 leading-snug font-medium"
+                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
+                  >
+                    5th Floor Mahiwa/Lumumba, P.O.Box 14317, Dar es Salaam
+                  </p>
+                  <p
+                    className="text-[10px] text-slate-900 m-0 mt-[4px] leading-snug font-medium"
+                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
+                  >
+                    Tel: +255732999782
+                  </p>
+                  <p
+                    className="text-[10px] text-slate-900 m-0 mt-[4px] leading-snug break-all font-medium"
+                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
+                  >
+                    fibucatradeunion@gmail.com
+                  </p>
+                </div>
+              </div>
+
+              <div className="absolute bottom-[14px] left-0 right-0 text-center z-30">
+                <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
+                <p className="italic text-slate-600 text-[10px] leading-none">
+                  General Secretary Signature
                 </p>
               </div>
             </div>
-
-            <div className="absolute bottom-[14px] left-0 right-0 text-center z-30">
-              <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
-              <p className="italic text-slate-600 text-[10px] leading-none">
-                General Secretary Signature
-              </p>
-            </div>
           </div>
         </div>
-      </div>
-    </>
-  );
+      </>
+      );
 });
 
-export default IDCard;
+      export default IDCard;
