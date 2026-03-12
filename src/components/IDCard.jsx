@@ -359,9 +359,9 @@ const IDCard = forwardRef(({ card }, ref) => {
               />
             </div>
 
-            {/* bottom info */}
+            {/* bottom info under QR */}
             <div
-              className="absolute bottom-[12px] right-[12px] left-[150px] z-30 px-1 py-1"
+              className="absolute top-[156px] right-[14px] z-30 w-[92px] text-center px-1"
               style={{
                 background: "transparent",
                 border: "none",
@@ -370,22 +370,16 @@ const IDCard = forwardRef(({ card }, ref) => {
               }}
             >
               <p
-                className="m-0 text-[10px] font-bold text-slate-900 leading-tight"
-                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.85)" }}
+                className="m-0 text-[9px] font-bold text-slate-900 leading-tight"
+                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
               >
                 ID: <span className="text-blue-950">{card?.cardNumber || "N/A"}</span>
               </p>
               <p
-                className="m-0 mt-[3px] text-[9px] text-slate-800 leading-tight"
-                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.85)" }}
+                className="m-0 mt-[3px] text-[8px] text-slate-800 leading-tight"
+                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
               >
                 Issued: {formattedDate}
-              </p>
-              <p
-                className="m-0 mt-[3px] text-[9px] text-slate-800 leading-tight break-words font-medium"
-                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.85)" }}
-              >
-                {String(card?.company || "FIBUCA").toUpperCase()}
               </p>
             </div>
           </div>
