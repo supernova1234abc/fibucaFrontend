@@ -1,4 +1,5 @@
 // frontend/src/App.jsx
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -19,6 +20,7 @@ import AdminIdCards from './pages/AdminIdCards';
 
 import PrivateRoute from './components/PrivateRoute';
 import DashboardLayout from './components/DashboardLayout';
+import LoadingIntro from './components/LoadingIntro';
 import { useAuth } from './context/AuthContext';
 import './index.css';
 
@@ -50,13 +52,27 @@ const superMenus = [
 
 export default function App() {
   const { user, loading } = useAuth();
+  const isLandingRoute = typeof window !== 'undefined' && window.location.pathname === '/';
+  const [introFinished, setIntroFinished] = useState(!isLandingRoute);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  useEffect(() => {
+    if (!isLandingRoute) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setIntroFinished(true);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [isLandingRoute]);
+
+  const showLandingIntro = isLandingRoute && (!introFinished || loading);
+
+  if (showLandingIntro) {
+    return <LoadingIntro hold={introFinished && loading} />;
   }
 
   return (
