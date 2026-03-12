@@ -34,7 +34,6 @@ export default function LoadingIntro({ hold = false }) {
   }, []);
 
   const typedText = useMemo(() => FULL_TEXT.slice(0, typedCount), [typedCount]);
-  const writingProgress = Math.min(1, typedCount / FULL_TEXT.length);
 
   return (
     <div className="intro-stage" aria-live="polite" aria-label="Loading Fibuca Trade Union Management Information System">
@@ -42,35 +41,15 @@ export default function LoadingIntro({ hold = false }) {
       <div className="intro-aura intro-aura-right" />
 
       <div className="intro-card">
-        <div className="intro-badge">3D Pencil Writing Intro</div>
-
         <div className="intro-writing-board">
           <div className="intro-writing-line">
             <span className="intro-typed-text">{typedText}</span>
             <span className="intro-cursor" />
-            <span
-              className="intro-pencil"
-              style={{ left: `calc(${Math.max(4, writingProgress * 100)}% - 0.9rem)` }}
-              aria-hidden="true"
-            >
-              <span className="intro-pencil-body" />
-              <span className="intro-pencil-tip" />
-              <span className="intro-pencil-eraser" />
-              <span className="intro-pencil-shadow" />
-            </span>
           </div>
 
           <div className={`intro-final-word ${showFinalWord ? 'is-visible' : ''} ${hold ? 'is-holding' : ''}`}>
             {FINAL_WORD}
           </div>
-        </div>
-
-        <div className="intro-breakdown">
-          <span>Fibuca</span>
-          <span>+</span>
-          <span>Trade Union</span>
-          <span>+</span>
-          <span>Management Information System</span>
         </div>
       </div>
     </div>
