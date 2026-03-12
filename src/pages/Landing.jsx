@@ -253,7 +253,7 @@ export default function Landing() {
       <div className="h-16" />
 
       <section className="relative">
-        <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden rounded-b-3xl">
+        <div className="relative h-[70vh] min-h-[480px] lg:h-[82vh] w-full overflow-hidden rounded-b-3xl bg-blue-950">
           <AnimatePresence mode="wait">
             <motion.img
               key={heroSlides[activeSlide]}
@@ -263,7 +263,7 @@ export default function Landing() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8 }}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover object-center lg:object-contain"
             />
           </AnimatePresence>
 
@@ -389,7 +389,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="mt-10 border-t border-blue-100 bg-white/70 px-4 py-5 text-center text-xs text-slate-600">
+      <footer className="mt-10 border-t border-blue-900 bg-blue-900 px-4 py-5 text-center text-xs text-white">
         © {new Date().getFullYear()} {t.footer}
       </footer>
     </div>
