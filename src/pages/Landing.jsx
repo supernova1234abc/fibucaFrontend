@@ -77,8 +77,8 @@ export default function Landing() {
       galleryTitle: "Company Gallery",
       gallerySubtitle: "Moments from union activities, meetings, field visits and community engagement.",
       galleryPhotos: [
-        { src: "/images/gallery2.jpg", title: "Workplace Visit" },
         { src: "/images/gallery1.jpg", title: "Union Meeting" },
+        { src: "/images/gallery2.jpg", title: "Workplace Visit" },
         { src: "/images/gallery3.jpg", title: "Member Training" },
         { src: "/images/gallery4.jpg", title: "Community Engagement" },
         { src: "/images/gallery5.jpg", title: "Labour Awareness Session" },

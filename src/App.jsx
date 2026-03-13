@@ -62,7 +62,7 @@ export default function App() {
 
     const timerId = window.setTimeout(() => {
       setIntroFinished(true);
-    }, 3000);
+    }, 4000);
 
     return () => {
       window.clearTimeout(timerId);
