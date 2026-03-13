@@ -17,6 +17,7 @@ import {
   FaQrcode,
   FaComments,
   FaPaperPlane,
+  FaPrint,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -252,6 +253,7 @@ export default function StaffDashboard() {
     await Swal.fire({
       title: "Scan QR Code",
       html: `
+        <button id="print-qr-btn" style="margin-bottom:10px;padding:6px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;">&#128438; Print QR</button>
         <div id="qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;"></div>
         <div style="margin-top:12px;word-break:break-all;font-size:12px;">${url}</div>
       `,
@@ -259,10 +261,24 @@ export default function StaffDashboard() {
         const wrap = document.getElementById("qr-wrap");
         if (wrap) {
           const container = document.createElement("div");
+          container.id = "qr-svg-container";
           wrap.appendChild(container);
           import("react-dom/client").then(({ createRoot }) => {
             const root = createRoot(container);
             root.render(<QRCode value={url} size={180} />);
+          });
+        }
+
+        const printBtn = document.getElementById("print-qr-btn");
+        if (printBtn) {
+          printBtn.addEventListener("click", () => {
+            const svgEl = document.querySelector("#qr-svg-container svg");
+            const svgHtml = svgEl ? svgEl.outerHTML : "";
+            const win = window.open("", "_blank", "width=400,height=520");
+            if (!win) return;
+            win.document.write(`<!DOCTYPE html><html><head><title>FIBUCA QR Code</title><style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#fff;}p{font-size:11px;word-break:break-all;max-width:280px;text-align:center;margin-top:12px;color:#555;}h2{font-size:16px;margin-bottom:8px;}</style></head><body><h2>FIBUCA Submission Link</h2>${svgHtml}<p>${url}</p></body></html>`);
+            win.document.close();
+            setTimeout(() => { win.print(); win.close(); }, 400);
           });
         }
       },

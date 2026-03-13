@@ -67,7 +67,7 @@ return (
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
         <div className="flex justify-center mb-4">
           <img
-            src="/images/newFibucaLogo.png"
+            src="/images/logo-watermark.png"
             alt="Fibuca Logo"
             className="h-28 w-28 opacity-90"
           />
