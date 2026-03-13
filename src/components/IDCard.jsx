@@ -14,14 +14,23 @@ import Swal from "sweetalert2";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
-// Cloudinary: background removal -> transparent PNG
-function toCloudinaryTransparentUrl(rawUrl, { height = 260 } = {}) {
-  if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
-  if (!rawUrl.includes("/upload/")) return rawUrl;
+// Strip any Cloudinary transformation segments so we use the raw stored URL.
+// cleanPhotoUrl is either already browser-cleaned (plain raw URL) or a legacy URL
+// that has e_background_removal embedded — either way we just serve the file as-is.
+function toCloudinaryRawUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url;
 
-  const [prefix, rest] = rawUrl.split("/upload/");
-  const tr = `e_background_removal/c_scale,h_${height}/f_png/q_auto:best,dpr_2.0/`;
-  return `${prefix}/upload/${tr}${rest}`;
+  const uploadIdx = url.indexOf("/upload/");
+  const afterUpload = url.slice(uploadIdx + 8); // skip '/upload/'
+
+  // If there are transformation segments (no leading 'v'), strip them
+  const versionMatch = afterUpload.match(/(v\d+\/.+)/);
+  if (versionMatch) {
+    return url.slice(0, uploadIdx + 8) + versionMatch[1];
+  }
+
+  return url;
 }
 
 const CARD_W = 340;
@@ -77,7 +86,7 @@ const IDCard = forwardRef(({ card }, ref) => {
           candidate.includes("res.cloudinary.com") &&
           candidate.includes("/upload/")
         ) {
-          return toCloudinaryTransparentUrl(candidate, { height: 260 });
+          return toCloudinaryRawUrl(candidate);
         }
         return candidate;
       }

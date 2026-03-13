@@ -20,8 +20,14 @@ export default function ClientDashboard() {
   const [loadingCards, setLoadingCards] = useState(true);
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [browserCleaning, setBrowserCleaning] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [cleanProgress, setCleanProgress] = useState(0);
+  const [photoRuntime, setPhotoRuntime] = useState({
+    photoMode: "cloudinary",
+    isVercel: false,
+    preferClientBgRemoval: true,
+  });
 
   // ✅ complaints
   const [complaints, setComplaints] = useState([]);
@@ -89,6 +95,17 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  const fetchPhotoRuntime = useCallback(async () => {
+    try {
+      const { data } = await api.get("/api/photo-mode");
+      if (data && typeof data === "object") {
+        setPhotoRuntime((prev) => ({ ...prev, ...data }));
+      }
+    } catch (err) {
+      console.warn("Photo runtime mode fetch failed, using defaults:", err?.message || err);
+    }
+  }, []);
+
   const fetchMyComplaints = useCallback(async () => {
     if (!user) return;
     setLoadingComplaints(true);
@@ -108,7 +125,15 @@ export default function ClientDashboard() {
     fetchSubmissions();
     fetchIdCards();
     fetchMyComplaints();
-  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints]);
+    fetchPhotoRuntime();
+  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime]);
+
+  const removeBackgroundInBrowser = useCallback(async (file) => {
+    const { removeBackground } = await import("@imgly/background-removal");
+    const cleanedBlob = await removeBackground(file);
+    const nextName = `${file.name.replace(/\.[^.]+$/, "")}_clean.png`;
+    return new File([cleanedBlob], nextName, { type: "image/png" });
+  }, []);
 
   // ---------------------- IMAGE UPLOAD ----------------------
   const handleFileUpload = async (file) => {
@@ -117,25 +142,58 @@ export default function ClientDashboard() {
     if (!card) return toast.error("No placeholder ID card found.");
 
     setUploadingPhoto(true);
+    setCleanProgress(0);
     try {
+      let uploadFile = file;
+      let clientCleaned = false;
+
+      if (photoRuntime.preferClientBgRemoval) {
+        setBrowserCleaning(true);
+        setIsCleaning(true);
+        setCleanProgress(8);
+        try {
+          uploadFile = await removeBackgroundInBrowser(file);
+          clientCleaned = true;
+          setCleanProgress(58);
+          toast.success("Background removed in browser.");
+        } catch (cleanErr) {
+          console.warn("Browser background removal failed, falling back to server mode:", cleanErr);
+          toast("Browser clean failed, using server fallback.", { icon: "⚠️" });
+        } finally {
+          setBrowserCleaning(false);
+          setIsCleaning(false);
+        }
+      }
+
       const fd = new FormData();
-      fd.append("photo", file, file.name);
+      fd.append("photo", uploadFile, uploadFile.name);
 
       const uploadResp = await api.put(`/api/idcards/${card.id}/photo`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          ...(clientCleaned ? { "X-Photo-Cleaned": "1" } : {}),
+        },
         onUploadProgress: (ev) => {
-          if (ev.total) setCleanProgress(Math.round((ev.loaded / ev.total) * 100));
+          if (ev.total) {
+            const base = clientCleaned ? 58 : 0;
+            const pct = Math.round((ev.loaded / ev.total) * (clientCleaned ? 42 : 100));
+            setCleanProgress(base + pct);
+          }
         },
       });
 
       const updated = uploadResp.data.card;
       setIdCards([updated]);
-      toast.success("✅ Photo uploaded and background removed.");
+      toast.success(clientCleaned
+        ? "✅ Photo cleaned in browser and uploaded."
+        : "✅ Photo uploaded and processed on server.");
     } catch (err) {
       console.error("Error uploading photo:", err);
       toast.error("Photo upload/clean failed.");
     } finally {
       setUploadingPhoto(false);
+      setBrowserCleaning(false);
+      setIsCleaning(false);
       setCleanProgress(0);
     }
   };
@@ -339,7 +397,7 @@ export default function ClientDashboard() {
               {idCards.map((card) => (
                 <div key={card.id}>
                   <IDCard card={card} />
-                  {card.rawPhotoUrl && (
+                  {card.rawPhotoUrl && !photoRuntime.preferClientBgRemoval && (
                     <button
                       onClick={() => handleReClean(card.id)}
                       disabled={isCleaning}
@@ -402,7 +460,9 @@ export default function ClientDashboard() {
               </div>
 
               {uploadingPhoto && (
-                <p className="text-blue-600 mt-2 font-semibold">Uploading / processing…</p>
+                <p className="text-blue-600 mt-2 font-semibold">
+                  {browserCleaning ? "Cleaning in browser…" : "Uploading / processing…"}
+                </p>
               )}
 
               {isCleaning && (
@@ -421,7 +481,10 @@ export default function ClientDashboard() {
                 <div className="mt-4">
                   <p className="font-semibold">Latest Photo:</p>
                   <img
-                    src={latestCard.cleanPhotoUrl}
+                    src={latestCard.cleanPhotoUrl.replace(
+                      /\/upload\/(?!v\d).*?(v\d+\/)/,
+                      "/upload/$1"
+                    )}
                     alt="photo-preview"
                     className="w-48 h-48 object-cover rounded shadow"
                   />
