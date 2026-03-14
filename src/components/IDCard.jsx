@@ -35,6 +35,68 @@ function toCloudinaryRawUrl(url) {
 
 const CARD_W = 340;
 const CARD_H = 214;
+const TEMPLATE_VERSION = "FIBUCA-CR80-V1";
+
+const SLOT_LIMITS = {
+  fullName: 22,
+  role: 22,
+  employeeNumber: 20,
+  company: 24,
+  cardNumber: 18,
+};
+
+const SLOT_CLASS = {
+  fullName: {
+    base: "m-0 font-bold text-slate-900 leading-none tracking-[0.3px]",
+    small: "text-[12px]",
+    tiny: "text-[11px]",
+  },
+  role: {
+    base: "m-0 mt-[4px] font-medium text-blue-900 leading-none",
+    small: "text-[11px]",
+    tiny: "text-[10px]",
+  },
+  company: {
+    base: "m-0 mt-[4px] font-medium text-slate-700 leading-none",
+    small: "text-[9px]",
+    tiny: "text-[8px]",
+  },
+  employeeNumber: {
+    base: "m-0 mt-[3px] font-semibold text-slate-800 leading-none",
+    small: "text-[9px]",
+    tiny: "text-[8px]",
+  },
+};
+
+function sanitizeText(value, fallback = "N/A") {
+  if (value === null || value === undefined) return fallback;
+  const normalized = String(value).replace(/\s+/g, " ").trim();
+  return normalized || fallback;
+}
+
+function truncateSlot(value, maxChars) {
+  const clean = sanitizeText(value, "");
+  if (!clean) return "";
+  if (clean.length <= maxChars) return clean;
+  return `${clean.slice(0, Math.max(1, maxChars - 3))}...`;
+}
+
+function getSlotClass(slotName, textValue) {
+  const limit = SLOT_LIMITS[slotName] || 20;
+  const slot = SLOT_CLASS[slotName];
+  if (!slot) return "";
+  const len = (textValue || "").length;
+  const sizeClass = len > limit - 3 ? slot.tiny : slot.small;
+  return `${slot.base} ${sizeClass}`;
+}
+
+function toSafeFileToken(value, fallback = "card") {
+  const cleaned = String(value || "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return cleaned || fallback;
+}
 
 const IDCard = forwardRef(({ card }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
@@ -57,6 +119,46 @@ const IDCard = forwardRef(({ card }, ref) => {
     const last = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
     return last ? `${first} ${last}` : first;
   };
+
+  const cardView = useMemo(() => {
+    const fullName = truncateSlot(
+      getFirstAndLastName(card?.fullName || card?.user?.name),
+      SLOT_LIMITS.fullName
+    );
+    const role = truncateSlot(
+      sanitizeText(card?.role || "MEMBER", "MEMBER").toUpperCase(),
+      SLOT_LIMITS.role
+    );
+    const employeeNumber = truncateSlot(
+      sanitizeText(card?.user?.employeeNumber || card?.employeeNumber, "N/A"),
+      SLOT_LIMITS.employeeNumber
+    );
+    const company = truncateSlot(
+      sanitizeText(card?.company || card?.user?.company, "FIBUCA"),
+      SLOT_LIMITS.company
+    );
+    const cardNumber = truncateSlot(
+      sanitizeText(card?.cardNumber, "N/A"),
+      SLOT_LIMITS.cardNumber
+    );
+
+    const qrPayload = [card?.userId || card?.user?.id || "user", cardNumber, TEMPLATE_VERSION]
+      .filter(Boolean)
+      .join("-");
+
+    const isMember = role.toLowerCase() === "member";
+    const identityWord = isMember ? "MEMBER" : "STAFF";
+
+    return {
+      fullName,
+      role,
+      employeeNumber,
+      company,
+      cardNumber,
+      qrPayload,
+      identityWord,
+    };
+  }, [card]);
 
   const isUrl = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
 
@@ -183,12 +285,13 @@ const IDCard = forwardRef(({ card }, ref) => {
       pdf.addPage([85.6, 54], "landscape");
       addFullPageImage(backImg);
 
-      pdf.save(`ID_${card?.cardNumber || "card"}.pdf`);
+      const safeCardNumber = toSafeFileToken(cardView.cardNumber, "card");
+      pdf.save(`ID_${safeCardNumber}_${TEMPLATE_VERSION}.pdf`);
 
       await Swal.fire({
         icon: "success",
         title: "PDF Generated!",
-        text: "ID card PDF downloaded successfully.",
+        text: "ID card PDF downloaded. Print at 100% scale (Actual size).",
         confirmButtonColor: "#1d4ed8",
         timer: 1500,
         timerProgressBar: true,
@@ -292,28 +395,20 @@ const IDCard = forwardRef(({ card }, ref) => {
 
             {/* photo */}
             <div className="absolute top-[48px] left-[12px] z-30">
-              <div
-                className="relative w-[110px] h-[110px] rounded-full overflow-hidden"
-                style={{
-                  background:
-                    "radial-gradient(circle at 30% 30%, #f8fafc 0%, #dbeafe 100%)",
-                  border: "4px solid rgba(255,255,255,0.95)",
-                  boxShadow:
-                    "0 6px 18px rgba(30,64,175,0.22), inset 0 0 0 1px rgba(30,64,175,0.14)",
-                }}
-              >
+              <div className="relative w-[116px] h-[116px] overflow-hidden">
                 {photoSrc ? (
                   <>
                     <img
                       src={photoSrc}
                       alt="ID"
                       crossOrigin="anonymous"
-                      className="absolute inset-0 w-full h-full object-cover object-top"
+                      className="absolute inset-0 w-full h-full object-contain object-center"
                       style={{
                         imageRendering: "high-quality",
                         filter: "saturate(1.1) contrast(1.08)",
                         transform: "translateZ(0)",
                         backfaceVisibility: "hidden",
+                        mixBlendMode: "normal",
                       }}
                       onLoad={() => setPhotoLoaded(true)}
                       onError={(e) => {
@@ -321,9 +416,7 @@ const IDCard = forwardRef(({ card }, ref) => {
                         setPhotoLoaded(true);
                       }}
                     />
-                    {!photoLoaded && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-white to-blue-50" />
-                    )}
+                    {!photoLoaded && <div className="absolute inset-0 bg-transparent" />}
                   </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-xs bg-transparent">
@@ -333,11 +426,17 @@ const IDCard = forwardRef(({ card }, ref) => {
               </div>
 
               <div className="mt-2 pl-1 w-[150px]">
-                <p className="m-0 text-[12px] font-bold text-slate-900 leading-none tracking-[0.3px]">
-                  {getFirstAndLastName(card?.fullName)}
+                <p className={getSlotClass("fullName", cardView.fullName)}>
+                  {cardView.fullName}
                 </p>
-                <p className="m-0 mt-[4px] text-[11px] font-medium text-blue-900 leading-none">
-                  {(card?.role || "MEMBER").toUpperCase()}
+                <p className={getSlotClass("role", cardView.role)}>
+                  {cardView.role}
+                </p>
+                <p className={getSlotClass("employeeNumber", cardView.employeeNumber)}>
+                  EMP: {cardView.employeeNumber}
+                </p>
+                <p className={getSlotClass("company", cardView.company)}>
+                  {cardView.company.toUpperCase()}
                 </p>
               </div>
             </div>
@@ -359,7 +458,7 @@ const IDCard = forwardRef(({ card }, ref) => {
               }}
             >
               <QRCode
-                value={`${card?.userId || "user"}-${card?.cardNumber || "0000"}`}
+                value={cardView.qrPayload}
                 size={72}
                 bgColor="#ffffff"
                 fgColor="#0f172a"
@@ -382,7 +481,7 @@ const IDCard = forwardRef(({ card }, ref) => {
                 className="m-0 text-[9px] font-bold text-slate-900 leading-tight"
                 style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
               >
-                ID: <span className="text-blue-950">{card?.cardNumber || "N/A"}</span>
+                ID: <span className="text-blue-950">{cardView.cardNumber}</span>
               </p>
               <p
                 className="m-0 mt-[3px] text-[8px] text-slate-800 leading-tight"
@@ -436,7 +535,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
             <div className="absolute top-[48px] left-[14px] right-[14px] z-30 text-center">
               <p className="font-semibold text-[10px] text-slate-800 mb-2 leading-snug">
-                THIS STAFF IDENTITY IS THE PROPERTY OF
+                THIS {cardView.identityWord} IDENTITY IS THE PROPERTY OF
               </p>
 
               <p className="font-bold text-[9px] uppercase mb-3 leading-snug text-blue-950">
@@ -477,6 +576,9 @@ const IDCard = forwardRef(({ card }, ref) => {
               <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
               <p className="italic text-slate-600 text-[10px] leading-none">
                 General Secretary Signature
+              </p>
+              <p className="mt-[3px] text-[8px] text-slate-500 tracking-[0.5px]">
+                TEMPLATE {TEMPLATE_VERSION}
               </p>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   FaIdCard,
   FaEye,
   FaDownload,
+  FaEdit,
   FaSyncAlt,
   FaFileAlt,
   FaChartLine,
@@ -23,6 +24,16 @@ export default function AdminIdCards() {
   const [selectedCard, setSelectedCard] = useState(null);
 
   const previewRef = useRef(null);
+
+  const suggestedRoles = [
+    "Member",
+    "IT",
+    "General Secretary",
+    "Branch Secretary",
+    "Treasurer",
+    "Organizer",
+    "Legal Officer",
+  ];
 
   const navbarTabs = [
     { id: "submissions", label: "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
@@ -120,6 +131,53 @@ export default function AdminIdCards() {
     }
   };
 
+  const handleEditRole = async (row) => {
+    try {
+      const result = await Swal.fire({
+        title: "Update Card Role",
+        input: "text",
+        inputValue: row?.role || "Member",
+        inputLabel: "Role (admin only)",
+        inputPlaceholder: "e.g. IT, General Secretary, Treasurer",
+        text: `Quick options: ${suggestedRoles.join(", ")}`,
+        showCancelButton: true,
+        confirmButtonText: "Save Role",
+        confirmButtonColor: "#1d4ed8",
+        cancelButtonColor: "#64748b",
+        inputValidator: (value) => {
+          const v = String(value || "").trim();
+          if (!v) return "Role is required";
+          if (v.length > 50) return "Role must be 50 characters or less";
+          return null;
+        },
+      });
+
+      if (!result.isConfirmed) return;
+
+      const res = await api.put(`/api/admin/idcards/${row.id}/role`, {
+        role: String(result.value || "").trim(),
+      });
+
+      const updatedCard = res?.data?.card;
+      if (!updatedCard) {
+        throw new Error("Role update response is invalid");
+      }
+
+      setCards((prev) => prev.map((c) => (c.id === updatedCard.id ? updatedCard : c)));
+      setFilteredCards((prev) => prev.map((c) => (c.id === updatedCard.id ? updatedCard : c)));
+      setSelectedCard((prev) => (prev?.id === updatedCard.id ? updatedCard : prev));
+
+      await Swal.fire("Updated", `Role set to ${updatedCard.role}`, "success");
+    } catch (err) {
+      console.error("❌ Failed to update card role:", err);
+      await Swal.fire(
+        "Error",
+        err?.response?.data?.error || "Failed to update ID card role",
+        "error"
+      );
+    }
+  };
+
   const columns = [
     {
       name: "#",
@@ -187,6 +245,14 @@ export default function AdminIdCards() {
             title="Preview card"
           >
             <FaEye />
+          </button>
+
+          <button
+            onClick={() => handleEditRole(row)}
+            className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
+            title="Edit role"
+          >
+            <FaEdit />
           </button>
 
           <button
