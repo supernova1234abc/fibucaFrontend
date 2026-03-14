@@ -133,6 +133,10 @@ export default function AdminIdCards() {
 
   const handleEditRole = async (row) => {
     try {
+      if (!row?.id) {
+        throw new Error("Card id missing");
+      }
+
       const result = await Swal.fire({
         title: "Update Card Role",
         input: "text",
@@ -154,9 +158,18 @@ export default function AdminIdCards() {
 
       if (!result.isConfirmed) return;
 
-      const res = await api.put(`/api/admin/idcards/${row.id}/role`, {
-        role: String(result.value || "").trim(),
-      });
+      const payload = { role: String(result.value || "").trim() };
+      let res;
+
+      try {
+        res = await api.put(`/api/admin/idcards/${row.id}/role`, payload);
+      } catch (primaryErr) {
+        // Fallback for environments still serving older/newer route variants.
+        if (primaryErr?.response?.status !== 404) {
+          throw primaryErr;
+        }
+        res = await api.put(`/api/admin/idcards/${row.id}`, payload);
+      }
 
       const updatedCard = res?.data?.card;
       if (!updatedCard) {
@@ -170,6 +183,16 @@ export default function AdminIdCards() {
       await Swal.fire("Updated", `Role set to ${updatedCard.role}`, "success");
     } catch (err) {
       console.error("❌ Failed to update card role:", err);
+
+      if (err?.response?.status === 404) {
+        await Swal.fire(
+          "Route not found",
+          "Role update endpoint is missing on the running backend. Deploy/restart backend with latest code.",
+          "error"
+        );
+        return;
+      }
+
       await Swal.fire(
         "Error",
         err?.response?.data?.error || "Failed to update ID card role",

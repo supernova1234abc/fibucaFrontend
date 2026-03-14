@@ -40,8 +40,6 @@ const TEMPLATE_VERSION = "FIBUCA-CR80-V1";
 const SLOT_LIMITS = {
   fullName: 22,
   role: 22,
-  employeeNumber: 20,
-  company: 24,
   cardNumber: 18,
 };
 
@@ -55,16 +53,6 @@ const SLOT_CLASS = {
     base: "m-0 mt-[4px] font-medium text-blue-900 leading-none",
     small: "text-[11px]",
     tiny: "text-[10px]",
-  },
-  company: {
-    base: "m-0 mt-[4px] font-medium text-slate-700 leading-none",
-    small: "text-[9px]",
-    tiny: "text-[8px]",
-  },
-  employeeNumber: {
-    base: "m-0 mt-[3px] font-semibold text-slate-800 leading-none",
-    small: "text-[9px]",
-    tiny: "text-[8px]",
   },
 };
 
@@ -129,14 +117,6 @@ const IDCard = forwardRef(({ card }, ref) => {
       sanitizeText(card?.role || "MEMBER", "MEMBER").toUpperCase(),
       SLOT_LIMITS.role
     );
-    const employeeNumber = truncateSlot(
-      sanitizeText(card?.user?.employeeNumber || card?.employeeNumber, "N/A"),
-      SLOT_LIMITS.employeeNumber
-    );
-    const company = truncateSlot(
-      sanitizeText(card?.company || card?.user?.company, "FIBUCA"),
-      SLOT_LIMITS.company
-    );
     const cardNumber = truncateSlot(
       sanitizeText(card?.cardNumber, "N/A"),
       SLOT_LIMITS.cardNumber
@@ -152,8 +132,6 @@ const IDCard = forwardRef(({ card }, ref) => {
     return {
       fullName,
       role,
-      employeeNumber,
-      company,
       cardNumber,
       qrPayload,
       identityWord,
@@ -416,6 +394,13 @@ const IDCard = forwardRef(({ card }, ref) => {
                         setPhotoLoaded(true);
                       }}
                     />
+                    <div
+                      className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[98px] h-[56px] pointer-events-none"
+                      style={{
+                        background:
+                          "radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.16) 0%, rgba(15,23,42,0.08) 40%, rgba(15,23,42,0) 78%)",
+                      }}
+                    />
                     {!photoLoaded && <div className="absolute inset-0 bg-transparent" />}
                   </>
                 ) : (
@@ -431,12 +416,6 @@ const IDCard = forwardRef(({ card }, ref) => {
                 </p>
                 <p className={getSlotClass("role", cardView.role)}>
                   {cardView.role}
-                </p>
-                <p className={getSlotClass("employeeNumber", cardView.employeeNumber)}>
-                  EMP: {cardView.employeeNumber}
-                </p>
-                <p className={getSlotClass("company", cardView.company)}>
-                  {cardView.company.toUpperCase()}
                 </p>
               </div>
             </div>
