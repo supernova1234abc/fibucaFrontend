@@ -373,7 +373,7 @@ const IDCard = forwardRef(({ card }, ref) => {
 
             {/* photo */}
             <div className="absolute top-[48px] left-[12px] z-30">
-              <div className="relative w-[116px] h-[116px] overflow-hidden">
+              <div className="relative w-[116px] h-[116px] overflow-hidden" style={{ borderBottomLeftRadius: "58px", borderBottomRightRadius: "58px" }}>
                 {photoSrc ? (
                   <>
                     <img
@@ -398,7 +398,7 @@ const IDCard = forwardRef(({ card }, ref) => {
                       className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[98px] h-[56px] pointer-events-none"
                       style={{
                         background:
-                          "radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.16) 0%, rgba(15,23,42,0.08) 40%, rgba(15,23,42,0) 78%)",
+                          "radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.52) 0%, rgba(15,23,42,0.28) 44%, rgba(15,23,42,0) 80%)",
                       }}
                     />
                     {!photoLoaded && <div className="absolute inset-0 bg-transparent" />}
