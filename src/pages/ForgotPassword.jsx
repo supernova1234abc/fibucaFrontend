@@ -34,7 +34,10 @@ export default function ForgotPassword() {
       setStage('reset');
       await Swal.fire('OTP Sent', `Code sent via ${channel} to ${target}.`, 'success');
     } catch (err) {
-      await Swal.fire('Error', err?.response?.data?.error || 'Failed to send OTP.', 'error');
+      const status = err?.response?.status;
+      const message = err?.response?.data?.error || 'Failed to send OTP.';
+      const title = status === 404 ? 'Account Not Found' : 'Error';
+      await Swal.fire(title, message, 'error');
     } finally {
       setLoading(false);
     }

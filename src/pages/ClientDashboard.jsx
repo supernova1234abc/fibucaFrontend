@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChangePwModalContext } from "../components/DashboardLayout";
-import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt } from "react-icons/fa";
+import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaUser, FaSave } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -49,18 +49,24 @@ export default function ClientDashboard() {
   const [transferNote, setTransferNote] = useState("");
   const [sendingTransfer, setSendingTransfer] = useState(false);
 
+  // ✅ profile edit
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profilePhone2, setProfilePhone2] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
   // ---------------------- FETCH FUNCTIONS ----------------------
   const fetchSubmissions = useCallback(async () => {
     if (!user) return;
     setLoadingSubmission(true);
     try {
       const res = await api.get("/submissions");
+      // Backend already filters by employeeNumber for CLIENT role
       const data = Array.isArray(res.data) ? res.data : [];
-      const mine = data
-        .filter((s) => s.employeeNumber === user.employeeNumber)
-        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      const sorted = data.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
 
-      let latest = mine[0] || null;
+      let latest = sorted[0] || null;
 
       // Resolve relative pdfPath to absolute
       if (latest?.pdfPath && !latest.pdfPath.startsWith("http")) {
@@ -131,13 +137,45 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data } = await api.get("/api/me");
+      const u = data?.user || {};
+      setProfileEmail(u.email || "");
+      setProfilePhone(u.phone || "");
+      setProfilePhone2(u.phone2 || "");
+      setProfileLoaded(true);
+    } catch (err) {
+      console.warn("Fetch profile failed:", err);
+    }
+  }, [user]);
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const payload = {};
+      if (profileEmail !== undefined) payload.email = profileEmail;
+      if (profilePhone !== undefined) payload.phone = profilePhone;
+      if (profilePhone2 !== undefined) payload.phone2 = profilePhone2;
+      await api.put("/api/profile", payload);
+      toast.success("✅ Profile updated");
+    } catch (err) {
+      const msg = err?.response?.data?.error || "Failed to update profile";
+      toast.error(msg);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   useEffect(() => {
     if (user && user.role !== "CLIENT") navigate("/login");
     fetchSubmissions();
     fetchIdCards();
     fetchMyComplaints();
     fetchPhotoRuntime();
-  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime]);
+    fetchProfile();
+  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime, fetchProfile]);
 
   const removeBackgroundInBrowser = useCallback(async (file) => {
     const { removeBackground } = await import("@imgly/background-removal");
@@ -318,7 +356,9 @@ export default function ClientDashboard() {
         ? "generate"
         : location.pathname.endsWith("/support")
           ? "support"
-          : "overview";
+          : location.pathname.endsWith("/profile")
+            ? "profile"
+            : "overview";
 
   const getCardRole = () => "Member";
 
@@ -409,7 +449,9 @@ export default function ClientDashboard() {
             <div className="space-y-8">
               {idCards.map((card) => (
                 <div key={card.id}>
-                  <IDCard card={card} />
+              <div className="overflow-x-auto">
+                <IDCard card={card} previewOnly={true} />
+              </div>
                   {card.rawPhotoUrl && !photoRuntime.preferClientBgRemoval && (
                     <button
                       onClick={() => handleReClean(card.id)}
@@ -462,14 +504,31 @@ export default function ClientDashboard() {
                 </p>
               </div>
 
-              <div className="mb-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                  disabled={uploadingPhoto || isCleaning}
-                  className="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none"
-                />
+              <div className="mb-3 space-y-2">
+                <p className="text-sm font-medium text-gray-700">Choose a photo:</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 cursor-pointer text-sm font-medium hover:bg-gray-100 transition ${uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""}`}>
+                    <span>📁 Choose from Gallery</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                      disabled={uploadingPhoto || isCleaning}
+                      className="hidden"
+                    />
+                  </label>
+                  <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-blue-400 bg-blue-50 cursor-pointer text-sm font-medium hover:bg-blue-100 transition ${uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""}`}>
+                    <span>📷 Take Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                      disabled={uploadingPhoto || isCleaning}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
               {uploadingPhoto && (
@@ -653,11 +712,79 @@ export default function ClientDashboard() {
         </div>
       )}
 
+      {/* Profile */}
+      {section === "profile" && (
+        <div className="bg-white rounded shadow p-6 max-w-lg">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <FaUser /> My Profile
+          </h2>
+
+          {!profileLoaded ? (
+            <p className="text-gray-400 animate-pulse">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 mb-1"><strong>Name:</strong> {user?.name}</p>
+                <p className="text-sm text-gray-500 mb-1"><strong>Employee #:</strong> {user?.employeeNumber}</p>
+                <p className="text-sm text-gray-500 mb-3"><strong>Username:</strong> {user?.username}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Phone Number {profilePhone && <span className="text-xs text-gray-400">(cannot be deleted)</span>}
+                </label>
+                <input
+                  type="tel"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  placeholder="+255 7XX XXX XXX"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Second Phone Number {profilePhone2 && <span className="text-xs text-gray-400">(cannot be deleted)</span>}
+                </label>
+                <input
+                  type="tel"
+                  value={profilePhone2}
+                  onChange={(e) => setProfilePhone2(e.target.value)}
+                  placeholder="+255 7XX XXX XXX (optional)"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                />
+              </div>
+
+              <button
+                onClick={saveProfile}
+                disabled={savingProfile}
+                className={`flex items-center gap-2 px-5 py-2 rounded text-white font-semibold ${
+                  savingProfile ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                <FaSave /> {savingProfile ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Password Notice */}
       <div className="bg-yellow-100 text-yellow-800 px-4 py-3 rounded-md flex items-center mt-6">
         <FaLock className="mr-2" />
         <span>
-          If you haven’t changed your password,{" "}
+          If you haven't changed your password,{" "}
           <button
             onClick={() => openChangePwModal(true)}
             className="underline font-semibold text-blue-600"

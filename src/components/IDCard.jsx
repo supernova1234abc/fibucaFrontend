@@ -86,7 +86,7 @@ function toSafeFileToken(value, fallback = "card") {
   return cleaned || fallback;
 }
 
-const IDCard = forwardRef(({ card }, ref) => {
+const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
   const [photoLoaded, setPhotoLoaded] = useState(false);
 
   const frontRef = useRef(null);
@@ -264,12 +264,16 @@ const IDCard = forwardRef(({ card }, ref) => {
       addFullPageImage(backImg);
 
       const safeCardNumber = toSafeFileToken(cardView.cardNumber, "card");
-      pdf.save(`ID_${safeCardNumber}_${TEMPLATE_VERSION}.pdf`);
+      if (!previewOnly) {
+        pdf.save(`ID_${safeCardNumber}_${TEMPLATE_VERSION}.pdf`);
+      }
 
       await Swal.fire({
         icon: "success",
-        title: "PDF Generated!",
-        text: "ID card PDF downloaded. Print at 100% scale (Actual size).",
+        title: previewOnly ? "ID Card Ready" : "PDF Generated!",
+        text: previewOnly
+          ? "This is your Digital ID Card. It is for preview only."
+          : "ID card PDF downloaded. Print at 100% scale (Actual size).",
         confirmButtonColor: "#1d4ed8",
         timer: 1500,
         timerProgressBar: true,
@@ -300,8 +304,13 @@ const IDCard = forwardRef(({ card }, ref) => {
           onClick={handlePrint}
           className="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded-md"
         >
-          Print ID
+          {previewOnly ? "Preview Digital ID" : "Print ID"}
         </button>
+        {previewOnly && (
+          <p className="text-xs text-gray-500 italic text-center">
+            This is a Digital ID Card for Preview Only
+          </p>
+        )}
 
         <div className="flex flex-col md:flex-row gap-5">
           {/* FRONT */}

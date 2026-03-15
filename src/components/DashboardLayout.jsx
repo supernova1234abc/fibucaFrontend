@@ -95,11 +95,13 @@ export default function DashboardLayout({ children, menus = [], user }) {
     });
   };
 
-  const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const isActive = (path, exact = false) =>
+    exact
+      ? location.pathname === path
+      : location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const renderMenuButton = (menu, idx, type = "main") => {
-    const active = isActive(menu.href);
+    const active = isActive(menu.href, menu.exact);
     const Icon = menu.icon;
 
     const activeClass =

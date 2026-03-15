@@ -26,11 +26,12 @@ import './index.css';
 
 // --- Menus ---
 const clientMenus = [
-  { href: '/client', label: 'Overview' },
+  { href: '/client', label: 'Overview', exact: true },
   { href: '/client/pdf', label: 'PDF Form' },
   { href: '/client/generate', label: 'Generate ID' },
   { href: '/client/idcards', label: 'Your ID Cards' },
   { href: '/client/support', label: 'Support' },
+  { href: '/client/profile', label: 'My Profile' },
 ];
 
 const adminMenus = [
@@ -41,12 +42,12 @@ const adminMenus = [
 ];
 
 const staffMenus = [
-  { href: '/staff/links', label: 'Dashboard' },
+  { href: '/staff/links', label: 'Dashboard', exact: true },
   { href: '/staff/scan-paper', label: 'Scan paper form' },
 ];
 
 const superMenus = [
-  { href: '/superadmin', label: 'Users' },
+  { href: '/superadmin', label: 'Users', exact: true },
   { href: '/superadmin/reports', label: 'All Reports' },
 ];
 
@@ -129,6 +130,7 @@ export default function App() {
               <Route path="/client/generate" element={<ClientDashboard />} />
               <Route path="/client/idcards" element={<ClientDashboard />} />
               <Route path="/client/support" element={<ClientDashboard />} />
+              <Route path="/client/profile" element={<ClientDashboard />} />
             </Route>
           </Route>
 
