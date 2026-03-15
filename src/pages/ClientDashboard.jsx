@@ -14,7 +14,13 @@ export default function ClientDashboard() {
   const location = useLocation();
   const { user } = useAuth();
 
-  const [submission, setSubmission] = useState(null);
+  const [submission, setSubmission] = useState(() => {
+    // Pre-seed from cache so the PDF button is visible immediately on mount
+    try {
+      const raw = localStorage.getItem("latestSubmission");
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) { return null; }
+  });
   const [loadingSubmission, setLoadingSubmission] = useState(true);
   const [idCards, setIdCards] = useState([]);
   const [loadingCards, setLoadingCards] = useState(true);
@@ -56,18 +62,23 @@ export default function ClientDashboard() {
 
       let latest = mine[0] || null;
 
-      // Handle pdfPath URL
+      // Resolve relative pdfPath to absolute
       if (latest?.pdfPath && !latest.pdfPath.startsWith("http")) {
         const backendUrl = import.meta.env.VITE_BACKEND_URL;
-        latest.pdfPath = `${backendUrl.replace(/\/$/, "")}/${latest.pdfPath.replace(/^\/+/, "")}`;
-      } else {
-        const cached = localStorage.getItem("latestSubmission");
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          if (cachedData?.employeeNumber === user?.employeeNumber) {
-            latest = cachedData;
+        latest = { ...latest, pdfPath: `${backendUrl.replace(/\/$/, "")}/${latest.pdfPath.replace(/^\/+/, "")}` };
+      }
+
+      // If we still have no pdfPath, try the localStorage cache for this user
+      if (!latest?.pdfPath) {
+        try {
+          const cached = localStorage.getItem("latestSubmission");
+          if (cached) {
+            const cachedData = JSON.parse(cached);
+            if (cachedData?.employeeNumber === user?.employeeNumber && cachedData?.pdfPath) {
+              latest = latest ? { ...latest, pdfPath: cachedData.pdfPath } : cachedData;
+            }
           }
-        }
+        } catch (_) {}
       }
 
       setSubmission(latest);
@@ -378,8 +389,10 @@ export default function ClientDashboard() {
             >
               <FaFilePdf className="mr-2" /> Download Form
             </button>
+          ) : loadingSubmission ? (
+            <p className="text-gray-400 animate-pulse">Loading your form...</p>
           ) : (
-            <p className="text-gray-500">You haven’t generated your form PDF yet.</p>
+            <p className="text-gray-500">You haven't generated your form PDF yet.</p>
           )}
         </div>
       )}

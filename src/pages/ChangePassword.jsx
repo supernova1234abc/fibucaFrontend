@@ -84,14 +84,8 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
       setLoading(true);
 
       if (isFirstLoginFlow) {
-        if (!otp.trim()) {
-          return alert('OTP code is required for first login.');
-        }
-
-        await api.post('/api/auth/complete-first-login', {
-          otp: otp.trim(),
-          newPassword,
-        });
+        // First login: no OTP needed — just set the new password
+        await api.post('/api/auth/complete-first-login', { newPassword });
       } else {
         if (!oldPassword.trim()) {
           return alert('Current password is required.');
@@ -129,48 +123,9 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
 
         {isFirstLoginFlow ? (
           <>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-700 mb-1">OTP Channel</label>
-              <select
-                value={channel}
-                onChange={(e) => setChannel(e.target.value)}
-                className="w-full p-2 border rounded"
-                disabled={loading || otpSent}
-              >
-                <option value="EMAIL">Email</option>
-                <option value="WHATSAPP">WhatsApp</option>
-              </select>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleRequestFirstLoginOtp}
-              disabled={loading}
-              className="w-full mb-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loading ? 'Sending OTP...' : 'Send OTP'}
-            </button>
-
-            {otpTarget && (
-              <p className="text-xs text-gray-600 mb-3">OTP target: {otpTarget}</p>
-            )}
-
-            {otpHint && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-3">
-                {otpHint}
-              </p>
-            )}
-
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Enter OTP code"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="w-full p-2 border rounded"
-                disabled={loading}
-              />
-            </div>
+            <p className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">
+              Set your personal password. You won’t need your temporary password again.
+            </p>
           </>
         ) : (
           <PasswordInput
