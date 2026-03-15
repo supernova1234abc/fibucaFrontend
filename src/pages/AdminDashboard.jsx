@@ -18,6 +18,7 @@ import {
   FaHistory,
   FaFilter,
   FaChartLine,
+  FaKey,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -151,18 +152,15 @@ export default function AdminDashboard() {
   const searchSubmissionsAdvanced = async () => {
     try {
       setLoading(true);
-
-      const params = new URLSearchParams();
-      Object.entries(submissionFilters).forEach(([key, value]) => {
-        if (value?.trim()) params.append(key, value.trim());
-      });
-
-      const url = params.toString()
-        ? `/api/admin/submissions/search?${params.toString()}`
-        : "/submissions";
-
-      const res = await api.get(url);
-      setFilteredUsers(res.data || []);
+      const params = {};
+      if (submissionFilters.employerName) params.employerName = submissionFilters.employerName;
+      if (submissionFilters.branchName) params.branchName = submissionFilters.branchName;
+      if (submissionFilters.employeeName) params.employeeName = submissionFilters.employeeName;
+      if (submissionFilters.employeeNumber) params.employeeNumber = submissionFilters.employeeNumber;
+      if (submissionFilters.phoneNumber) params.phoneNumber = submissionFilters.phoneNumber;
+      const res = await api.get("/submissions", { params });
+      const rows = res.data || [];
+      setFilteredUsers(rows);
     } catch (err) {
       console.error("❌ advanced submission search failed:", err);
       Swal.fire("Error", "Failed to search submissions", "error");
@@ -279,7 +277,31 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleResetPassword = async (user) => {
+    const { value: newPassword } = await Swal.fire({
+      title: `Reset Password`,
+      html: `<p style="margin-bottom:8px">Set a temporary password for <b>${user.name || user.username}</b>.<br/>They will be prompted to change it on next login.</p>`,
+      input: "password",
+      inputLabel: "New temporary password",
+      inputPlaceholder: "Min. 6 characters",
+      inputAttributes: { autocomplete: "new-password" },
+      showCancelButton: true,
+      confirmButtonColor: "#1e3a5f",
+      confirmButtonText: "Reset",
+      inputValidator: (v) => (!v || v.length < 6 ? "Password must be at least 6 characters" : null),
+    });
+    if (!newPassword) return;
+
+    try {
+      await api.post(`/api/admin/users/${user.id}/reset-password`, { newPassword });
+      Swal.fire("Done!", "Password has been reset. User will be prompted to change it on next login.", "success");
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.error || "Failed to reset password", "error");
+    }
+  };
+
   const handleSearchUsers = (value) => {
+    if (!value) return setFilteredSystemUsers(systemUsers);
     if (!value) return setFilteredSystemUsers(systemUsers);
 
     const results = systemUsers.filter(
@@ -562,12 +584,21 @@ export default function AdminDashboard() {
           <button
             onClick={() => handleOpenUserModal(row)}
             className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+            title="Edit user"
           >
             <FaEdit />
           </button>
           <button
+            onClick={() => handleResetPassword(row)}
+            className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
+            title="Reset password"
+          >
+            <FaKey />
+          </button>
+          <button
             onClick={() => handleDeleteUser(row.id)}
             className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"
+            title="Delete user"
           >
             <FaTrash />
           </button>
