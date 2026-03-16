@@ -302,7 +302,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
           </aside>
 
           <div className="flex-1 flex flex-col min-h-screen">
-            <header className="no-force-dark bg-white border-b border-slate-200 flex items-center justify-between px-4 py-4 md:px-6 sticky top-0 z-30">
+            <header className="no-force-dark bg-white border-b border-slate-200 flex items-center justify-between px-4 py-4 md:px-6 sticky top-0 z-50">
               <div className="flex items-center gap-3">
                 <button
                   className="md:hidden no-force-dark p-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-700"
@@ -342,7 +342,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-60 bg-white text-slate-900 rounded-2xl shadow-xl z-40 border border-slate-200 overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-60 bg-white text-slate-900 rounded-2xl shadow-xl z-[80] border border-slate-200 overflow-hidden">
                     <div className="px-4 py-4 border-b border-slate-100">
                       <div className="text-sm font-semibold">{user?.name || "User"}</div>
                       <div className="text-xs text-slate-500 mt-1 uppercase tracking-wide">

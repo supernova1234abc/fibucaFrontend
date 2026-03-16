@@ -137,7 +137,9 @@ export default function App() {
               <Route path="/client/generate" element={<ClientDashboard />} />
               <Route path="/client/idcards" element={<ClientDashboard />} />
               <Route path="/client/support" element={<Navigate to="/client/support/complaints" replace />} />
-                </Route>
+              <Route path="/client/support/complaints" element={<ClientDashboard />} />
+              <Route path="/client/support/transfer" element={<ClientDashboard />} />
+            </Route>
           </Route>
 
           {/* Catch-all */}

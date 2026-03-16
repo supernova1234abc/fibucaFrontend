@@ -357,21 +357,6 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-4">
-            <button
-              onClick={() => navigate("/client/support/complaints")}
-              className="inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <FaRegCommentDots className="mr-2" /> Complaints / Support
-            </button>
-
-            <button
-              onClick={() => navigate("/client/support/transfer")}
-              className="inline-flex items-center px-4 py-2 rounded bg-gray-900 text-white hover:bg-gray-800"
-            >
-              <FaExchangeAlt className="mr-2" /> Transfer Request
-            </button>
-          </div>
         </div>
       )}
 

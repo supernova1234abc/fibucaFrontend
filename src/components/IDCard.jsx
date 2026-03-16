@@ -295,7 +295,7 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
   }));
 
   const cardStyle =
-    "relative overflow-hidden rounded-[18px] border border-blue-200 bg-white text-[10px] leading-tight shadow-[0_10px_30px_rgba(0,0,0,0.16)]";
+    "relative z-0 isolate overflow-hidden rounded-[18px] border border-blue-200 bg-white text-[10px] leading-tight shadow-[0_10px_30px_rgba(0,0,0,0.16)]";
 
   return (
     <>
