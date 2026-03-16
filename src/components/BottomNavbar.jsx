@@ -8,15 +8,17 @@ export default function BottomNavbar({ tabs = [] }) {
 
   if (!tabs || tabs.length === 0) return null;
 
-  const isActive = (href) =>
-    location.pathname === href || location.pathname.startsWith(`${href}/`);
+  const isActive = (href, exact = false) =>
+    exact
+      ? location.pathname === href
+      : location.pathname === href || location.pathname.startsWith(`${href}/`);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-white/95 backdrop-blur border-t border-slate-200 shadow-[0_-6px_20px_rgba(0,0,0,0.08)] z-40">
       <div className="flex justify-around items-center h-20 max-w-7xl mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const active = isActive(tab.href);
+          const active = isActive(tab.href, tab.exact);
 
           return (
             <button

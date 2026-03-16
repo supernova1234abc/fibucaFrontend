@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ChangePasswordPage from "../pages/ChangePassword";
+import BottomNavbar from "./BottomNavbar";
 
 // Contexts
 export const ChangePwModalContext = createContext(null);
@@ -95,6 +96,8 @@ export default function DashboardLayout({ children, menus = [], user }) {
     });
   };
 
+  const bottomNavMenus = menus.filter((m) => m.bottomNav);
+
   const isActive = (path, exact = false) =>
     exact
       ? location.pathname === path
@@ -103,15 +106,15 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const renderMenuButton = (menu, idx, type = "main") => {
     const active = isActive(menu.href, menu.exact);
     const Icon = menu.icon;
+    const key = `${menu.href}-${idx}`;
 
     const activeClass =
       type === "section"
         ? "bg-gradient-to-r from-red-500 to-rose-500 text-white font-semibold shadow-md"
         : "bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow-md";
 
-    return (
+    const btn = (
       <button
-        key={`${menu.href}-${idx}`}
         onClick={() => {
           navigate(menu.href);
           setSidebarOpen(false);
@@ -129,6 +132,13 @@ export default function DashboardLayout({ children, menus = [], user }) {
           <span>{menu.label}</span>
         </div>
       </button>
+    );
+
+    // Items in the bottom nav are hidden on mobile sidebar (accessible via bottom bar)
+    return (
+      <div key={key} className={menu.bottomNav ? "hidden md:block" : ""}>
+        {btn}
+      </div>
     );
   };
 
@@ -268,6 +278,8 @@ export default function DashboardLayout({ children, menus = [], user }) {
             <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-28 md:pb-6">
               {children || <Outlet />}
             </main>
+
+            {bottomNavMenus.length > 0 && <BottomNavbar tabs={bottomNavMenus} />}
           </div>
 
           {showChangePwModal && (

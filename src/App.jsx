@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { FaHome, FaFilePdf, FaIdCard } from 'react-icons/fa';
 
 import Landing from './pages/Landing';
 import ClientForm from './pages/ClientForm';
@@ -26,12 +27,12 @@ import './index.css';
 
 // --- Menus ---
 const clientMenus = [
-  { href: '/client', label: 'Overview', exact: true },
-  { href: '/client/pdf', label: 'PDF Form' },
-  { href: '/client/generate', label: 'Generate ID' },
-  { href: '/client/idcards', label: 'Your ID Cards' },
-  { href: '/client/support', label: 'Support' },
-  { href: '/client/profile', label: 'My Profile' },
+  { id: 'overview', href: '/client',          label: 'Overview',   exact: true, bottomNav: true, icon: FaHome     },
+  { id: 'pdf',      href: '/client/pdf',      label: 'PDF',                     bottomNav: true, icon: FaFilePdf  },
+  { id: 'idcards',  href: '/client/idcards',  label: 'ID Card',                 bottomNav: true, icon: FaIdCard   },
+  { id: 'generate', href: '/client/generate', label: 'Generate ID' },
+  { id: 'support',  href: '/client/support',  label: 'Support'    },
+  { id: 'profile',  href: '/client/profile',  label: 'My Profile' },
 ];
 
 const adminMenus = [
