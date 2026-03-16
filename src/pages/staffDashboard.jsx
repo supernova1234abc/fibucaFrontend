@@ -20,6 +20,7 @@ import {
   FaPaperPlane,
   FaPrint,
   FaBullhorn,
+  FaPaperclip,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -29,6 +30,66 @@ import toast from "react-hot-toast";
 import { useLanguage } from "../context/LanguageContext";
 //import QRCode from "react-qr-code";
 import { QRCodeSVG as QRCode } from "qrcode.react";
+
+function parseReplyContent(raw = "") {
+  const lines = String(raw || "").split(/\r?\n/);
+  let attachmentFileUrl = "";
+  let attachmentLinkUrl = "";
+  const cleanLines = [];
+
+  lines.forEach((line) => {
+    if (line.startsWith("__ATTACHMENT_FILE__:")) {
+      attachmentFileUrl = line.replace("__ATTACHMENT_FILE__:", "").trim();
+      return;
+    }
+    if (line.startsWith("__ATTACHMENT_LINK__:")) {
+      attachmentLinkUrl = line.replace("__ATTACHMENT_LINK__:", "").trim();
+      return;
+    }
+    cleanLines.push(line);
+  });
+
+  return {
+    message: cleanLines.join("\n").trim(),
+    attachmentFileUrl,
+    attachmentLinkUrl,
+  };
+}
+
+function fileNameFromUrl(url = "") {
+  try {
+    const value = String(url || "").split("?")[0];
+    const parts = value.split("/");
+    return parts[parts.length - 1] || "attachment.pdf";
+  } catch (_) {
+    return "attachment.pdf";
+  }
+}
+
+const MAX_REPLY_FILE_MB = 10;
+const MAX_DOC_FILE_MB = 10;
+const MAX_REPLY_FILE_BYTES = MAX_REPLY_FILE_MB * 1024 * 1024;
+const MAX_DOC_FILE_BYTES = MAX_DOC_FILE_MB * 1024 * 1024;
+
+function complaintHasAttachment(complaint) {
+  return Array.isArray(complaint?.replies) && complaint.replies.some((reply) => {
+    const parsed = parseReplyContent(reply?.message || "");
+    return !!parsed.attachmentFileUrl || !!parsed.attachmentLinkUrl;
+  });
+}
+
+function getUploadErrorMessage(err, fallbackEn, fallbackSw, isSw) {
+  const status = err?.response?.status;
+  const raw = String(err?.response?.data?.error || err?.message || "");
+
+  if (status === 413 || /file too large|payload too large|request entity too large/i.test(raw)) {
+    return isSw
+      ? "Faili ni kubwa sana. Tafadhali tumia PDF ndogo (chini ya 10MB)."
+      : "File is too large. Please upload a smaller PDF (under 10MB).";
+  }
+
+  return isSw ? fallbackSw : fallbackEn;
+}
 
 export default function StaffDashboard() {
   const { user } = useAuth();
@@ -69,11 +130,16 @@ export default function StaffDashboard() {
   const [complaints, setComplaints] = useState([]);
   const [loadingComplaints, setLoadingComplaints] = useState(false);
   const [replyDrafts, setReplyDrafts] = useState({});
+  const [replyAttachmentFiles, setReplyAttachmentFiles] = useState({});
+  const [replyAttachmentLinks, setReplyAttachmentLinks] = useState({});
+  const [replyUploadProgress, setReplyUploadProgress] = useState({});
   const [nowMs, setNowMs] = useState(Date.now());
 
   const [officialDocuments, setOfficialDocuments] = useState([]);
   const [officialUpdates, setOfficialUpdates] = useState([]);
   const [docForm, setDocForm] = useState({ title: "", description: "", fileUrl: "" });
+  const [docFile, setDocFile] = useState(null);
+  const [docUploadProgress, setDocUploadProgress] = useState(0);
   const [updateForm, setUpdateForm] = useState({ title: "", category: "", message: "" });
   const [publishingDoc, setPublishingDoc] = useState(false);
   const [publishingUpdate, setPublishingUpdate] = useState(false);
@@ -334,18 +400,46 @@ export default function StaffDashboard() {
   };
 
   const publishDocument = async () => {
-    if (!docForm.title.trim() || !docForm.fileUrl.trim()) {
-      return toast.error(isSw ? "Kichwa na URL ya nyaraka vinahitajika" : "Title and document URL are required");
+    if (!docForm.title.trim() || (!docFile && !docForm.fileUrl.trim())) {
+      return toast.error(isSw ? "Weka kichwa na PDF au URL ya nyaraka" : "Provide title and a PDF file or document URL");
     }
     try {
       setPublishingDoc(true);
-      await api.post("/api/staff/documents", docForm);
+      setDocUploadProgress(0);
+
+      if (docFile) {
+        if (docFile.size > MAX_DOC_FILE_BYTES) {
+          return toast.error(isSw ? `PDF imezidi ${MAX_DOC_FILE_MB}MB.` : `PDF exceeds ${MAX_DOC_FILE_MB}MB limit.`);
+        }
+
+        const formData = new FormData();
+        formData.append("title", docForm.title);
+        if (docForm.description) formData.append("description", docForm.description);
+        if (docForm.fileUrl) formData.append("fileUrl", docForm.fileUrl);
+        formData.append("file", docFile);
+
+        await api.post("/api/staff/documents", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (ev) => {
+            if (ev.total) {
+              const pct = Math.round((ev.loaded / ev.total) * 100);
+              setDocUploadProgress(pct);
+            }
+          },
+        });
+      } else {
+        await api.post("/api/staff/documents", docForm);
+      }
+
       setDocForm({ title: "", description: "", fileUrl: "" });
+      setDocFile(null);
+      setDocUploadProgress(0);
       toast.success(isSw ? "Nyaraka zimechapishwa" : "Document published");
       fetchOfficialData();
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuchapisha nyaraka" : "Failed to publish document"));
+      toast.error(getUploadErrorMessage(err, "Failed to publish document", "Imeshindikana kuchapisha nyaraka", isSw));
+      setDocUploadProgress(0);
     } finally {
       setPublishingDoc(false);
     }
@@ -382,16 +476,53 @@ export default function StaffDashboard() {
 
   const sendReply = async (complaintId) => {
     const message = (replyDrafts[complaintId] || "").trim();
-    if (!message) return toast.error(isSw ? "Ujumbe wa majibu unahitajika" : "Reply message is required");
+    const attachmentFile = replyAttachmentFiles[complaintId] || null;
+    const attachmentLink = (replyAttachmentLinks[complaintId] || "").trim();
+
+    if (!message && !attachmentFile && !attachmentLink) {
+      return toast.error(isSw ? "Andika jibu, ongeza PDF au link" : "Add a reply, PDF file or link");
+    }
 
     try {
-      await api.post(`/api/staff/complaints/${complaintId}/reply`, { message });
+      setReplyUploadProgress((prev) => ({ ...prev, [complaintId]: 0 }));
+
+      if (attachmentFile) {
+        if (attachmentFile.size > MAX_REPLY_FILE_BYTES) {
+          return toast.error(isSw ? `PDF imezidi ${MAX_REPLY_FILE_MB}MB.` : `PDF exceeds ${MAX_REPLY_FILE_MB}MB limit.`);
+        }
+
+        const formData = new FormData();
+        if (message) formData.append("message", message);
+        formData.append("file", attachmentFile);
+        if (attachmentLink) formData.append("attachmentLink", attachmentLink);
+
+        await api.post(`/api/staff/complaints/${complaintId}/reply`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (ev) => {
+            if (ev.total) {
+              const pct = Math.round((ev.loaded / ev.total) * 100);
+              setReplyUploadProgress((prev) => ({ ...prev, [complaintId]: pct }));
+            }
+          },
+        });
+      } else {
+        await api.post(`/api/staff/complaints/${complaintId}/reply`, {
+          message,
+          ...(attachmentLink ? { attachmentLink } : {}),
+        });
+        setReplyUploadProgress((prev) => ({ ...prev, [complaintId]: 100 }));
+      }
+
       toast.success(isSw ? "Jibu limetumwa" : "Reply sent");
       setReplyDrafts((prev) => ({ ...prev, [complaintId]: "" }));
+      setReplyAttachmentFiles((prev) => ({ ...prev, [complaintId]: null }));
+      setReplyAttachmentLinks((prev) => ({ ...prev, [complaintId]: "" }));
+      setReplyUploadProgress((prev) => ({ ...prev, [complaintId]: 0 }));
       fetchComplaints();
     } catch (err) {
       console.error(err);
-      toast.error(isSw ? "Imeshindikana kutuma jibu" : "Failed to send reply");
+      toast.error(getUploadErrorMessage(err, "Failed to send reply", "Imeshindikana kutuma jibu", isSw));
+      setReplyUploadProgress((prev) => ({ ...prev, [complaintId]: 0 }));
     }
   };
 
@@ -554,6 +685,11 @@ export default function StaffDashboard() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {complaintHasAttachment(c) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                          <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
+                        </span>
+                      )}
                       <button
                         onClick={() => updateComplaintStatus(c.id, "OPEN")}
                         className={`px-3 py-1 rounded text-sm ${
@@ -593,17 +729,43 @@ export default function StaffDashboard() {
 
                   {c.replies?.length > 0 && (
                     <div className="space-y-2">
-                      {c.replies.map((r) => (
-                        <div key={r.id} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded">
-                          <div className="text-sm font-semibold text-blue-900">
-                            {r.sender?.name} ({r.sender?.role})
+                      {c.replies.map((r) => {
+                        const parsed = parseReplyContent(r.message);
+                        return (
+                          <div key={r.id} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded">
+                            <div className="text-sm font-semibold text-blue-900">
+                              {r.sender?.name} ({r.sender?.role})
+                            </div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              {new Date(r.createdAt).toLocaleString()}
+                            </div>
+                            {!!parsed.message && <p className="text-sm whitespace-pre-wrap">{parsed.message}</p>}
+
+                            {!!parsed.attachmentFileUrl && (
+                              <a
+                                href={parsed.attachmentFileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={fileNameFromUrl(parsed.attachmentFileUrl)}
+                                className="inline-flex items-center gap-2 mt-2 text-sm text-blue-700 hover:underline"
+                              >
+                                <FaFilePdf /> {isSw ? "Fungua/Pakua PDF" : "Open/Download PDF"}
+                              </a>
+                            )}
+
+                            {!!parsed.attachmentLinkUrl && (
+                              <a
+                                href={parsed.attachmentLinkUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 mt-2 ml-3 text-sm text-blue-700 hover:underline"
+                              >
+                                <FaLink /> {isSw ? "Fungua Link" : "Open Link"}
+                              </a>
+                            )}
                           </div>
-                          <div className="text-xs text-gray-500 mb-1">
-                            {new Date(r.createdAt).toLocaleString()}
-                          </div>
-                          <p className="text-sm whitespace-pre-wrap">{r.message}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -620,6 +782,53 @@ export default function StaffDashboard() {
                       placeholder={isSw ? "Andika jibu..." : "Write reply..."}
                       className="w-full border rounded px-3 py-2"
                     />
+
+                    <div className="grid md:grid-cols-2 gap-2">
+                      <label className="border rounded px-3 py-2 bg-white text-sm cursor-pointer hover:bg-gray-50">
+                        {isSw ? "Ambatisha PDF" : "Attach PDF"}
+                        <input
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setReplyAttachmentFiles((prev) => ({ ...prev, [c.id]: file }));
+                          }}
+                        />
+                      </label>
+
+                      <input
+                        type="url"
+                        value={replyAttachmentLinks[c.id] || ""}
+                        onChange={(e) =>
+                          setReplyAttachmentLinks((prev) => ({
+                            ...prev,
+                            [c.id]: e.target.value,
+                          }))
+                        }
+                        placeholder={isSw ? "Au weka link (https://...)" : "Or add link (https://...)"}
+                        className="border rounded px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    {replyAttachmentFiles[c.id] && (
+                      <p className="text-xs text-gray-600">
+                        {isSw ? "PDF iliyochaguliwa:" : "Selected PDF:"} {replyAttachmentFiles[c.id]?.name}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      {isSw ? `Ukubwa wa juu wa PDF: ${MAX_REPLY_FILE_MB}MB` : `Max PDF size: ${MAX_REPLY_FILE_MB}MB`}
+                    </p>
+
+                    {replyUploadProgress[c.id] > 0 && replyUploadProgress[c.id] < 100 && (
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-200"
+                          style={{ width: `${replyUploadProgress[c.id]}%` }}
+                        />
+                      </div>
+                    )}
+
                     <button
                       onClick={() => sendReply(c.id)}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -662,6 +871,31 @@ export default function StaffDashboard() {
                 onChange={(e) => setDocForm((p) => ({ ...p, fileUrl: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
               />
+              <label className="block border rounded px-3 py-2 bg-slate-50 hover:bg-slate-100 cursor-pointer text-sm">
+                {isSw ? "Au pakia PDF" : "Or upload PDF"}
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                />
+              </label>
+              {docFile && (
+                <p className="text-xs text-gray-600">
+                  {isSw ? "PDF iliyochaguliwa:" : "Selected PDF:"} {docFile.name}
+                </p>
+              )}
+              <p className="text-xs text-gray-500">
+                {isSw ? `Ukubwa wa juu wa PDF: ${MAX_DOC_FILE_MB}MB` : `Max PDF size: ${MAX_DOC_FILE_MB}MB`}
+              </p>
+              {docUploadProgress > 0 && docUploadProgress < 100 && (
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-200"
+                    style={{ width: `${docUploadProgress}%` }}
+                  />
+                </div>
+              )}
               <textarea
                 rows={3}
                 placeholder={isSw ? "Maelezo (hiari)" : "Description (optional)"}

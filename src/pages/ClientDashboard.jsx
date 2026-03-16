@@ -2,12 +2,44 @@
 import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChangePwModalContext } from "../components/DashboardLayout";
-import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaBullhorn, FaFileAlt } from "react-icons/fa";
+import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaBullhorn, FaFileAlt, FaPaperclip } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import IDCard from "../components/IDCard";
 import { useLanguage } from "../context/LanguageContext";
+
+function parseReplyContent(raw = "") {
+  const lines = String(raw || "").split(/\r?\n/);
+  let attachmentFileUrl = "";
+  let attachmentLinkUrl = "";
+  const cleanLines = [];
+
+  lines.forEach((line) => {
+    if (line.startsWith("__ATTACHMENT_FILE__:")) {
+      attachmentFileUrl = line.replace("__ATTACHMENT_FILE__:", "").trim();
+      return;
+    }
+    if (line.startsWith("__ATTACHMENT_LINK__:")) {
+      attachmentLinkUrl = line.replace("__ATTACHMENT_LINK__:", "").trim();
+      return;
+    }
+    cleanLines.push(line);
+  });
+
+  return {
+    message: cleanLines.join("\n").trim(),
+    attachmentFileUrl,
+    attachmentLinkUrl,
+  };
+}
+
+function complaintHasAttachment(complaint) {
+  return Array.isArray(complaint?.replies) && complaint.replies.some((reply) => {
+    const parsed = parseReplyContent(reply?.message || "");
+    return !!parsed.attachmentFileUrl || !!parsed.attachmentLinkUrl;
+  });
+}
 
 export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
@@ -650,31 +682,63 @@ export default function ClientDashboard() {
                   <div key={c.id} className="border border-gray-200 rounded p-3">
                     <div className="flex items-center justify-between">
                       <p className="font-semibold">{c.subject}</p>
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          c.status === "OPEN"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : c.status === "RESOLVED"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {complaintHasAttachment(c) && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                            <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            c.status === "OPEN"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : c.status === "RESOLVED"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{c.message}</p>
                     <p className="text-xs text-gray-400 mt-2">{new Date(c.createdAt).toLocaleString()}</p>
                     {c.replies?.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {c.replies.map((r) => (
-                          <div key={r.id} className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
-                            <p className="text-sm font-semibold text-blue-900">
-                              {r.sender?.name} ({r.sender?.role})
-                            </p>
-                            <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
-                            <p className="text-sm text-gray-800 whitespace-pre-wrap">{r.message}</p>
-                          </div>
-                        ))}
+                        {c.replies.map((r) => {
+                          const parsed = parseReplyContent(r.message);
+                          return (
+                            <div key={r.id} className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
+                              <p className="text-sm font-semibold text-blue-900">
+                                {r.sender?.name} ({r.sender?.role})
+                              </p>
+                              <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
+                              {!!parsed.message && <p className="text-sm text-gray-800 whitespace-pre-wrap">{parsed.message}</p>}
+
+                              {!!parsed.attachmentFileUrl && (
+                                <a
+                                  href={parsed.attachmentFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-2 text-sm text-blue-700 hover:underline"
+                                >
+                                  <FaFilePdf /> {isSw ? "Fungua / Pakua PDF" : "Open / Download PDF"}
+                                </a>
+                              )}
+
+                              {!!parsed.attachmentLinkUrl && (
+                                <a
+                                  href={parsed.attachmentLinkUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-2 ml-3 text-sm text-blue-700 hover:underline"
+                                >
+                                  <FaFileAlt /> {isSw ? "Fungua Link" : "Open Link"}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -779,31 +843,63 @@ export default function ClientDashboard() {
                   <div key={c.id} className="border border-gray-200 rounded p-3">
                     <div className="flex items-center justify-between">
                       <p className="font-semibold">{c.subject}</p>
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          c.status === "OPEN"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : c.status === "RESOLVED"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {complaintHasAttachment(c) && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                            <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            c.status === "OPEN"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : c.status === "RESOLVED"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{c.message}</p>
                     <p className="text-xs text-gray-400 mt-2">{new Date(c.createdAt).toLocaleString()}</p>
                     {c.replies?.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {c.replies.map((r) => (
-                          <div key={r.id} className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
-                            <p className="text-sm font-semibold text-blue-900">
-                              {r.sender?.name} ({r.sender?.role})
-                            </p>
-                            <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
-                            <p className="text-sm text-gray-800 whitespace-pre-wrap">{r.message}</p>
-                          </div>
-                        ))}
+                        {c.replies.map((r) => {
+                          const parsed = parseReplyContent(r.message);
+                          return (
+                            <div key={r.id} className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
+                              <p className="text-sm font-semibold text-blue-900">
+                                {r.sender?.name} ({r.sender?.role})
+                              </p>
+                              <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
+                              {!!parsed.message && <p className="text-sm text-gray-800 whitespace-pre-wrap">{parsed.message}</p>}
+
+                              {!!parsed.attachmentFileUrl && (
+                                <a
+                                  href={parsed.attachmentFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-2 text-sm text-blue-700 hover:underline"
+                                >
+                                  <FaFilePdf /> {isSw ? "Fungua / Pakua PDF" : "Open / Download PDF"}
+                                </a>
+                              )}
+
+                              {!!parsed.attachmentLinkUrl && (
+                                <a
+                                  href={parsed.attachmentLinkUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-2 ml-3 text-sm text-blue-700 hover:underline"
+                                >
+                                  <FaFileAlt /> {isSw ? "Fungua Link" : "Open Link"}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
