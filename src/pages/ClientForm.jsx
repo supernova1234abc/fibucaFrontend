@@ -513,7 +513,7 @@ export default function ClientForm() {
 
         {!tokenValid && (
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-300 rounded text-yellow-800 text-center">
-            <p className="font-semibold">🔒 Staff Authorization Required</p>
+            <p className="font-semibold">🔒 {isSw ? "Idhini ya Staff Inahitajika" : "Staff Authorization Required"}</p>
             <p className="text-sm">
               {isSw ? "Fomu hii inaweza kuwasilishwa kwa kutumia kiungo halali cha staff tu." : "This form can only be submitted using a valid staff link."}
             </p>

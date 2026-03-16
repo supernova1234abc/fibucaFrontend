@@ -324,7 +324,7 @@ export default function AdminDashboard() {
 
   const exportToExcel = () => {
     if (!filteredUsers.length) {
-      return Swal.fire("No Data", "No records found.", "info");
+      return Swal.fire(isSw ? "Hakuna Data" : "No Data", isSw ? "Hakuna rekodi zilizopatikana." : "No records found.", "info");
     }
 
     const data = filteredUsers.map((user, index) => ({
@@ -346,7 +346,7 @@ export default function AdminDashboard() {
 
   const exportToPDF = () => {
     if (!filteredUsers.length) {
-      return Swal.fire("No Data", "No records found.", "info");
+      return Swal.fire(isSw ? "Hakuna Data" : "No Data", isSw ? "Hakuna rekodi zilizopatikana." : "No records found.", "info");
     }
 
     const doc = new jsPDF();
@@ -458,17 +458,17 @@ export default function AdminDashboard() {
         .map(
           (t) => `
             <div style="text-align:left; border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:10px;">
-              <div><b>Old Employer:</b> ${t.oldEmployerName || "N/A"}</div>
-              <div><b>New Employer:</b> ${t.newEmployerName || "N/A"}</div>
-              <div><b>Old Branch:</b> ${t.oldBranchName || "N/A"}</div>
-              <div><b>New Branch:</b> ${t.newBranchName || "N/A"}</div>
-              <div><b>Old Phone:</b> ${t.oldPhoneNumber || "N/A"}</div>
-              <div><b>New Phone:</b> ${t.newPhoneNumber || "N/A"}</div>
-              <div><b>Old Employee #:</b> ${t.oldEmployeeNumber}</div>
-              <div><b>New Employee #:</b> ${t.newEmployeeNumber}</div>
-              <div><b>Note:</b> ${t.note || "N/A"}</div>
-              <div><b>Date:</b> ${new Date(t.createdAt).toLocaleString()}</div>
-              <div><b>Performed By:</b> ${t.performedBy?.name || "Unknown"}</div>
+              <div><b>${isSw ? "Mwajiri wa Zamani" : "Old Employer"}:</b> ${t.oldEmployerName || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Mwajiri Mpya" : "New Employer"}:</b> ${t.newEmployerName || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Tawi la Zamani" : "Old Branch"}:</b> ${t.oldBranchName || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Tawi Jipya" : "New Branch"}:</b> ${t.newBranchName || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Simu ya Zamani" : "Old Phone"}:</b> ${t.oldPhoneNumber || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Simu Mpya" : "New Phone"}:</b> ${t.newPhoneNumber || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Namba ya Zamani ya Mwajiriwa" : "Old Employee #"}:</b> ${t.oldEmployeeNumber}</div>
+              <div><b>${isSw ? "Namba Mpya ya Mwajiriwa" : "New Employee #"}:</b> ${t.newEmployeeNumber}</div>
+              <div><b>${isSw ? "Maelezo" : "Note"}:</b> ${t.note || (isSw ? "Haipo" : "N/A")}</div>
+              <div><b>${isSw ? "Tarehe" : "Date"}:</b> ${new Date(t.createdAt).toLocaleString()}</div>
+              <div><b>${isSw ? "Amefanya" : "Performed By"}:</b> ${t.performedBy?.name || (isSw ? "Haijulikani" : "Unknown")}</div>
             </div>
           `
         )
@@ -895,7 +895,7 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Username *</label>
+                <label className="block text-sm font-medium mb-1">{isSw ? "Jina la Mtumiaji *" : "Username *"}</label>
                 <input
                   type="text"
                   name="username"
