@@ -6,10 +6,12 @@ import jsPDF from "jspdf";
 import Swal from "sweetalert2";
 import { FaSpinner } from "react-icons/fa";
 import { api } from "../lib/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ClientForm() {
   const navigate = useNavigate();
   const { token } = useParams();
+  const { isSw } = useLanguage();
 
   const [form, setForm] = useState({
     employeeName: "",
@@ -98,13 +100,14 @@ export default function ClientForm() {
   const validate = () => {
     const newErrors = {};
 
-    if (!form.employeeName.trim()) newErrors.employeeName = "Required";
-    if (!form.employeeNumber.trim()) newErrors.employeeNumber = "Required";
-    if (!form.employerName.trim()) newErrors.employerName = "Required";
-    if (!form.phoneNumber.trim()) newErrors.phoneNumber = "Required";
-    if (!form.witness.trim()) newErrors.witness = "Required";
-    if (!employeeSignature) newErrors.employeeSignature = "Required";
-    if (!witnessSignature) newErrors.witnessSignature = "Required";
+    const reqMsg = isSw ? "Inahitajika" : "Required";
+    if (!form.employeeName.trim()) newErrors.employeeName = reqMsg;
+    if (!form.employeeNumber.trim()) newErrors.employeeNumber = reqMsg;
+    if (!form.employerName.trim()) newErrors.employerName = reqMsg;
+    if (!form.phoneNumber.trim()) newErrors.phoneNumber = reqMsg;
+    if (!form.witness.trim()) newErrors.witness = reqMsg;
+    if (!employeeSignature) newErrors.employeeSignature = reqMsg;
+    if (!witnessSignature) newErrors.witnessSignature = reqMsg;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -112,7 +115,11 @@ export default function ClientForm() {
 
   const generatePDF = async () => {
     if (!validate()) {
-      Swal.fire("Missing Information", "Please complete all required fields.", "warning");
+      Swal.fire(
+        isSw ? "Taarifa Hazijakamilika" : "Missing Information",
+        isSw ? "Tafadhali jaza sehemu zote zinazohitajika." : "Please complete all required fields.",
+        "warning"
+      );
       return;
     }
 
@@ -120,15 +127,15 @@ export default function ClientForm() {
       title: "Confirm Agreement",
       html: `
         <div style="text-align:left">
-          <p><strong>By submitting this form, you agree to:</strong></p>
-          <p>1. Employer will deduct union dues monthly.</p>
-          <p>2. Deductions may be adjusted with written notice.</p>
-          <p>3. You may cancel by one month written notice.</p>
+          <p><strong>${isSw ? "Kwa kuwasilisha fomu hii, unakubali:" : "By submitting this form, you agree to:"}</strong></p>
+          <p>${isSw ? "1. Mwajiri atakata ada ya chama kila mwezi." : "1. Employer will deduct union dues monthly."}</p>
+          <p>${isSw ? "2. Makato yanaweza kubadilishwa kwa taarifa ya maandishi." : "2. Deductions may be adjusted with written notice."}</p>
+          <p>${isSw ? "3. Unaweza kusitisha kwa notisi ya maandishi ya mwezi mmoja." : "3. You may cancel by one month written notice."}</p>
         </div>
       `,
       icon: "info",
       showCancelButton: true,
-      confirmButtonText: "I Agree & Submit",
+      confirmButtonText: isSw ? "Nakubali na Kuwasilisha" : "I Agree & Submit",
     });
 
     if (!confirmAgreement.isConfirmed) return;
@@ -363,29 +370,29 @@ export default function ClientForm() {
 
       if (response.data.loginCredentials) {
         await Swal.fire({
-          title: "Account Created Successfully!",
+          title: isSw ? "Akaunti Imeundwa!" : "Account Created Successfully!",
           html: `<div style="text-align: left; margin: 20px 0;">
-            <p><strong>Your form has been submitted and account created.</strong></p>
+            <p><strong>${isSw ? "Fomu yako imewasilishwa na akaunti imeundwa." : "Your form has been submitted and account created."}</strong></p>
             <p style="margin-top: 15px; padding: 12px; background-color: #f0f0f0; border-radius: 5px; border-left: 4px solid #1976d2;">
-              <strong>Login Credentials:</strong><br/><br/>
-              <span style="font-size: 14px;"><strong>Username:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.username}</code><br/><br/>
-              <span style="font-size: 14px;"><strong>Password:</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.password}</code>
+              <strong>${isSw ? "Taarifa za Kuingia:" : "Login Credentials:"}</strong><br/><br/>
+              <span style="font-size: 14px;"><strong>${isSw ? "Jina la Mtumiaji:" : "Username:"}</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.username}</code><br/><br/>
+              <span style="font-size: 14px;"><strong>${isSw ? "Nenosiri:" : "Password:"}</strong></span> <code style="background-color: white; padding: 5px; border-radius: 3px;">${response.data.loginCredentials.password}</code>
             </p>
-            <p style="margin-top: 15px; color: #d32f2f; font-size: 13px;"><strong>⚠️ Save these credentials. You'll need them to log in and change your password.</strong></p>
-            <p style="margin-top: 10px; font-size: 12px; color: #666;">You will be redirected to the login page.</p>
+            <p style="margin-top: 15px; color: #d32f2f; font-size: 13px;"><strong>⚠️ ${isSw ? "Hifadhi taarifa hizi. Utazihitaji kuingia na kubadili nenosiri." : "Save these credentials. You'll need them to log in and change your password."}</strong></p>
+            <p style="margin-top: 10px; font-size: 12px; color: #666;">${isSw ? "Utaelekezwa kwenye ukurasa wa kuingia." : "You will be redirected to the login page."}</p>
           </div>`,
           icon: "success",
-          confirmButtonText: "Go to Login",
+          confirmButtonText: isSw ? "Nenda Kuingia" : "Go to Login",
           confirmButtonColor: "#1976d2",
           allowOutsideClick: false,
           allowEscapeKey: false,
         });
       } else {
         await Swal.fire({
-          title: "Form Submitted",
-          text: "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
+          title: isSw ? "Fomu Imewasilishwa" : "Form Submitted",
+          text: isSw ? "Fomu yako imewasilishwa. Angalia barua pepe au wasiliana na admin kupata taarifa za kuingia." : "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
           icon: "success",
-          confirmButtonText: "Go to Login",
+          confirmButtonText: isSw ? "Nenda Kuingia" : "Go to Login",
         });
       }
 
@@ -393,23 +400,23 @@ export default function ClientForm() {
     } catch (err) {
       console.error("❌ Submission error:", err);
 
-      let errorMessage = "Submission failed.";
+      let errorMessage = isSw ? "Uwasilishaji umeshindikana." : "Submission failed.";
       const status = err.response?.status;
 
       if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (status === 408 || err.code === "ECONNABORTED") {
-        errorMessage = "Request timeout. Try again.";
+        errorMessage = isSw ? "Muda wa ombi umeisha. Jaribu tena." : "Request timeout. Try again.";
       } else if (err.message === "Network Error" || !navigator.onLine) {
-        errorMessage = "Network error. Check your connection.";
+        errorMessage = isSw ? "Tatizo la mtandao. Angalia muunganisho wako." : "Network error. Check your connection.";
       } else if (status >= 400 && status < 500) {
-        errorMessage = `Request failed (${status}).`;
+        errorMessage = isSw ? `Ombi limeshindwa (${status}).` : `Request failed (${status}).`;
       } else if (status >= 500) {
-        errorMessage = `Server error (${status}).`;
+        errorMessage = isSw ? `Hitilafu ya seva (${status}).` : `Server error (${status}).`;
       }
 
       Swal.fire({
-        title: "Error",
+        title: isSw ? "Hitilafu" : "Error",
         html: `<div>${errorMessage}</div>`,
         icon: "error",
       });
@@ -419,12 +426,12 @@ export default function ClientForm() {
   };
 
   const mainFields = [
-    { name: "employeeName", label: "Employee Name", required: true },
-    { name: "employeeNumber", label: "Employee Number", required: true },
-    { name: "employerName", label: "Employer Name", required: true },
-    { name: "branchName", label: "Branch Name (Optional)", required: false },
-    { name: "phoneNumber", label: "Phone Number", required: true },
-    { name: "witness", label: "Witness", required: true },
+    { name: "employeeName", label: isSw ? "Jina la Mfanyakazi" : "Employee Name", tip: isSw ? "Andika jina kamili kama lilivyo kwenye rekodi za kazi." : "Enter full name exactly as used in employment records.", required: true },
+    { name: "employeeNumber", label: isSw ? "Namba ya Mfanyakazi" : "Employee Number", tip: isSw ? "Tumia namba rasmi ya mfanyakazi." : "Use your official employee number.", required: true },
+    { name: "employerName", label: isSw ? "Jina la Mwajiri" : "Employer Name", tip: isSw ? "Jaza jina la kampuni/taasisi unayofanyia kazi." : "Provide the current employer/company name.", required: true },
+    { name: "branchName", label: isSw ? "Jina la Tawi (Hiari)" : "Branch Name (Optional)", tip: isSw ? "Tawi/eneo la kazi (si lazima)." : "Your branch/location (optional).", required: false },
+    { name: "phoneNumber", label: isSw ? "Namba ya Simu" : "Phone Number", tip: isSw ? "Namba ya mawasiliano inayopatikana kwa urahisi." : "Reachable phone number for communication.", required: true },
+    { name: "witness", label: isSw ? "Shahidi" : "Witness", tip: isSw ? "Jina la shahidi anayethibitisha taarifa." : "Name of the witness validating this form.", required: true },
   ];
 
   return (
@@ -450,6 +457,7 @@ export default function ClientForm() {
                 name={field.name}
                 value={form[field.name]}
                 onChange={handleChange}
+                title={field.tip}
                 className={`w-full border-b-2 p-2 ${
                   errors[field.name] ? "border-red-500" : "border-gray-400"
                 }`}
@@ -463,14 +471,14 @@ export default function ClientForm() {
 
           <div>
             <label className="block text-xs font-bold uppercase mb-1">
-              Trade Union Name
+              {isSw ? "Jina la Chama cha Wafanyakazi" : "Trade Union Name"}
             </label>
             <div className="border-b-2 p-2 border-gray-400">FIBUCA</div>
           </div>
 
           <div>
             <label className="block text-xs font-bold uppercase mb-1">
-              Initial Monthly Union Dues
+              {isSw ? "Ada ya Mwanzo ya Kila Mwezi" : "Initial Monthly Union Dues"}
             </label>
             <select
               value="1%"
@@ -483,19 +491,20 @@ export default function ClientForm() {
         </div>
 
         <div className="mt-4 rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
-          Branch name and phone number are collected for system records and communication.
-          They will not appear in the generated PDF.
+          {isSw
+            ? "Jina la tawi na namba ya simu hukusanywa kwa rekodi za mfumo na mawasiliano. Havitachapishwa kwenye PDF."
+            : "Branch name and phone number are collected for system records and communication. They will not appear in the generated PDF."}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           <SignatureBox
-            label="Employee Signature"
+            label={isSw ? "Sahihi ya Mfanyakazi" : "Employee Signature"}
             signature={employeeSignature}
             openModal={() => setEmployeeSigOpen(true)}
             error={errors.employeeSignature}
           />
           <SignatureBox
-            label="Witness Signature"
+            label={isSw ? "Sahihi ya Shahidi" : "Witness Signature"}
             signature={witnessSignature}
             openModal={() => setWitnessSigOpen(true)}
             error={errors.witnessSignature}
@@ -506,7 +515,7 @@ export default function ClientForm() {
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-300 rounded text-yellow-800 text-center">
             <p className="font-semibold">🔒 Staff Authorization Required</p>
             <p className="text-sm">
-              This form can only be submitted using a valid staff link.
+              {isSw ? "Fomu hii inaweza kuwasilishwa kwa kutumia kiungo halali cha staff tu." : "This form can only be submitted using a valid staff link."}
             </p>
           </div>
         )}
@@ -515,10 +524,10 @@ export default function ClientForm() {
           onClick={() => {
             if (!tokenValid) {
               Swal.fire({
-                title: "Restricted Access",
-                text: "You need a valid staff link to submit this form.",
+                title: isSw ? "Ufikiaji Umezuiwa" : "Restricted Access",
+                text: isSw ? "Unahitaji kiungo halali cha staff kuwasilisha fomu hii." : "You need a valid staff link to submit this form.",
                 icon: "warning",
-                confirmButtonText: "Login Instead",
+                confirmButtonText: isSw ? "Ingia Badala yake" : "Login Instead",
                 confirmButtonColor: "#2563eb",
               }).then(() => navigate("/login"));
               return;
@@ -536,9 +545,9 @@ export default function ClientForm() {
           {loading ? (
             <FaSpinner className="animate-spin mx-auto" />
           ) : tokenValid ? (
-            "Generate & Submit PDF"
+            isSw ? "Tengeneza na Wasilisha PDF" : "Generate & Submit PDF"
           ) : (
-            "Staff Link Required"
+            isSw ? "Kiungo cha Staff Kinahitajika" : "Staff Link Required"
           )}
         </button>
       </div>
@@ -569,6 +578,7 @@ export default function ClientForm() {
 }
 
 function SignatureBox({ label, signature, openModal, error }) {
+  const { isSw } = useLanguage();
   return (
     <div>
       <label className="block text-xs font-bold uppercase mb-2">{label}</label>
@@ -579,7 +589,7 @@ function SignatureBox({ label, signature, openModal, error }) {
         {signature ? (
           <img src={signature} alt="signature" className="h-14" />
         ) : (
-          "Tap to Sign"
+          isSw ? "Gusa Kusaini" : "Tap to Sign"
         )}
       </div>
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
@@ -588,10 +598,11 @@ function SignatureBox({ label, signature, openModal, error }) {
 }
 
 function SignatureModal({ close, save, sigPadRef }) {
+  const { isSw } = useLanguage();
   const handleClose = () => {
     Swal.fire({
-      title: "Close without saving?",
-      text: "Your signature will be lost.",
+      title: isSw ? "Funga bila kuhifadhi?" : "Close without saving?",
+      text: isSw ? "Sahihi yako itapotea." : "Your signature will be lost.",
       icon: "warning",
       showCancelButton: true,
     }).then((res) => {
@@ -602,7 +613,7 @@ function SignatureModal({ close, save, sigPadRef }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded p-4 w-96">
-        <h2 className="text-center font-bold mb-2">Sign Below</h2>
+        <h2 className="text-center font-bold mb-2">{isSw ? "Saini Hapa Chini" : "Sign Below"}</h2>
         <SignatureCanvas
           ref={sigPadRef}
           penColor="black"
@@ -613,16 +624,16 @@ function SignatureModal({ close, save, sigPadRef }) {
             onClick={() => sigPadRef.current.clear()}
             className="px-4 py-2 border rounded"
           >
-            Clear
+            {isSw ? "Futa" : "Clear"}
           </button>
           <button
             onClick={() => save(sigPadRef.current.toDataURL("image/png"))}
             className="px-4 py-2 bg-blue-700 text-white rounded"
           >
-            Save
+            {isSw ? "Hifadhi" : "Save"}
           </button>
           <button onClick={handleClose} className="px-4 py-2 border rounded">
-            Cancel
+            {isSw ? "Ghairi" : "Cancel"}
           </button>
         </div>
       </div>

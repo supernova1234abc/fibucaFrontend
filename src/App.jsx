@@ -23,48 +23,49 @@ import PrivateRoute from './components/PrivateRoute';
 import DashboardLayout from './components/DashboardLayout';
 import LoadingIntro from './components/LoadingIntro';
 import { useAuth } from './context/AuthContext';
+import { useLanguage } from './context/LanguageContext';
 import './index.css';
-
-// --- Menus ---
-const clientMenus = [
-  { id: 'overview', href: '/client',          label: 'Overview',   exact: true, bottomNav: true, icon: FaHome     },
-  { id: 'pdf',      href: '/client/pdf',      label: 'PDF',                     bottomNav: true, icon: FaFilePdf  },
-  { id: 'idcards',  href: '/client/idcards',  label: 'ID Card',                 bottomNav: true, icon: FaIdCard   },
-  { id: 'generate', href: '/client/generate', label: 'Generate ID' },
-  { id: 'documents', href: '/client/documents', label: 'Documents' },
-  { id: 'updates', href: '/client/updates', label: 'News & Updates' },
-  {
-    id: 'support',
-    label: 'Support',
-    children: [
-      { id: 'support-complaints', href: '/client/support/complaints', label: 'Complaints' },
-      { id: 'support-transfer', href: '/client/support/transfer', label: 'Transfer Notice' },
-    ],
-  },
-];
-
-const adminMenus = [
-  { href: '/admin/submissions', label: 'Dashboard' },
-  { href: '/admin/scan-paper', label: 'Scan Paper' },
-  { href: '/admin/idcards', label: 'ID Cards' },
-  { href: '/admin/reports', label: 'Reports' },
-];
-
-const staffMenus = [
-  { href: '/staff/links', label: 'Dashboard', exact: true },
-  { href: '/staff/notices', label: 'Notices' },
-  { href: '/staff/scan-paper', label: 'Scan paper form' },
-];
-
-const superMenus = [
-  { href: '/superadmin', label: 'Users', exact: true },
-  { href: '/superadmin/reports', label: 'All Reports' },
-];
 
 export default function App() {
   const { user, loading } = useAuth();
+  const { isSw } = useLanguage();
   const isLandingRoute = typeof window !== 'undefined' && window.location.pathname === '/';
   const [introFinished, setIntroFinished] = useState(!isLandingRoute);
+
+  const clientMenus = [
+    { id: 'overview', href: '/client', label: isSw ? 'Muhtasari' : 'Overview', exact: true, bottomNav: true, icon: FaHome },
+    { id: 'pdf', href: '/client/pdf', label: 'PDF', bottomNav: true, icon: FaFilePdf },
+    { id: 'idcards', href: '/client/idcards', label: isSw ? 'Kitambulisho' : 'ID Card', bottomNav: true, icon: FaIdCard },
+    { id: 'generate', href: '/client/generate', label: isSw ? 'Tengeneza ID' : 'Generate ID' },
+    { id: 'documents', href: '/client/documents', label: isSw ? 'Nyaraka' : 'Documents' },
+    { id: 'updates', href: '/client/updates', label: isSw ? 'Habari na Taarifa' : 'News & Updates' },
+    {
+      id: 'support',
+      label: isSw ? 'Msaada' : 'Support',
+      children: [
+        { id: 'support-complaints', href: '/client/support/complaints', label: isSw ? 'Malalamiko' : 'Complaints' },
+        { id: 'support-transfer', href: '/client/support/transfer', label: isSw ? 'Taarifa ya Uhamisho' : 'Transfer Notice' },
+      ],
+    },
+  ];
+
+  const adminMenus = [
+    { href: '/admin/submissions', label: isSw ? 'Dashibodi' : 'Dashboard' },
+    { href: '/admin/scan-paper', label: isSw ? 'Skani Fomu' : 'Scan Paper' },
+    { href: '/admin/idcards', label: isSw ? 'Vitambulisho' : 'ID Cards' },
+    { href: '/admin/reports', label: isSw ? 'Ripoti' : 'Reports' },
+  ];
+
+  const staffMenus = [
+    { href: '/staff/links', label: isSw ? 'Dashibodi' : 'Dashboard', exact: true },
+    { href: '/staff/notices', label: isSw ? 'Matangazo' : 'Notices' },
+    { href: '/staff/scan-paper', label: isSw ? 'Fomu ya skani' : 'Scan paper form' },
+  ];
+
+  const superMenus = [
+    { href: '/superadmin', label: isSw ? 'Watumiaji' : 'Users', exact: true },
+    { href: '/superadmin/reports', label: isSw ? 'Ripoti zote' : 'All Reports' },
+  ];
 
   useEffect(() => {
     if (!isLandingRoute) {

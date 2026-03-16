@@ -7,12 +7,14 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import IDCard from "../components/IDCard";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { isSw } = useLanguage();
 
   const [submission, setSubmission] = useState(() => {
     // Pre-seed from cache so the PDF button is visible immediately on mount
@@ -176,7 +178,7 @@ export default function ClientDashboard() {
   const handleFileUpload = async (file) => {
     if (!file) return;
     const card = idCards[0];
-    if (!card) return toast.error("No placeholder ID card found.");
+    if (!card) return toast.error(isSw ? "Hakuna kadi ya mwanzo iliyopatikana." : "No placeholder ID card found.");
 
     setUploadingPhoto(true);
     setCleanProgress(0);
@@ -192,10 +194,10 @@ export default function ClientDashboard() {
           uploadFile = await removeBackgroundInBrowser(file);
           clientCleaned = true;
           setCleanProgress(58);
-          toast.success("Background removed in browser.");
+          toast.success(isSw ? "Mandharinyuma yameondolewa kwenye kivinjari." : "Background removed in browser.");
         } catch (cleanErr) {
           console.warn("Browser background removal failed, falling back to server mode:", cleanErr);
-          toast("Browser clean failed, using server fallback.", { icon: "⚠️" });
+          toast(isSw ? "Usafishaji wa kivinjari umeshindikana, tunatumia seva." : "Browser clean failed, using server fallback.", { icon: "⚠️" });
         } finally {
           setBrowserCleaning(false);
           setIsCleaning(false);
@@ -222,11 +224,11 @@ export default function ClientDashboard() {
       const updated = uploadResp.data.card;
       setIdCards([updated]);
       toast.success(clientCleaned
-        ? "✅ Photo cleaned in browser and uploaded."
-        : "✅ Photo uploaded and processed on server.");
+        ? (isSw ? "Picha imesafishwa kwenye kivinjari na kupakiwa." : "Photo cleaned in browser and uploaded.")
+        : (isSw ? "Picha imepakiwa na kuchakatwa kwenye seva." : "Photo uploaded and processed on server."));
     } catch (err) {
       console.error("Error uploading photo:", err);
-      toast.error("Photo upload/clean failed.");
+      toast.error(isSw ? "Kupakia au kusafisha picha kumeshindikana." : "Photo upload/clean failed.");
     } finally {
       setUploadingPhoto(false);
       setBrowserCleaning(false);
@@ -249,10 +251,10 @@ export default function ClientDashboard() {
 
       await api.put(`/api/idcards/${cardId}/clean-photo`);
       await fetchIdCards();
-      toast.success("Photo re-cleaned!");
+      toast.success(isSw ? "Picha imesafishwa tena!" : "Photo re-cleaned!");
     } catch (err) {
       console.error(err);
-      toast.error("Re-clean failed.");
+      toast.error(isSw ? "Usafishaji wa pili umeshindikana." : "Re-clean failed.");
     } finally {
       setIsCleaning(false);
       setCleanProgress(0);
@@ -273,7 +275,7 @@ export default function ClientDashboard() {
       a.remove();
     } catch (err) {
       console.error("PDF download failed:", err);
-      toast.error("Download failed — opening in a new tab");
+      toast.error(isSw ? "Upakuaji umeshindikana, tunafungua kwenye tab mpya" : "Download failed - opening in a new tab");
       window.open(url, "_blank", "noopener");
     }
   };
@@ -283,18 +285,18 @@ export default function ClientDashboard() {
     const subject = complaintSubject.trim();
     const message = complaintMessage.trim();
 
-    if (!subject || !message) return toast.error("Subject and message are required.");
+    if (!subject || !message) return toast.error(isSw ? "Kichwa na ujumbe vinahitajika." : "Subject and message are required.");
 
     setSendingComplaint(true);
     try {
       await api.post("/api/complaints", { subject, message });
-      toast.success("✅ Complaint sent");
+      toast.success(isSw ? "Malalamiko yametumwa" : "Complaint sent");
       setComplaintSubject("");
       setComplaintMessage("");
       fetchMyComplaints();
     } catch (err) {
       console.error("Complaint submit failed:", err);
-      toast.error("Failed to send complaint");
+      toast.error(isSw ? "Imeshindikana kutuma malalamiko" : "Failed to send complaint");
     } finally {
       setSendingComplaint(false);
     }
@@ -309,11 +311,11 @@ export default function ClientDashboard() {
     const note = transferNote.trim();
 
     if (!newBranch) {
-      return toast.error("New branch/workstation is required.");
+      return toast.error(isSw ? "Tawi au kituo kipya cha kazi kinahitajika." : "New branch/workstation is required.");
     }
 
     if (transferMode === "EMPLOYER_CHANGE" && (!newEmpNo || !newEmployer)) {
-      return toast.error("New employer and new employee number are required.");
+      return toast.error(isSw ? "Mwajiri mpya na namba mpya ya mwajiriwa vinahitajika." : "New employer and new employee number are required.");
     }
 
     setSendingTransfer(true);
@@ -331,7 +333,7 @@ export default function ClientDashboard() {
 
       await api.post("/api/complaints", { subject, message });
 
-      toast.success("✅ Transfer request sent to staff");
+      toast.success(isSw ? "Ombi la uhamisho limetumwa kwa staff" : "Transfer request sent to staff");
       setTransferEmployer("");
       setTransferNewEmpNo("");
       setTransferNewBranch("");
@@ -340,7 +342,7 @@ export default function ClientDashboard() {
       fetchMyComplaints();
     } catch (err) {
       console.error("Transfer request failed:", err);
-      toast.error("Failed to send transfer request");
+      toast.error(isSw ? "Imeshindikana kutuma ombi la uhamisho" : "Failed to send transfer request");
     } finally {
       setSendingTransfer(false);
     }
@@ -373,27 +375,27 @@ export default function ClientDashboard() {
       {/* Overview */}
       {section === "overview" && (
         <div>
-          <h1 className="text-2xl font-bold text-blue-700">Hello, {user.name}</h1>
+          <h1 className="text-2xl font-bold text-blue-700">{isSw ? `Habari, ${user.name}` : `Hello, ${user.name}`}</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="bg-white p-4 rounded shadow">
-              <h3 className="font-semibold">Last Submission</h3>
+              <h3 className="font-semibold">{isSw ? "Uwasilishaji wa Mwisho" : "Last Submission"}</h3>
               <p className="text-gray-600">
                 {loadingSubmission
-                  ? "Loading…"
+                  ? (isSw ? "Inapakia..." : "Loading...")
                   : submission
                     ? new Date(submission.submittedAt).toLocaleDateString()
-                    : "None"}
+                    : (isSw ? "Hakuna" : "None")}
               </p>
             </div>
 
             <div className="bg-white p-4 rounded shadow">
-              <h3 className="font-semibold">ID Cards Created</h3>
-              <p className="text-gray-600">{loadingCards ? "Loading…" : idCards.length}</p>
+              <h3 className="font-semibold">{isSw ? "Vitambulisho Vilivyotengenezwa" : "ID Cards Created"}</h3>
+              <p className="text-gray-600">{loadingCards ? (isSw ? "Inapakia..." : "Loading...") : idCards.length}</p>
             </div>
 
             <div className="bg-white p-4 rounded shadow">
-              <h3 className="font-semibold">Role / Title</h3>
+              <h3 className="font-semibold">{isSw ? "Nafasi / Cheo" : "Role / Title"}</h3>
               <p className="text-gray-600">{getCardRole()}</p>
             </div>
           </div>
@@ -404,20 +406,20 @@ export default function ClientDashboard() {
       {/* Documents */}
       {section === "documents" && (
         <div className="bg-white rounded shadow p-6">
-          <h2 className="text-lg font-semibold mb-3 flex items-center"><FaFileAlt className="mr-2" /> Official Documents</h2>
+          <h2 className="text-lg font-semibold mb-3 flex items-center"><FaFileAlt className="mr-2" /> {isSw ? "Nyaraka Rasmi" : "Official Documents"}</h2>
           {loadingOfficial ? (
-            <p className="text-gray-500">Loading documents...</p>
+            <p className="text-gray-500">{isSw ? "Inapakia nyaraka..." : "Loading documents..."}</p>
           ) : officialDocuments.length === 0 ? (
-            <p className="text-gray-500">No documents available yet.</p>
+            <p className="text-gray-500">{isSw ? "Hakuna nyaraka bado." : "No documents available yet."}</p>
           ) : (
             <div className="space-y-3">
               {officialDocuments.map((d) => (
                 <div key={d.id} className="border rounded p-3">
                   <p className="font-semibold">{d.title}</p>
                   {d.description && <p className="text-sm text-gray-600 mt-1">{d.description}</p>}
-                  <p className="text-xs text-gray-400 mt-1">Posted by {d.createdBy?.name || "Staff"} • {new Date(d.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-1">{isSw ? "Imewekwa na" : "Posted by"} {d.createdBy?.name || "Staff"} • {new Date(d.createdAt).toLocaleString()}</p>
                   <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-blue-600 hover:underline">
-                    Open / Download
+                    {isSw ? "Fungua / Pakua" : "Open / Download"}
                   </a>
                 </div>
               ))}
@@ -429,11 +431,11 @@ export default function ClientDashboard() {
       {/* News & Updates */}
       {section === "updates" && (
         <div className="bg-white rounded shadow p-6">
-          <h2 className="text-lg font-semibold mb-3 flex items-center"><FaBullhorn className="mr-2" /> News & Updates</h2>
+          <h2 className="text-lg font-semibold mb-3 flex items-center"><FaBullhorn className="mr-2" /> {isSw ? "Habari na Taarifa" : "News & Updates"}</h2>
           {loadingOfficial ? (
-            <p className="text-gray-500">Loading updates...</p>
+            <p className="text-gray-500">{isSw ? "Inapakia taarifa..." : "Loading updates..."}</p>
           ) : officialUpdates.length === 0 ? (
-            <p className="text-gray-500">No updates posted yet.</p>
+            <p className="text-gray-500">{isSw ? "Hakuna taarifa bado." : "No updates posted yet."}</p>
           ) : (
             <div className="space-y-3">
               {officialUpdates.map((u) => (
@@ -443,7 +445,7 @@ export default function ClientDashboard() {
                     {u.category && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{u.category}</span>}
                   </div>
                   <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{u.message}</p>
-                  <p className="text-xs text-gray-400 mt-2">Posted by {u.createdBy?.name || "Staff"} • {new Date(u.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-2">{isSw ? "Imewekwa na" : "Posted by"} {u.createdBy?.name || "Staff"} • {new Date(u.createdAt).toLocaleString()}</p>
                 </div>
               ))}
             </div>
@@ -454,7 +456,7 @@ export default function ClientDashboard() {
       {/* PDF Section */}
       {section === "pdf" && (
         <div className="bg-white rounded shadow p-6">
-          <h2 className="text-lg font-semibold mb-2">Your Generated PDF Form</h2>
+          <h2 className="text-lg font-semibold mb-2">{isSw ? "Fomu Yako ya PDF Iliyotengenezwa" : "Your Generated PDF Form"}</h2>
           {submission?.pdfPath ? (
             <button
               onClick={() =>
@@ -465,12 +467,12 @@ export default function ClientDashboard() {
               }
               className="inline-flex items-center text-blue-600 hover:underline"
             >
-              <FaFilePdf className="mr-2" /> Download Form
+              <FaFilePdf className="mr-2" /> {isSw ? "Pakua Fomu" : "Download Form"}
             </button>
           ) : loadingSubmission ? (
-            <p className="text-gray-400 animate-pulse">Loading your form...</p>
+            <p className="text-gray-400 animate-pulse">{isSw ? "Inapakia fomu yako..." : "Loading your form..."}</p>
           ) : (
-            <p className="text-gray-500">You haven't generated your form PDF yet.</p>
+            <p className="text-gray-500">{isSw ? "Bado hujatengeneza PDF ya fomu yako." : "You haven't generated your form PDF yet."}</p>
           )}
         </div>
       )}
@@ -478,11 +480,11 @@ export default function ClientDashboard() {
       {/* ID Cards */}
       {section === "idcards" && (
         <div>
-          <h2 className="text-xl font-bold text-blue-700 mb-4">Your ID Cards</h2>
+          <h2 className="text-xl font-bold text-blue-700 mb-4">{isSw ? "Vitambulisho Vyako" : "Your ID Cards"}</h2>
           {loadingCards ? (
-            <p className="text-gray-500">Loading…</p>
+            <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
           ) : idCards.length === 0 ? (
-            <p className="text-gray-500">No ID cards found.</p>
+            <p className="text-gray-500">{isSw ? "Hakuna vitambulisho vilivyopatikana." : "No ID cards found."}</p>
           ) : (
             <div className="space-y-8">
               {idCards.map((card) => (
@@ -497,7 +499,7 @@ export default function ClientDashboard() {
                       className={`mt-2 px-3 py-1 rounded text-white ${isCleaning ? "bg-gray-400" : "bg-yellow-600 hover:bg-yellow-700"
                         }`}
                     >
-                      <FaRedo className="inline mr-1" /> Re-clean Photo
+                      <FaRedo className="inline mr-1" /> {isSw ? "Safisha Tena Picha" : "Re-clean Photo"}
                     </button>
                   )}
                 </div>
@@ -519,34 +521,34 @@ export default function ClientDashboard() {
       {/* Generate / Upload photo */}
       {section === "generate" && (
         <div className="bg-white rounded shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Add Your Photo</h2>
+          <h2 className="text-xl font-bold mb-4">{isSw ? "Ongeza Picha Yako" : "Add Your Photo"}</h2>
 
           {loadingCards ? (
-            <p className="text-gray-500">Loading placeholder card…</p>
+            <p className="text-gray-500">{isSw ? "Inapakia kadi ya mwanzo..." : "Loading placeholder card..."}</p>
           ) : idCards.length === 0 ? (
-            <p className="text-red-500">You need a placeholder card first.</p>
+            <p className="text-red-500">{isSw ? "Unahitaji kwanza kadi ya mwanzo." : "You need a placeholder card first."}</p>
           ) : (
             <>
               <div className="mb-4 space-y-1">
                 <p>
-                  <strong>Name:</strong> {user.name}
+                  <strong>{isSw ? "Jina" : "Name"}:</strong> {user.name}
                 </p>
                 <p>
-                  <strong>Company:</strong> {latestCard?.company || submission?.employerName || "N/A"}
+                  <strong>{isSw ? "Kampuni" : "Company"}:</strong> {latestCard?.company || submission?.employerName || "N/A"}
                 </p>
                 <p>
-                  <strong>Role / Title:</strong> {getCardRole()}
+                  <strong>{isSw ? "Nafasi / Cheo" : "Role / Title"}:</strong> {getCardRole()}
                 </p>
                 <p>
-                  <strong>Card #:</strong> {latestCard?.cardNumber}
+                  <strong>{isSw ? "Namba ya Kadi" : "Card #"}:</strong> {latestCard?.cardNumber}
                 </p>
               </div>
 
               <div className="mb-3 space-y-2">
-                <p className="text-sm font-medium text-gray-700">Choose a photo:</p>
+                <p className="text-sm font-medium text-gray-700">{isSw ? "Chagua picha:" : "Choose a photo:"}</p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 cursor-pointer text-sm font-medium hover:bg-gray-100 transition ${uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""}`}>
-                    <span>📁 Choose from Gallery</span>
+                    <span>{isSw ? "Chagua Kutoka Kwenye Gallery" : "Choose from Gallery"}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -556,7 +558,7 @@ export default function ClientDashboard() {
                     />
                   </label>
                   <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-blue-400 bg-blue-50 cursor-pointer text-sm font-medium hover:bg-blue-100 transition ${uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""}`}>
-                    <span>📷 Take Photo</span>
+                    <span>{isSw ? "Piga Picha" : "Take Photo"}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -571,13 +573,13 @@ export default function ClientDashboard() {
 
               {uploadingPhoto && (
                 <p className="text-blue-600 mt-2 font-semibold">
-                  {browserCleaning ? "Cleaning in browser…" : "Uploading / processing…"}
+                  {browserCleaning ? (isSw ? "Inasafisha kwenye kivinjari..." : "Cleaning in browser...") : (isSw ? "Inapakia / inachakata..." : "Uploading / processing...")}
                 </p>
               )}
 
               {isCleaning && (
                 <div className="mt-2">
-                  <p className="text-yellow-600 font-semibold">Cleaning photo… {cleanProgress}%</p>
+                  <p className="text-yellow-600 font-semibold">{isSw ? `Inasafisha picha... ${cleanProgress}%` : `Cleaning photo... ${cleanProgress}%`}</p>
                   <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
                     <div
                       className="bg-green-500 h-3 rounded-full transition-all duration-300"
@@ -589,7 +591,7 @@ export default function ClientDashboard() {
 
               {latestCard?.cleanPhotoUrl && (
                 <div className="mt-4">
-                  <p className="font-semibold">Latest Photo:</p>
+                  <p className="font-semibold">{isSw ? "Picha ya Mwisho:" : "Latest Photo:"}</p>
                   <img
                     src={latestCard.cleanPhotoUrl.replace(
                       /\/upload\/(?!v\d).*?(v\d+\/)/,
@@ -610,19 +612,19 @@ export default function ClientDashboard() {
         <div className="space-y-4">
           <div className="bg-white rounded shadow p-6">
             <h2 className="text-lg font-bold mb-3 flex items-center">
-              <FaRegCommentDots className="mr-2" /> New Complaint
+              <FaRegCommentDots className="mr-2" /> {isSw ? "Lalamiko Jipya" : "New Complaint"}
             </h2>
             <div className="space-y-3">
               <input
                 value={complaintSubject}
                 onChange={(e) => setComplaintSubject(e.target.value)}
-                placeholder="Subject / Head"
+                placeholder={isSw ? "Kichwa cha ujumbe" : "Subject / Head"}
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
               />
               <textarea
                 value={complaintMessage}
                 onChange={(e) => setComplaintMessage(e.target.value)}
-                placeholder="Write your complaint/message..."
+                placeholder={isSw ? "Andika malalamiko/ujumbe wako..." : "Write your complaint/message..."}
                 rows={4}
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
               />
@@ -631,17 +633,17 @@ export default function ClientDashboard() {
                 disabled={sendingComplaint}
                 className={`px-4 py-2 rounded text-white ${sendingComplaint ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
               >
-                Send Complaint
+                {isSw ? "Tuma Lalamiko" : "Send Complaint"}
               </button>
             </div>
           </div>
 
           <div className="bg-white rounded shadow p-6">
-            <h3 className="font-semibold mb-2">My Requests / Complaints</h3>
+            <h3 className="font-semibold mb-2">{isSw ? "Maombi / Malalamiko Yangu" : "My Requests / Complaints"}</h3>
             {loadingComplaints ? (
-              <p className="text-gray-500">Loading…</p>
+              <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
             ) : complaints.length === 0 ? (
-              <p className="text-gray-500">No complaints yet.</p>
+              <p className="text-gray-500">{isSw ? "Bado hakuna malalamiko." : "No complaints yet."}</p>
             ) : (
               <div className="space-y-2">
                 {complaints.map((c) => (
@@ -688,67 +690,67 @@ export default function ClientDashboard() {
         <div className="space-y-4">
           <div className="bg-white rounded shadow p-6">
             <h2 className="text-lg font-bold mb-3 flex items-center">
-              <FaExchangeAlt className="mr-2" /> Transfer Notice
+              <FaExchangeAlt className="mr-2" /> {isSw ? "Taarifa ya Uhamisho" : "Transfer Notice"}
             </h2>
             <div className="mb-3">
-              <label className="block text-sm font-semibold mb-1">Transfer Type</label>
+              <label className="block text-sm font-semibold mb-1">{isSw ? "Aina ya Uhamisho" : "Transfer Type"}</label>
               <select
                 value={transferMode}
                 onChange={(e) => setTransferMode(e.target.value)}
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
               >
-                <option value="EMPLOYER_CHANGE">Change to new employer</option>
-                <option value="BRANCH_ONLY">No employer change (branch only)</option>
+                <option value="EMPLOYER_CHANGE">{isSw ? "Badili kwenda mwajiri mpya" : "Change to new employer"}</option>
+                <option value="BRANCH_ONLY">{isSw ? "Hakuna mabadiliko ya mwajiri (tawi tu)" : "No employer change (branch only)"}</option>
               </select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {transferMode === "EMPLOYER_CHANGE" && (
                 <>
                   <div>
-                    <label className="block text-sm font-semibold mb-1">New Employer / Bank</label>
+                    <label className="block text-sm font-semibold mb-1">{isSw ? "Mwajiri / Benki Mpya" : "New Employer / Bank"}</label>
                     <input
                       value={transferEmployer}
                       onChange={(e) => setTransferEmployer(e.target.value)}
-                      placeholder="e.g. CRDB Bank"
+                      placeholder={isSw ? "mf. CRDB Bank" : "e.g. CRDB Bank"}
                       className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1">New Employee Number</label>
+                    <label className="block text-sm font-semibold mb-1">{isSw ? "Namba Mpya ya Mwajiriwa" : "New Employee Number"}</label>
                     <input
                       value={transferNewEmpNo}
                       onChange={(e) => setTransferNewEmpNo(e.target.value)}
-                      placeholder="New employee number"
+                      placeholder={isSw ? "Namba mpya ya mwajiriwa" : "New employee number"}
                       className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                     />
                   </div>
                 </>
               )}
               <div>
-                <label className="block text-sm font-semibold mb-1">New Branch Name</label>
+                <label className="block text-sm font-semibold mb-1">{isSw ? "Jina la Tawi Jipya" : "New Branch Name"}</label>
                 <input
                   value={transferNewBranch}
                   onChange={(e) => setTransferNewBranch(e.target.value)}
-                  placeholder="e.g. Kariakoo Branch"
+                  placeholder={isSw ? "mf. Tawi la Kariakoo" : "e.g. Kariakoo Branch"}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">New Workstation</label>
+                <label className="block text-sm font-semibold mb-1">{isSw ? "Kituo Kipya cha Kazi" : "New Workstation"}</label>
                 <input
                   value={transferWorkstation}
                   onChange={(e) => setTransferWorkstation(e.target.value)}
-                  placeholder="e.g. Teller Desk 4"
+                  placeholder={isSw ? "mf. Teller Desk 4" : "e.g. Teller Desk 4"}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold mb-1">Reason / Note (optional)</label>
+                <label className="block text-sm font-semibold mb-1">{isSw ? "Sababu / Maelezo (hiari)" : "Reason / Note (optional)"}</label>
                 <textarea
                   value={transferNote}
                   onChange={(e) => setTransferNote(e.target.value)}
                   rows={3}
-                  placeholder="Explain why you are changing bank/employer..."
+                  placeholder={isSw ? "Eleza kwa nini unabadilisha benki/mwajiri..." : "Explain why you are changing bank/employer..."}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
@@ -758,19 +760,19 @@ export default function ClientDashboard() {
               disabled={sendingTransfer}
               className={`mt-3 px-4 py-2 rounded text-white ${sendingTransfer ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"}`}
             >
-              Submit Transfer Request
+              {isSw ? "Tuma Ombi la Uhamisho" : "Submit Transfer Request"}
             </button>
             <p className="text-xs text-gray-500 mt-2">
-              Note: Staff must approve the transfer before your employee number changes in the system.
+              {isSw ? "Kumbuka: Staff lazima waidhinishe uhamisho kabla namba yako ya mwajiriwa haijabadilika kwenye mfumo." : "Note: Staff must approve the transfer before your employee number changes in the system."}
             </p>
           </div>
 
           <div className="bg-white rounded shadow p-6">
-            <h3 className="font-semibold mb-2">My Requests / Complaints</h3>
+            <h3 className="font-semibold mb-2">{isSw ? "Maombi / Malalamiko Yangu" : "My Requests / Complaints"}</h3>
             {loadingComplaints ? (
-              <p className="text-gray-500">Loading…</p>
+              <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
             ) : complaints.length === 0 ? (
-              <p className="text-gray-500">No complaints yet.</p>
+              <p className="text-gray-500">{isSw ? "Bado hakuna malalamiko." : "No complaints yet."}</p>
             ) : (
               <div className="space-y-2">
                 {complaints.map((c) => (
@@ -816,12 +818,12 @@ export default function ClientDashboard() {
       <div className="bg-yellow-100 text-yellow-800 px-4 py-3 rounded-md flex items-center mt-6">
         <FaLock className="mr-2" />
         <span>
-          If you haven't changed your password,{" "}
+          {isSw ? "Kama bado hujabadilisha nywila yako," : "If you haven't changed your password,"}{" "}
           <button
             onClick={() => openChangePwModal(true)}
             className="underline font-semibold text-blue-600"
           >
-            click here
+            {isSw ? "bonyeza hapa" : "click here"}
           </button>
           .
         </span>

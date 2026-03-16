@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 function PasswordInput({ value, onChange, placeholder, shown, onToggle, disabled }) {
   return (
@@ -29,6 +30,7 @@ function PasswordInput({ value, onChange, placeholder, shown, onToggle, disabled
 export default function ChangePassword({ inModal = false, onSuccess, onCancel }) {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
+  const { isSw } = useLanguage();
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -59,9 +61,9 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
       setOtpSent(true);
       setOtpTarget(res?.data?.target || 'your contact');
       setOtpHint(res?.data?.devOtp ? `Dev OTP: ${res.data.devOtp}` : '');
-      alert(`OTP sent via ${channel}${res?.data?.target ? ` to ${res.data.target}` : ''}.`);
+      alert(isSw ? `OTP imetumwa kupitia ${channel}${res?.data?.target ? ` kwenda ${res.data.target}` : ''}.` : `OTP sent via ${channel}${res?.data?.target ? ` to ${res.data.target}` : ''}.`);
     } catch (err) {
-      alert(err?.response?.data?.error || 'Failed to request OTP.');
+      alert(err?.response?.data?.error || (isSw ? 'Imeshindikana kuomba OTP.' : 'Failed to request OTP.'));
     } finally {
       setLoading(false);
     }
@@ -69,15 +71,15 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
 
   const handleSubmit = async () => {
     if (!newPassword.trim() || !confirmPassword.trim()) {
-      return alert('New password and confirmation are required.');
+      return alert(isSw ? 'Nywila mpya na uthibitisho vinahitajika.' : 'New password and confirmation are required.');
     }
 
     if (newPassword !== confirmPassword) {
-      return alert('New password and confirmation do not match.');
+      return alert(isSw ? 'Nywila mpya na uthibitisho havilingani.' : 'New password and confirmation do not match.');
     }
 
     if (newPassword.length < 6) {
-      return alert('Password must be at least 6 characters.');
+      return alert(isSw ? 'Nywila lazima iwe na angalau herufi 6.' : 'Password must be at least 6 characters.');
     }
 
     try {
@@ -88,7 +90,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
         await api.post('/api/auth/complete-first-login', { newPassword });
       } else {
         if (!oldPassword.trim()) {
-          return alert('Current password is required.');
+          return alert(isSw ? 'Nywila ya sasa inahitajika.' : 'Current password is required.');
         }
 
         await api.put('/api/change-password', {
@@ -106,7 +108,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
       }
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.error || err?.response?.data?.message || 'Failed to change password.');
+      alert(err?.response?.data?.error || err?.response?.data?.message || (isSw ? 'Imeshindikana kubadili nywila.' : 'Failed to change password.'));
     } finally {
       setLoading(false);
     }
@@ -118,20 +120,20 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
     <div className={inModal ? '' : 'min-h-screen flex items-center justify-center bg-blue-50 p-4'}>
       <div className={`bg-white shadow-md rounded p-6 w-full max-w-md ${inModal ? '' : 'mx-auto'}`}>
         <h2 className={`text-xl font-bold mb-4 text-center ${isFirstLoginFlow ? 'text-blue-700' : 'text-gray-800'}`}>
-          {isFirstLoginFlow ? 'First Login Setup' : 'Change Password'}
+          {isFirstLoginFlow ? (isSw ? 'Mipangilio ya Kuingia Mara ya Kwanza' : 'First Login Setup') : (isSw ? 'Badili Nywila' : 'Change Password')}
         </h2>
 
         {isFirstLoginFlow ? (
           <>
             <p className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-4">
-              Set your personal password. You won’t need your temporary password again.
+              {isSw ? 'Weka nywila yako binafsi. Hutahitaji tena nywila ya muda.' : 'Set your personal password. You won’t need your temporary password again.'}
             </p>
           </>
         ) : (
           <PasswordInput
             value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)}
-            placeholder="Current Password"
+            placeholder={isSw ? 'Nywila ya Sasa' : 'Current Password'}
             shown={showOld}
             onToggle={() => setShowOld((v) => !v)}
             disabled={loading}
@@ -141,7 +143,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
         <PasswordInput
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="New Password"
+          placeholder={isSw ? 'Nywila Mpya' : 'New Password'}
           shown={showNew}
           onToggle={() => setShowNew((v) => !v)}
           disabled={loading}
@@ -150,7 +152,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
         <PasswordInput
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm New Password"
+          placeholder={isSw ? 'Thibitisha Nywila Mpya' : 'Confirm New Password'}
           shown={showConfirm}
           onToggle={() => setShowConfirm((v) => !v)}
           disabled={loading}
@@ -163,7 +165,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
               disabled={loading}
               className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
             >
-              Cancel
+              {isSw ? 'Ghairi' : 'Cancel'}
             </button>
           )}
           <button
@@ -171,7 +173,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save'}
+            {loading ? (isSw ? 'Inahifadhi...' : 'Saving...') : (isSw ? 'Hifadhi' : 'Save')}
           </button>
         </div>
       </div>

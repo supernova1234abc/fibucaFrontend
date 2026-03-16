@@ -26,11 +26,13 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
 import toast from "react-hot-toast";
+import { useLanguage } from "../context/LanguageContext";
 //import QRCode from "react-qr-code";
 import { QRCodeSVG as QRCode } from "qrcode.react";
 
 export default function StaffDashboard() {
   const { user } = useAuth();
+  const { isSw } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const setSectionMenus = useContext(DashboardSectionMenuContext);
@@ -46,11 +48,11 @@ export default function StaffDashboard() {
     : "links";
 
   const navbarTabs = [
-    { id: "links", label: "Links", icon: FaLink, href: "/staff/links" },
-    { id: "clients", label: "Clients", icon: FaUsers, href: "/staff/clients" },
-    { id: "complaints", label: "Complaints", icon: FaComments, href: "/staff/complaints" },
-    { id: "notices", label: "Notices", icon: FaBullhorn, href: "/staff/notices" },
-    { id: "profile", label: "Profile", icon: FaChartLine, href: "/staff/profile" },
+    { id: "links", label: isSw ? "Viungo" : "Links", icon: FaLink, href: "/staff/links" },
+    { id: "clients", label: isSw ? "Wateja" : "Clients", icon: FaUsers, href: "/staff/clients" },
+    { id: "complaints", label: isSw ? "Malalamiko" : "Complaints", icon: FaComments, href: "/staff/complaints" },
+    { id: "notices", label: isSw ? "Matangazo" : "Notices", icon: FaBullhorn, href: "/staff/notices" },
+    { id: "profile", label: isSw ? "Wasifu" : "Profile", icon: FaChartLine, href: "/staff/profile" },
   ];
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function StaffDashboard() {
       .then((res) => setComplaints(res.data || []))
       .catch((err) => {
         console.error(err);
-        toast.error("Failed to fetch complaints");
+        toast.error(isSw ? "Imeshindikana kupakia malalamiko" : "Failed to fetch complaints");
       })
       .finally(() => setLoadingComplaints(false));
   };
@@ -129,7 +131,7 @@ export default function StaffDashboard() {
       setOfficialUpdates(Array.isArray(updatesRes.data) ? updatesRes.data : []);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to fetch official documents/updates");
+      toast.error(isSw ? "Imeshindikana kupakia nyaraka/taarifa" : "Failed to fetch official documents/updates");
     }
   };
 
@@ -170,7 +172,7 @@ export default function StaffDashboard() {
 
   const exportToExcel = () => {
     if (!filteredSubs.length) {
-      return Swal.fire("No Data", "No records found.", "info");
+      return Swal.fire(isSw ? "Hakuna Data" : "No Data", isSw ? "Hakuna rekodi zilizopatikana." : "No records found.", "info");
     }
 
     const data = filteredSubs.map((s, index) => ({
@@ -192,7 +194,7 @@ export default function StaffDashboard() {
 
   const exportToPDF = () => {
     if (!filteredSubs.length) {
-      return Swal.fire("No Data", "No records found.", "info");
+      return Swal.fire(isSw ? "Hakuna Data" : "No Data", isSw ? "Hakuna rekodi zilizopatikana." : "No records found.", "info");
     }
 
     const doc = new jsPDF();
@@ -216,10 +218,10 @@ export default function StaffDashboard() {
     setGenerating(true);
     try {
       const { value: formValues } = await Swal.fire({
-        title: "Generate Link",
+        title: isSw ? "Tengeneza Kiungo" : "Generate Link",
         html:
-          '<input id="swal-hours" class="swal2-input" placeholder="Hours valid" type="number">' +
-          '<input id="swal-max" class="swal2-input" placeholder="Max uses (optional)" type="number">',
+          `<input id="swal-hours" class="swal2-input" placeholder="${isSw ? "Masaa ya uhalali" : "Hours valid"}" type="number">` +
+          `<input id="swal-max" class="swal2-input" placeholder="${isSw ? "Matumizi ya juu (hiari)" : "Max uses (optional)"}" type="number">`,
         focusConfirm: false,
         preConfirm: () => ({
           hoursValid: parseInt(document.getElementById("swal-hours").value) || 24,
@@ -233,14 +235,14 @@ export default function StaffDashboard() {
       const code = res.data.code;
 
       await Swal.fire({
-        title: "Link Generated",
-        html: `<div class="text-left"><div class="font-semibold mb-1">Share Code:</div><div class="text-lg tracking-wide">${code}</div><div class="text-xs text-gray-500 mt-2">Use Copy to share full link securely.</div></div>`,
+        title: isSw ? "Kiungo Kimetengenezwa" : "Link Generated",
+        html: `<div class="text-left"><div class="font-semibold mb-1">${isSw ? "Msimbo wa Kushiriki:" : "Share Code:"}</div><div class="text-lg tracking-wide">${code}</div><div class="text-xs text-gray-500 mt-2">${isSw ? "Tumia Copy kushiriki kiungo kamili kwa usalama." : "Use Copy to share full link securely."}</div></div>`,
         icon: "success",
       });
 
       fetchLinks();
     } catch (err) {
-      Swal.fire("Error", "Failed to generate link.", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Imeshindikana kutengeneza kiungo." : "Failed to generate link.", "error");
     } finally {
       setGenerating(false);
     }
@@ -248,11 +250,11 @@ export default function StaffDashboard() {
 
   const handleDeleteLink = async (id, usedCount) => {
     if (usedCount > 0) {
-      return Swal.fire("Locked", "Cannot delete used link.", "info");
+      return Swal.fire(isSw ? "Imefungwa" : "Locked", isSw ? "Huwezi kufuta kiungo kilichotumika." : "Cannot delete used link.", "info");
     }
 
     const confirm = await Swal.fire({
-      title: "Delete Link?",
+      title: isSw ? "Futa Kiungo?" : "Delete Link?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#e11d48",
@@ -262,11 +264,11 @@ export default function StaffDashboard() {
 
     try {
       await api.delete(`/api/staff/link/${id}`);
-      Swal.fire("Deleted!", "Link deleted successfully", "success");
+      Swal.fire(isSw ? "Imefutwa!" : "Deleted!", isSw ? "Kiungo kimefutwa kwa mafanikio" : "Link deleted successfully", "success");
       fetchLinks();
     } catch (err) {
       console.error("Delete link error:", err);
-      Swal.fire("Error", err.response?.data?.error || "Failed to delete link", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", err.response?.data?.error || (isSw ? "Imeshindikana kufuta kiungo" : "Failed to delete link"), "error");
     }
   };
 
@@ -274,9 +276,9 @@ export default function StaffDashboard() {
     const url = `${VITE_FRONTEND_URL}/submission/${token}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied");
+      toast.success(isSw ? "Kiungo kimenakiliwa" : "Link copied");
     } catch {
-      toast.error("Failed to copy link");
+      toast.error(isSw ? "Imeshindikana kunakili kiungo" : "Failed to copy link");
     }
   };
 
@@ -284,9 +286,9 @@ export default function StaffDashboard() {
     const url = `${VITE_FRONTEND_URL}/submission/${token}`;
 
     await Swal.fire({
-      title: "Scan QR Code",
+      title: isSw ? "Skani Msimbo wa QR" : "Scan QR Code",
       html: `
-        <button id="print-qr-btn" style="margin-bottom:10px;padding:6px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;">&#128438; Print QR</button>
+        <button id="print-qr-btn" style="margin-bottom:10px;padding:6px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;">&#128438; ${isSw ? "Chapisha QR" : "Print QR"}</button>
         <div id="qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;"></div>
         <div style="margin-top:12px;word-break:break-all;font-size:12px;">${url}</div>
       `,
@@ -309,21 +311,21 @@ export default function StaffDashboard() {
             const svgHtml = svgEl ? svgEl.outerHTML : "";
             const win = window.open("", "_blank", "width=400,height=520");
             if (!win) return;
-            win.document.write(`<!DOCTYPE html><html><head><title>FIBUCA QR Code</title><style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#fff;}p{font-size:11px;word-break:break-all;max-width:280px;text-align:center;margin-top:12px;color:#555;}h2{font-size:16px;margin-bottom:8px;}</style></head><body><h2>FIBUCA Submission Link</h2>${svgHtml}<p>${url}</p></body></html>`);
+            win.document.write(`<!DOCTYPE html><html><head><title>FIBUCA QR Code</title><style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#fff;}p{font-size:11px;word-break:break-all;max-width:280px;text-align:center;margin-top:12px;color:#555;}h2{font-size:16px;margin-bottom:8px;}</style></head><body><h2>${isSw ? "Kiungo cha Uwasilishaji FIBUCA" : "FIBUCA Submission Link"}</h2>${svgHtml}<p>${url}</p></body></html>`);
             win.document.close();
             setTimeout(() => { win.print(); win.close(); }, 400);
           });
         }
       },
       width: 420,
-      confirmButtonText: "Close",
+      confirmButtonText: isSw ? "Funga" : "Close",
     });
   };
 
   const formatTimeLeft = (expiresAt) => {
-    if (!expiresAt) return "No expiry";
+    if (!expiresAt) return isSw ? "Hakuna mwisho" : "No expiry";
     const diffMs = new Date(expiresAt).getTime() - nowMs;
-    if (diffMs <= 0) return "Expired";
+    if (diffMs <= 0) return isSw ? "Imeisha" : "Expired";
     const totalSec = Math.floor(diffMs / 1000);
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
@@ -333,17 +335,17 @@ export default function StaffDashboard() {
 
   const publishDocument = async () => {
     if (!docForm.title.trim() || !docForm.fileUrl.trim()) {
-      return toast.error("Title and document URL are required");
+      return toast.error(isSw ? "Kichwa na URL ya nyaraka vinahitajika" : "Title and document URL are required");
     }
     try {
       setPublishingDoc(true);
       await api.post("/api/staff/documents", docForm);
       setDocForm({ title: "", description: "", fileUrl: "" });
-      toast.success("Document published");
+      toast.success(isSw ? "Nyaraka zimechapishwa" : "Document published");
       fetchOfficialData();
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.error || "Failed to publish document");
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuchapisha nyaraka" : "Failed to publish document"));
     } finally {
       setPublishingDoc(false);
     }
@@ -351,17 +353,17 @@ export default function StaffDashboard() {
 
   const publishUpdate = async () => {
     if (!updateForm.title.trim() || !updateForm.message.trim()) {
-      return toast.error("Title and message are required");
+      return toast.error(isSw ? "Kichwa na ujumbe vinahitajika" : "Title and message are required");
     }
     try {
       setPublishingUpdate(true);
       await api.post("/api/staff/updates", updateForm);
       setUpdateForm({ title: "", category: "", message: "" });
-      toast.success("Update published");
+      toast.success(isSw ? "Taarifa imechapishwa" : "Update published");
       fetchOfficialData();
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.error || "Failed to publish update");
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuchapisha taarifa" : "Failed to publish update"));
     } finally {
       setPublishingUpdate(false);
     }
@@ -370,48 +372,48 @@ export default function StaffDashboard() {
   const updateComplaintStatus = async (id, status) => {
     try {
       await api.put(`/api/staff/complaints/${id}/status`, { status });
-      toast.success("Status updated");
+      toast.success(isSw ? "Hali imesasishwa" : "Status updated");
       fetchComplaints();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to update status");
+      toast.error(isSw ? "Imeshindikana kusasisha hali" : "Failed to update status");
     }
   };
 
   const sendReply = async (complaintId) => {
     const message = (replyDrafts[complaintId] || "").trim();
-    if (!message) return toast.error("Reply message is required");
+    if (!message) return toast.error(isSw ? "Ujumbe wa majibu unahitajika" : "Reply message is required");
 
     try {
       await api.post(`/api/staff/complaints/${complaintId}/reply`, { message });
-      toast.success("Reply sent");
+      toast.success(isSw ? "Jibu limetumwa" : "Reply sent");
       setReplyDrafts((prev) => ({ ...prev, [complaintId]: "" }));
       fetchComplaints();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to send reply");
+      toast.error(isSw ? "Imeshindikana kutuma jibu" : "Failed to send reply");
     }
   };
 
   const clientColumns = [
     { name: "#", selector: (_, i) => i + 1, width: "60px" },
-    { name: "Employee", selector: (r) => r.employeeName, sortable: true, wrap: true },
-    { name: "Number", selector: (r) => r.employeeNumber, wrap: true },
-    { name: "Employer", selector: (r) => r.employerName, wrap: true },
-    { name: "Branch", selector: (r) => r.branchName || "-", wrap: true },
-    { name: "Phone", selector: (r) => r.phoneNumber || "-", wrap: true },
-    { name: "Dues", selector: (r) => r.dues },
+    { name: isSw ? "Mwajiriwa" : "Employee", selector: (r) => r.employeeName, sortable: true, wrap: true },
+    { name: isSw ? "Namba" : "Number", selector: (r) => r.employeeNumber, wrap: true },
+    { name: isSw ? "Mwajiri" : "Employer", selector: (r) => r.employerName, wrap: true },
+    { name: isSw ? "Tawi" : "Branch", selector: (r) => r.branchName || "-", wrap: true },
+    { name: isSw ? "Simu" : "Phone", selector: (r) => r.phoneNumber || "-", wrap: true },
+    { name: isSw ? "Ada" : "Dues", selector: (r) => r.dues },
   ];
 
   const linkColumns = [
     { name: "#", selector: (_, i) => i + 1, width: "60px" },
     {
-      name: "Code",
+      name: isSw ? "Msimbo" : "Code",
       wrap: true,
       cell: (row) => <span className="font-mono text-sm">{String(row.token || "").slice(0, 12)}</span>,
     },
-    { name: "Max Uses", selector: (r) => r.maxUses || "Unlimited" },
-    { name: "Used", selector: (r) => r.usedCount },
+    { name: isSw ? "Matumizi ya Juu" : "Max Uses", selector: (r) => r.maxUses || (isSw ? "Bila kikomo" : "Unlimited") },
+    { name: isSw ? "Imetumika" : "Used", selector: (r) => r.usedCount },
     {
       name: "Status",
       cell: (row) => {
@@ -420,13 +422,13 @@ export default function StaffDashboard() {
         const maxed = row.maxUses && row.usedCount >= row.maxUses;
 
         if (!row.isActive || expired || maxed) {
-          return <span className="text-red-600 font-semibold">Expired</span>;
+          return <span className="text-red-600 font-semibold">{isSw ? "Imeisha" : "Expired"}</span>;
         }
 
         return (
           <div className="text-xs">
-            <div className="text-green-600 font-semibold">Active</div>
-            <div className="text-slate-500">{formatTimeLeft(row.expiresAt)} left</div>
+            <div className="text-green-600 font-semibold">{isSw ? "Hai" : "Active"}</div>
+            <div className="text-slate-500">{formatTimeLeft(row.expiresAt)} {isSw ? "imebaki" : "left"}</div>
           </div>
         );
       },
@@ -439,7 +441,7 @@ export default function StaffDashboard() {
             onClick={() => handleCopyLink(row.token)}
             className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            <FaCopy /> Copy
+            <FaCopy /> {isSw ? "Nakili" : "Copy"}
           </button>
 
           <button
@@ -454,10 +456,10 @@ export default function StaffDashboard() {
               onClick={() => handleDeleteLink(row.id, row.usedCount)}
               className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
             >
-              Delete
+              {isSw ? "Futa" : "Delete"}
             </button>
           ) : (
-            <span className="text-gray-400 text-xs">Locked</span>
+            <span className="text-gray-400 text-xs">{isSw ? "Imefungwa" : "Locked"}</span>
           )}
         </div>
       ),
@@ -467,14 +469,14 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 pb-28 md:pb-0">
       <div className="max-w-7xl mx-auto space-y-6 p-6">
-        <h1 className="text-3xl font-bold">Staff Dashboard</h1>
+        <h1 className="text-3xl font-bold">{isSw ? "Dashibodi ya Staff" : "Staff Dashboard"}</h1>
 
         <div className="grid md:grid-cols-5 gap-4">
-          <StatCard icon={<FaUsers />} label="Clients" value={stats.totalClients} />
-          <StatCard icon={<FaLink />} label="Total Links" value={stats.totalLinks} />
-          <StatCard icon={<FaChartLine />} label="Active Links" value={stats.activeLinks} />
-          <StatCard icon={<FaClock />} label="Expired Links" value={stats.expiredLinks} />
-          <StatCard icon={<FaComments />} label="Open Complaints" value={stats.openComplaints} />
+          <StatCard icon={<FaUsers />} label={isSw ? "Wateja" : "Clients"} value={stats.totalClients} />
+          <StatCard icon={<FaLink />} label={isSw ? "Viungo Vyote" : "Total Links"} value={stats.totalLinks} />
+          <StatCard icon={<FaChartLine />} label={isSw ? "Viungo Hai" : "Active Links"} value={stats.activeLinks} />
+          <StatCard icon={<FaClock />} label={isSw ? "Viungo Vilivyoisha" : "Expired Links"} value={stats.expiredLinks} />
+          <StatCard icon={<FaComments />} label={isSw ? "Malalamiko Wazi" : "Open Complaints"} value={stats.openComplaints} />
         </div>
 
         {activeTab === "links" && (
@@ -484,7 +486,7 @@ export default function StaffDashboard() {
               disabled={generating}
               className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
             >
-              {generating ? "Generating..." : "Generate Link"}
+              {generating ? (isSw ? "Inatengeneza..." : "Generating...") : (isSw ? "Tengeneza Kiungo" : "Generate Link")}
             </button>
 
             <div className="bg-white rounded shadow mt-4">
@@ -504,17 +506,17 @@ export default function StaffDashboard() {
             <div className="flex flex-col md:flex-row gap-3 mt-4 md:items-center md:justify-between">
               <input
                 type="text"
-                placeholder="Search by name, number, employer, branch, phone..."
+                placeholder={isSw ? "Tafuta kwa jina, namba, mwajiri, tawi, simu..." : "Search by name, number, employer, branch, phone..."}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="border rounded px-3 py-2 w-full md:max-w-md"
               />
 
               <div className="flex gap-3">
                 <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded">
-                  Excel
+                  {isSw ? "Excel" : "Excel"}
                 </button>
                 <button onClick={exportToPDF} className="bg-red-600 text-white px-4 py-2 rounded">
-                  PDF
+                  {isSw ? "PDF" : "PDF"}
                 </button>
               </div>
             </div>
@@ -534,9 +536,9 @@ export default function StaffDashboard() {
         {activeTab === "complaints" && (
           <div className="space-y-4">
             {loadingComplaints ? (
-              <div className="bg-white p-6 rounded shadow text-gray-500">Loading complaints...</div>
+              <div className="bg-white p-6 rounded shadow text-gray-500">{isSw ? "Inapakia malalamiko..." : "Loading complaints..."}</div>
             ) : complaints.length === 0 ? (
-              <div className="bg-white p-6 rounded shadow text-gray-500">No complaints found.</div>
+              <div className="bg-white p-6 rounded shadow text-gray-500">{isSw ? "Hakuna malalamiko yaliyopatikana." : "No complaints found."}</div>
             ) : (
               complaints.map((c) => (
                 <div key={c.id} className="bg-white p-5 rounded shadow space-y-4">
@@ -560,7 +562,7 @@ export default function StaffDashboard() {
                             : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
-                        OPEN
+                        {isSw ? "WAZI" : "OPEN"}
                       </button>
                       <button
                         onClick={() => updateComplaintStatus(c.id, "RESOLVED")}
@@ -570,7 +572,7 @@ export default function StaffDashboard() {
                             : "bg-green-100 text-green-800"
                         }`}
                       >
-                        RESOLVED
+                        {isSw ? "IMETATULIWA" : "RESOLVED"}
                       </button>
                       <button
                         onClick={() => updateComplaintStatus(c.id, "CLOSED")}
@@ -580,7 +582,7 @@ export default function StaffDashboard() {
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        CLOSED
+                        {isSw ? "IMEFUNGWA" : "CLOSED"}
                       </button>
                     </div>
                   </div>
@@ -615,14 +617,14 @@ export default function StaffDashboard() {
                           [c.id]: e.target.value,
                         }))
                       }
-                      placeholder="Write reply..."
+                      placeholder={isSw ? "Andika jibu..." : "Write reply..."}
                       className="w-full border rounded px-3 py-2"
                     />
                     <button
                       onClick={() => sendReply(c.id)}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      <FaPaperPlane /> Send Reply
+                      <FaPaperPlane /> {isSw ? "Tuma Jibu" : "Send Reply"}
                     </button>
                   </div>
                 </div>
@@ -633,36 +635,36 @@ export default function StaffDashboard() {
 
         {activeTab === "profile" && (
           <div className="bg-white p-6 rounded shadow mt-4 space-y-2">
-            <p><strong>Name:</strong> {user?.name}</p>
-            <p><strong>Email:</strong> {user?.email}</p>
-            <p><strong>Role:</strong> {user?.role}</p>
-            <p><strong>Total Clients Served:</strong> {stats.totalClients}</p>
-            <p><strong>Total Links Generated:</strong> {stats.totalLinks}</p>
-            <p><strong>Total Complaints:</strong> {stats.totalComplaints}</p>
+            <p><strong>{isSw ? "Jina" : "Name"}:</strong> {user?.name}</p>
+            <p><strong>{isSw ? "Barua Pepe" : "Email"}:</strong> {user?.email}</p>
+            <p><strong>{isSw ? "Nafasi" : "Role"}:</strong> {user?.role}</p>
+            <p><strong>{isSw ? "Jumla ya Wateja Uliowahudumia" : "Total Clients Served"}:</strong> {stats.totalClients}</p>
+            <p><strong>{isSw ? "Jumla ya Viungo Vilivyotengenezwa" : "Total Links Generated"}:</strong> {stats.totalLinks}</p>
+            <p><strong>{isSw ? "Jumla ya Malalamiko" : "Total Complaints"}:</strong> {stats.totalComplaints}</p>
           </div>
         )}
 
         {activeTab === "notices" && (
           <div className="space-y-6">
             <div className="bg-white p-5 rounded shadow space-y-3">
-              <h3 className="text-lg font-bold flex items-center gap-2"><FaFileAlt /> Publish Official Document</h3>
+              <h3 className="text-lg font-bold flex items-center gap-2"><FaFileAlt /> {isSw ? "Chapisha Nyaraka Rasmi" : "Publish Official Document"}</h3>
               <input
                 type="text"
-                placeholder="Document title"
+                placeholder={isSw ? "Kichwa cha nyaraka" : "Document title"}
                 value={docForm.title}
                 onChange={(e) => setDocForm((p) => ({ ...p, title: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
               />
               <input
                 type="text"
-                placeholder="Document URL (Cloudinary/Drive/etc)"
+                placeholder={isSw ? "URL ya nyaraka (Cloudinary/Drive/n.k.)" : "Document URL (Cloudinary/Drive/etc)"}
                 value={docForm.fileUrl}
                 onChange={(e) => setDocForm((p) => ({ ...p, fileUrl: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
               />
               <textarea
                 rows={3}
-                placeholder="Description (optional)"
+                placeholder={isSw ? "Maelezo (hiari)" : "Description (optional)"}
                 value={docForm.description}
                 onChange={(e) => setDocForm((p) => ({ ...p, description: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
@@ -672,29 +674,29 @@ export default function StaffDashboard() {
                 disabled={publishingDoc}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
-                {publishingDoc ? "Publishing..." : "Publish Document"}
+                {publishingDoc ? (isSw ? "Inachapisha..." : "Publishing...") : (isSw ? "Chapisha Nyaraka" : "Publish Document")}
               </button>
             </div>
 
             <div className="bg-white p-5 rounded shadow space-y-3">
-              <h3 className="text-lg font-bold flex items-center gap-2"><FaBullhorn /> Publish News / Update</h3>
+              <h3 className="text-lg font-bold flex items-center gap-2"><FaBullhorn /> {isSw ? "Chapisha Habari / Taarifa" : "Publish News / Update"}</h3>
               <input
                 type="text"
-                placeholder="Update title"
+                placeholder={isSw ? "Kichwa cha taarifa" : "Update title"}
                 value={updateForm.title}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, title: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
               />
               <input
                 type="text"
-                placeholder="Category (optional)"
+                placeholder={isSw ? "Kundi (hiari)" : "Category (optional)"}
                 value={updateForm.category}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, category: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
               />
               <textarea
                 rows={4}
-                placeholder="Message"
+                placeholder={isSw ? "Ujumbe" : "Message"}
                 value={updateForm.message}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, message: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
@@ -704,14 +706,14 @@ export default function StaffDashboard() {
                 disabled={publishingUpdate}
                 className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-black"
               >
-                {publishingUpdate ? "Publishing..." : "Publish Update"}
+                {publishingUpdate ? (isSw ? "Inachapisha..." : "Publishing...") : (isSw ? "Chapisha Taarifa" : "Publish Update")}
               </button>
             </div>
 
             <div className="bg-white p-5 rounded shadow">
-              <h4 className="font-semibold mb-2">Latest Published Documents</h4>
+              <h4 className="font-semibold mb-2">{isSw ? "Nyaraka za Hivi Karibuni" : "Latest Published Documents"}</h4>
               {officialDocuments.length === 0 ? (
-                <p className="text-sm text-gray-500">No documents published yet.</p>
+                <p className="text-sm text-gray-500">{isSw ? "Bado hakuna nyaraka zilizochapishwa." : "No documents published yet."}</p>
               ) : (
                 <div className="space-y-2">
                   {officialDocuments.slice(0, 8).map((d) => (

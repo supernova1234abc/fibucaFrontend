@@ -14,6 +14,8 @@ import ChangePasswordPage from "../pages/ChangePassword";
 import BottomNavbar from "./BottomNavbar";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 // Contexts
 export const ChangePwModalContext = createContext(null);
@@ -41,6 +43,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshUser } = useAuth();
+  const { isSw } = useLanguage();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -117,13 +120,13 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
   const handleLogout = () => {
     Swal.fire({
-      title: "Are you sure?",
-      text: "You will be logged out!",
+      title: isSw ? "Una uhakika?" : "Are you sure?",
+      text: isSw ? "Utatolewa kwenye mfumo!" : "You will be logged out!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#2563eb",
-      confirmButtonText: "Yes, logout",
+      confirmButtonText: isSw ? "Ndio, toka" : "Yes, logout",
     }).then((result) => {
       if (result.isConfirmed) {
         localStorage.removeItem("fibuca_user");
@@ -133,8 +136,8 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
         Swal.fire({
           icon: "success",
-          title: "Logged Out",
-          text: "You have been successfully logged out.",
+          title: isSw ? "Umetoka" : "Logged Out",
+          text: isSw ? "Umetoka kwenye mfumo kwa mafanikio." : "You have been successfully logged out.",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -313,14 +316,15 @@ export default function DashboardLayout({ children, menus = [], user }) {
                 </button>
 
                 <div>
-                  <h1 className="text-lg md:text-xl font-bold text-slate-800">FIBUCA Dashboard</h1>
+                  <h1 className="text-lg md:text-xl font-bold text-slate-800">{isSw ? "Dashibodi ya FIBUCA" : "FIBUCA Dashboard"}</h1>
                   <p className="hidden md:block text-xs text-slate-500">
-                    Welcome back, {getFirstName(user?.name)}
+                    {isSw ? "Karibu tena," : "Welcome back,"} {getFirstName(user?.name)}
                   </p>
                 </div>
               </div>
 
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative flex items-center gap-2" ref={dropdownRef}>
+                <LanguageSwitcher compact />
                 <button
                   className="flex items-center gap-3 focus:outline-none no-force-dark rounded-xl px-2 py-1.5 hover:bg-slate-100 transition"
                   onClick={() => setDropdownOpen((prev) => !prev)}
@@ -358,7 +362,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                       className="no-force-dark flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-slate-50 transition"
                     >
                       <FaUser className="text-slate-500" />
-                      <span>My Profile</span>
+                      <span>{isSw ? "Wasifu Wangu" : "My Profile"}</span>
                     </button>
 
                     <button
@@ -369,7 +373,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                       className="no-force-dark flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-slate-50 transition"
                     >
                       <FaKey className="text-slate-500" />
-                      <span>Change Password</span>
+                      <span>{isSw ? "Badili Nenosiri" : "Change Password"}</span>
                     </button>
 
                     <div className="p-3 border-t border-slate-100">
@@ -378,7 +382,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                         className="no-force-dark flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2.5 px-4 rounded-xl font-semibold shadow-sm w-full transition"
                       >
                         <FaSignOutAlt />
-                        Logout
+                        {isSw ? "Toka" : "Logout"}
                       </button>
                     </div>
                   </div>
@@ -428,7 +432,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
               <div className="fixed inset-0 flex items-center justify-center z-40 p-4">
                 <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
                   <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-800">My Profile</h3>
+                    <h3 className="text-lg font-bold text-slate-800">{isSw ? "Wasifu Wangu" : "My Profile"}</h3>
                     <button
                       className="text-slate-500 hover:text-slate-700"
                       onClick={() => setShowProfileModal(false)}
@@ -439,14 +443,14 @@ export default function DashboardLayout({ children, menus = [], user }) {
                   </div>
 
                   <div className="px-5 py-4 space-y-3 text-sm">
-                    <p><span className="font-semibold text-slate-700">Name:</span> {user?.name || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">Role:</span> {user?.role || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">Username:</span> {user?.username || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">Employee #:</span> {user?.employeeNumber || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Jina:" : "Name:"}</span> {user?.name || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Wajibu:" : "Role:"}</span> {user?.role || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Jina la Mtumiaji:" : "Username:"}</span> {user?.username || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Namba ya Mtumishi:" : "Employee #:"}</span> {user?.employeeNumber || "-"}</p>
                     {profileEditMode ? (
                       <>
                         <div>
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">{isSw ? "Barua Pepe" : "Email"}</label>
                           <input
                             type="email"
                             value={profileEmail}
@@ -456,7 +460,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">{isSw ? "Simu" : "Phone"}</label>
                           <input
                             type="tel"
                             value={profilePhone}
@@ -466,7 +470,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Second Phone</label>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">{isSw ? "Simu ya Pili" : "Second Phone"}</label>
                           <input
                             type="tel"
                             value={profilePhone2}
@@ -478,9 +482,9 @@ export default function DashboardLayout({ children, menus = [], user }) {
                       </>
                     ) : (
                       <>
-                        <p><span className="font-semibold text-slate-700">Email:</span> {user?.email || "-"}</p>
-                        <p><span className="font-semibold text-slate-700">Phone:</span> {user?.phone || "-"}</p>
-                        <p><span className="font-semibold text-slate-700">Second Phone:</span> {user?.phone2 || "-"}</p>
+                        <p><span className="font-semibold text-slate-700">{isSw ? "Barua Pepe:" : "Email:"}</span> {user?.email || "-"}</p>
+                        <p><span className="font-semibold text-slate-700">{isSw ? "Simu:" : "Phone:"}</span> {user?.phone || "-"}</p>
+                        <p><span className="font-semibold text-slate-700">{isSw ? "Simu ya Pili:" : "Second Phone:"}</span> {user?.phone2 || "-"}</p>
                       </>
                     )}
                   </div>
@@ -498,14 +502,14 @@ export default function DashboardLayout({ children, menus = [], user }) {
                           className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700"
                           disabled={savingProfile}
                         >
-                          Cancel
+                          {isSw ? "Ghairi" : "Cancel"}
                         </button>
                         <button
                           onClick={handleSaveProfile}
                           className="px-3 py-2 rounded-lg bg-blue-600 text-white font-semibold disabled:bg-slate-400"
                           disabled={savingProfile}
                         >
-                          {savingProfile ? "Saving..." : "Save Changes"}
+                          {savingProfile ? (isSw ? "Inahifadhi..." : "Saving...") : (isSw ? "Hifadhi Mabadiliko" : "Save Changes")}
                         </button>
                       </>
                     ) : (
@@ -513,7 +517,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                         onClick={() => setProfileEditMode(true)}
                         className="px-3 py-2 rounded-lg bg-slate-900 text-white font-semibold"
                       >
-                        Edit Profile
+                        {isSw ? "Hariri Wasifu" : "Edit Profile"}
                       </button>
                     )}
                   </div>

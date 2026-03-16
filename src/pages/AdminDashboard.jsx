@@ -25,10 +25,12 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isSw } = useLanguage();
   const setSectionMenus = useContext(DashboardSectionMenuContext);
 
   const section = location.pathname.endsWith("/users")
@@ -40,10 +42,10 @@ export default function AdminDashboard() {
     : "submissions";
 
   const navbarTabs = [
-    { id: "submissions", label: "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
-    { id: "users", label: "Users", icon: FaUsers, href: "/admin/users" },
-    { id: "leaderboard", label: "Ranking", icon: FaTrophy, href: "/admin/leaderboard" },
-    { id: "reports", label: "Reports", icon: FaChartLine, href: "/admin/reports" },
+    { id: "submissions", label: isSw ? "Uwasilishaji" : "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
+    { id: "users", label: isSw ? "Watumiaji" : "Users", icon: FaUsers, href: "/admin/users" },
+    { id: "leaderboard", label: isSw ? "Orodha ya Nafasi" : "Ranking", icon: FaTrophy, href: "/admin/leaderboard" },
+    { id: "reports", label: isSw ? "Ripoti" : "Reports", icon: FaChartLine, href: "/admin/reports" },
   ];
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
       })
       .catch((err) => {
         console.error("❌ Failed to fetch users:", err);
-        Swal.fire("Error", "Failed to fetch users", "error");
+        Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Imeshindikana kupakia watumiaji" : "Failed to fetch users", "error");
       })
       .finally(() => setUserLoading(false));
   }, []);
@@ -120,7 +122,7 @@ export default function AdminDashboard() {
       })
       .catch((err) => {
         console.error("❌ Failed to fetch leaderboard:", err);
-        Swal.fire("Error", "Failed to fetch staff leaderboard", "error");
+        Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Imeshindikana kupakia orodha ya staff" : "Failed to fetch staff leaderboard", "error");
       })
       .finally(() => setLeaderboardLoading(false));
   }, []);
@@ -157,7 +159,7 @@ export default function AdminDashboard() {
       setFilteredUsers(rows);
     } catch (err) {
       console.error("❌ advanced submission search failed:", err);
-      Swal.fire("Error", "Failed to search submissions", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Imeshindikana kutafuta uwasilishaji" : "Failed to search submissions", "error");
     } finally {
       setLoading(false);
     }
@@ -220,7 +222,7 @@ export default function AdminDashboard() {
   const handleSaveUser = async () => {
     try {
       if (!userFormData.name || !userFormData.username) {
-        return Swal.fire("Error", "Name and Username are required", "error");
+        return Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Jina na Username vinahitajika" : "Name and Username are required", "error");
       }
 
       if (editingSystemUser) {
@@ -230,26 +232,26 @@ export default function AdminDashboard() {
           role: userFormData.role,
           employeeNumber: userFormData.employeeNumber,
         });
-        Swal.fire("Success!", "User updated successfully", "success");
+        Swal.fire(isSw ? "Imefanikiwa!" : "Success!", isSw ? "Mtumiaji amesasishwa kwa mafanikio" : "User updated successfully", "success");
       } else {
         if (!userFormData.password || userFormData.password.length < 6) {
-          return Swal.fire("Error", "Password must be at least 6 characters", "error");
+          return Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Nywila lazima iwe na angalau herufi 6" : "Password must be at least 6 characters", "error");
         }
         await api.post("/api/admin/users", userFormData);
-        Swal.fire("Success!", "User created successfully", "success");
+        Swal.fire(isSw ? "Imefanikiwa!" : "Success!", isSw ? "Mtumiaji ameundwa kwa mafanikio" : "User created successfully", "success");
       }
 
       handleCloseUserModal();
       fetchSystemUsers();
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.error || "Failed to save user", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", err.response?.data?.error || (isSw ? "Imeshindikana kuhifadhi mtumiaji" : "Failed to save user"), "error");
     }
   };
 
   const handleDeleteUser = (userId) => {
     Swal.fire({
-      title: "Delete User?",
-      text: "This action cannot be undone.",
+      title: isSw ? "Futa Mtumiaji?" : "Delete User?",
+      text: isSw ? "Kitendo hiki hakiwezi kurejeshwa." : "This action cannot be undone.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#e11d48",
@@ -258,11 +260,11 @@ export default function AdminDashboard() {
         api
           .delete(`/api/admin/users/${userId}`)
           .then(() => {
-            Swal.fire("Deleted!", "User deleted successfully", "success");
+            Swal.fire(isSw ? "Imefutwa!" : "Deleted!", isSw ? "Mtumiaji amefutwa kwa mafanikio" : "User deleted successfully", "success");
             fetchSystemUsers();
           })
           .catch((err) =>
-            Swal.fire("Error", err.response?.data?.error || "Failed to delete user", "error")
+            Swal.fire(isSw ? "Hitilafu" : "Error", err.response?.data?.error || (isSw ? "Imeshindikana kufuta mtumiaji" : "Failed to delete user"), "error")
           );
       }
     });
@@ -270,24 +272,24 @@ export default function AdminDashboard() {
 
   const handleResetPassword = async (user) => {
     const { value: newPassword } = await Swal.fire({
-      title: `Reset Password`,
-      html: `<p style="margin-bottom:8px">Set a temporary password for <b>${user.name || user.username}</b>.<br/>They will be prompted to change it on next login.</p>`,
+      title: isSw ? "Weka Upya Nywila" : "Reset Password",
+      html: `<p style="margin-bottom:8px">${isSw ? "Weka nywila ya muda kwa" : "Set a temporary password for"} <b>${user.name || user.username}</b>.<br/>${isSw ? "Ataombwa kuibadilisha wakati wa kuingia tena." : "They will be prompted to change it on next login."}</p>`,
       input: "password",
-      inputLabel: "New temporary password",
-      inputPlaceholder: "Min. 6 characters",
+      inputLabel: isSw ? "Nywila mpya ya muda" : "New temporary password",
+      inputPlaceholder: isSw ? "Angalau herufi 6" : "Min. 6 characters",
       inputAttributes: { autocomplete: "new-password" },
       showCancelButton: true,
       confirmButtonColor: "#1e3a5f",
-      confirmButtonText: "Reset",
-      inputValidator: (v) => (!v || v.length < 6 ? "Password must be at least 6 characters" : null),
+      confirmButtonText: isSw ? "Weka upya" : "Reset",
+      inputValidator: (v) => (!v || v.length < 6 ? (isSw ? "Nywila lazima iwe na angalau herufi 6" : "Password must be at least 6 characters") : null),
     });
     if (!newPassword) return;
 
     try {
       await api.post(`/api/admin/users/${user.id}/reset-password`, { newPassword });
-      Swal.fire("Done!", "Password has been reset. User will be prompted to change it on next login.", "success");
+      Swal.fire(isSw ? "Imekamilika!" : "Done!", isSw ? "Nywila imewekwa upya. Mtumiaji ataombwa kuibadilisha wakati wa kuingia tena." : "Password has been reset. User will be prompted to change it on next login.", "success");
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.error || "Failed to reset password", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", err.response?.data?.error || (isSw ? "Imeshindikana kuweka upya nywila" : "Failed to reset password"), "error");
     }
   };
 
@@ -427,10 +429,10 @@ export default function AdminDashboard() {
 
       await api.post("/bulk-upload", { records });
       fetchSubmissions();
-      Swal.fire("Success", "Users uploaded!", "success");
+      Swal.fire(isSw ? "Imefanikiwa" : "Success", isSw ? "Rekodi zimepakiwa!" : "Users uploaded!", "success");
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", "Upload failed.", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Upakiaji umeshindikana." : "Upload failed.", "error");
     } finally {
       setUploading(false);
     }
@@ -443,13 +445,13 @@ export default function AdminDashboard() {
       );
 
       if (!matchedUser) {
-        return Swal.fire("Not Found", "No linked system user found for this submission.", "info");
+        return Swal.fire(isSw ? "Haijapatikana" : "Not Found", isSw ? "Hakuna mtumiaji wa mfumo aliyeunganishwa na uwasilishaji huu." : "No linked system user found for this submission.", "info");
       }
 
       const { data } = await api.get(`/api/users/${matchedUser.id}/transfers`);
 
       if (!data || data.length === 0) {
-        return Swal.fire("No Transfer History", "This client has no transfer history yet.", "info");
+        return Swal.fire(isSw ? "Hakuna Historia ya Uhamisho" : "No Transfer History", isSw ? "Mteja huyu bado hana historia ya uhamisho." : "This client has no transfer history yet.", "info");
       }
 
       const html = data
@@ -473,29 +475,29 @@ export default function AdminDashboard() {
         .join("");
 
       Swal.fire({
-        title: "Transfer History",
+        title: isSw ? "Historia ya Uhamisho" : "Transfer History",
         html: `<div style="max-height:420px;overflow:auto;">${html}</div>`,
         width: 700,
-        confirmButtonText: "Close",
+        confirmButtonText: isSw ? "Funga" : "Close",
       });
     } catch (err) {
       console.error("❌ transfer history fetch failed:", err);
-      Swal.fire("Error", "Failed to fetch transfer history", "error");
+      Swal.fire(isSw ? "Hitilafu" : "Error", isSw ? "Imeshindikana kupakia historia ya uhamisho" : "Failed to fetch transfer history", "error");
     }
   };
 
   const submissionColumns = [
     { name: "#", selector: (row, index) => index + 1, width: "60px" },
-    { name: "Employee", selector: (row) => row.employeeName, sortable: true, wrap: true },
-    { name: "Number", selector: (row) => row.employeeNumber, wrap: true },
-    { name: "Phone", selector: (row) => row.phoneNumber || "-", wrap: true },
-    { name: "Employer", selector: (row) => row.employerName || "-", wrap: true },
-    { name: "Branch", selector: (row) => row.branchName || "-", wrap: true },
-    { name: "Dues", selector: (row) => row.dues || "-" },
+    { name: isSw ? "Mwajiriwa" : "Employee", selector: (row) => row.employeeName, sortable: true, wrap: true },
+    { name: isSw ? "Namba" : "Number", selector: (row) => row.employeeNumber, wrap: true },
+    { name: isSw ? "Simu" : "Phone", selector: (row) => row.phoneNumber || "-", wrap: true },
+    { name: isSw ? "Mwajiri" : "Employer", selector: (row) => row.employerName || "-", wrap: true },
+    { name: isSw ? "Tawi" : "Branch", selector: (row) => row.branchName || "-", wrap: true },
+    { name: isSw ? "Ada" : "Dues", selector: (row) => row.dues || "-" },
     {
       name: "PDF",
       cell: (row) => {
-        if (!row.pdfPath) return <span className="text-gray-400">None</span>;
+        if (!row.pdfPath) return <span className="text-gray-400">{isSw ? "Hakuna" : "None"}</span>;
         const pdfUrl = row.pdfPath.startsWith("http") ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
         return (
           <a
@@ -503,7 +505,7 @@ export default function AdminDashboard() {
             target="_blank"
             rel="noopener noreferrer"
             className="text-red-600 hover:underline flex items-center gap-1"
-            title="Open PDF"
+            title={isSw ? "Fungua PDF" : "Open PDF"}
           >
             <FaFilePdf />
           </a>
@@ -511,7 +513,7 @@ export default function AdminDashboard() {
       },
     },
     {
-      name: "Download",
+      name: isSw ? "Pakua" : "Download",
       cell: (row) => {
         if (!row.pdfPath) return <span className="text-gray-400">—</span>;
         const pdfUrl = row.pdfPath.startsWith("http") ? row.pdfPath : `${BACKEND_URL}/${row.pdfPath}`;
@@ -521,7 +523,7 @@ export default function AdminDashboard() {
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline flex items-center gap-1"
-            title="Download PDF"
+            title={isSw ? "Pakua PDF" : "Download PDF"}
           >
             <FaDownload />
           </a>
@@ -529,19 +531,19 @@ export default function AdminDashboard() {
       },
     },
     {
-      name: "Transfers",
+      name: isSw ? "Uhamisho" : "Transfers",
       cell: (row) => (
         <button
           onClick={() => handleViewTransfers(row)}
           className="text-purple-600 hover:underline flex items-center gap-1"
-          title="View transfer history"
+          title={isSw ? "Tazama historia ya uhamisho" : "View transfer history"}
         >
           <FaHistory />
         </button>
       ),
     },
     {
-      name: "Actions",
+      name: isSw ? "Vitendo" : "Actions",
       cell: (row) => (
         <div className="flex gap-2">
           <button
@@ -563,33 +565,33 @@ export default function AdminDashboard() {
 
   const userColumns = [
     { name: "#", selector: (row, index) => index + 1, width: "60px" },
-    { name: "Name", selector: (row) => row.name, sortable: true, wrap: true },
+    { name: isSw ? "Jina" : "Name", selector: (row) => row.name, sortable: true, wrap: true },
     { name: "Username", selector: (row) => row.username, wrap: true },
     { name: "Email", selector: (row) => row.email || "-", wrap: true },
-    { name: "Role", selector: (row) => row.role, sortable: true },
-    { name: "Employee #", selector: (row) => row.employeeNumber || "-" },
+    { name: isSw ? "Nafasi" : "Role", selector: (row) => row.role, sortable: true },
+    { name: isSw ? "Namba ya Mwajiriwa" : "Employee #", selector: (row) => row.employeeNumber || "-" },
     {
-      name: "Actions",
+      name: isSw ? "Vitendo" : "Actions",
       cell: (row) => (
         <div className="flex gap-2">
           <button
             onClick={() => handleOpenUserModal(row)}
             className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-            title="Edit user"
+            title={isSw ? "Hariri mtumiaji" : "Edit user"}
           >
             <FaEdit />
           </button>
           <button
             onClick={() => handleResetPassword(row)}
             className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
-            title="Reset password"
+            title={isSw ? "Weka upya nywila" : "Reset password"}
           >
             <FaKey />
           </button>
           <button
             onClick={() => handleDeleteUser(row.id)}
             className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"
-            title="Delete user"
+            title={isSw ? "Futa mtumiaji" : "Delete user"}
           >
             <FaTrash />
           </button>
@@ -602,21 +604,21 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-100 pb-28 md:pb-0">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage submissions, users, leaderboard and reports</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">{isSw ? "Dashibodi ya Admin" : "Admin Dashboard"}</h1>
+          <p className="text-gray-600">{isSw ? "Simamia uwasilishaji, watumiaji, nafasi na ripoti" : "Manage submissions, users, leaderboard and reports"}</p>
         </div>
 
         {section === "submissions" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 space-y-4">
               <div className="flex flex-col md:flex-row justify-between gap-4">
-                <h2 className="text-2xl font-bold">Client Submissions</h2>
+                <h2 className="text-2xl font-bold">{isSw ? "Uwasilishaji wa Wateja" : "Client Submissions"}</h2>
 
                 <div className="relative w-full md:w-80">
                   <FaSearch className="absolute top-3 left-3 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Quick search name / no / employer..."
+                    placeholder={isSw ? "Tafuta haraka jina / namba / mwajiri..." : "Quick search name / no / employer..."}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   />
@@ -625,7 +627,7 @@ export default function AdminDashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
-                  placeholder="Employer e.g. CRDB"
+                  placeholder={isSw ? "Mwajiri mf. CRDB" : "Employer e.g. CRDB"}
                   value={submissionFilters.employerName}
                   onChange={(e) =>
                     setSubmissionFilters((prev) => ({ ...prev, employerName: e.target.value }))
@@ -634,7 +636,7 @@ export default function AdminDashboard() {
                 />
 
                 <input
-                  placeholder="Branch e.g. Kariakoo"
+                  placeholder={isSw ? "Tawi mf. Kariakoo" : "Branch e.g. Kariakoo"}
                   value={submissionFilters.branchName}
                   onChange={(e) =>
                     setSubmissionFilters((prev) => ({ ...prev, branchName: e.target.value }))
@@ -648,19 +650,19 @@ export default function AdminDashboard() {
                   onClick={searchSubmissionsAdvanced}
                   className="bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-indigo-700 transition flex items-center gap-1.5"
                 >
-                  <FaFilter /> Filter
+                  <FaFilter /> {isSw ? "Chuja" : "Filter"}
                 </button>
 
                 <button
                   onClick={resetSubmissionFilters}
                   className="bg-gray-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-gray-700 transition"
                 >
-                  Reset
+                  {isSw ? "Weka upya" : "Reset"}
                 </button>
 
                 <label className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md cursor-pointer hover:bg-blue-700 transition">
                   <FaUpload className="inline mr-2" />
-                  {uploading ? "Uploading..." : "Upload Excel"}
+                  {uploading ? (isSw ? "Inapakia..." : "Uploading...") : (isSw ? "Pakia Excel" : "Upload Excel")}
                   <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
                 </label>
 
@@ -698,13 +700,13 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
               <div className="flex flex-col md:flex-row justify-between gap-4">
-                <h2 className="text-2xl font-bold">System Users</h2>
+                <h2 className="text-2xl font-bold">{isSw ? "Watumiaji wa Mfumo" : "System Users"}</h2>
                 <div className="flex gap-3 flex-wrap">
                   <div className="relative w-full md:w-80">
                     <FaSearch className="absolute top-3 left-3 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search users..."
+                      placeholder={isSw ? "Tafuta watumiaji..." : "Search users..."}
                       onChange={(e) => handleSearchUsers(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
@@ -714,7 +716,7 @@ export default function AdminDashboard() {
                     onClick={() => handleOpenUserModal()}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
                   >
-                    <FaPlus /> Add User
+                    <FaPlus /> {isSw ? "Ongeza Mtumiaji" : "Add User"}
                   </button>
                 </div>
               </div>
@@ -737,11 +739,11 @@ export default function AdminDashboard() {
         {section === "leaderboard" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold mb-6">Staff Performance Leaderboard</h2>
-              <p className="text-gray-600 mb-4">Ranked by number of active distribution links</p>
+              <h2 className="text-2xl font-bold mb-6">{isSw ? "Orodha ya Utendaji wa Staff" : "Staff Performance Leaderboard"}</h2>
+              <p className="text-gray-600 mb-4">{isSw ? "Imepangwa kwa idadi ya viungo hai vya usambazaji" : "Ranked by number of active distribution links"}</p>
 
               {leaderboardLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading leaderboard...</div>
+                <div className="text-center py-8 text-gray-500">{isSw ? "Inapakia orodha ya nafasi..." : "Loading leaderboard..."}</div>
               ) : staffLeaderboard.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {staffLeaderboard.map((staff, idx) => (
@@ -763,7 +765,7 @@ export default function AdminDashboard() {
                             {idx === 0 && "🥇 "}
                             {idx === 1 && "🥈 "}
                             {idx === 2 && "🥉 "}
-                            Rank #{idx + 1}
+                            {isSw ? `Nafasi #${idx + 1}` : `Rank #${idx + 1}`}
                           </div>
                           <h3 className="text-lg font-bold text-gray-800">{staff.name}</h3>
                           <p className="text-sm text-gray-600">{staff.username}</p>
@@ -773,15 +775,15 @@ export default function AdminDashboard() {
                       <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-blue-600">{staff.activeLinks}</div>
-                          <div className="text-xs text-gray-600">Active Links</div>
+                          <div className="text-xs text-gray-600">{isSw ? "Viungo Hai" : "Active Links"}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-green-600">{staff.totalLinks}</div>
-                          <div className="text-xs text-gray-600">Total Links</div>
+                          <div className="text-xs text-gray-600">{isSw ? "Viungo Vyote" : "Total Links"}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-purple-600">{staff.totalClients}</div>
-                          <div className="text-xs text-gray-600">Clients</div>
+                          <div className="text-xs text-gray-600">{isSw ? "Wateja" : "Clients"}</div>
                         </div>
                       </div>
 
@@ -792,23 +794,23 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500">No staff members found</div>
+                <div className="text-center py-12 text-gray-500">{isSw ? "Hakuna staff waliopatikana" : "No staff members found"}</div>
               )}
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Need deeper insight?</h3>
+                  <h3 className="text-xl font-bold text-gray-800">{isSw ? "Unahitaji uchambuzi wa kina?" : "Need deeper insight?"}</h3>
                   <p className="text-gray-600 text-sm">
-                    Open the reports page for trends, summaries and visual analytics.
+                    {isSw ? "Fungua ukurasa wa ripoti kwa mwenendo, muhtasari na uchambuzi wa kuona." : "Open the reports page for trends, summaries and visual analytics."}
                   </p>
                 </div>
                 <button
                   onClick={() => navigate("/admin/reports")}
                   className="bg-blue-700 text-white px-5 py-2.5 rounded-lg hover:bg-blue-800 transition flex items-center gap-2"
                 >
-                  <FaChartLine /> Open Reports
+                  <FaChartLine /> {isSw ? "Fungua Ripoti" : "Open Reports"}
                 </button>
               </div>
             </div>
@@ -821,15 +823,15 @@ export default function AdminDashboard() {
               <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-2xl">
                 <FaChartLine />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Advanced Reports</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">{isSw ? "Ripoti za Kina" : "Advanced Reports"}</h2>
               <p className="text-gray-600 mb-6">
-                Your analytics page is now separated from the main dashboard for cleaner admin workflow.
+                {isSw ? "Ukurasa wa uchambuzi umetenganishwa na dashibodi kuu kwa mtiririko bora wa kazi za admin." : "Your analytics page is now separated from the main dashboard for cleaner admin workflow."}
               </p>
               <button
                 onClick={() => navigate("/admin/reports")}
                 className="bg-blue-700 text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition"
               >
-                Go to Reports Page
+                {isSw ? "Nenda Kwenye Ukurasa wa Ripoti" : "Go to Reports Page"}
               </button>
             </div>
           </div>
@@ -839,7 +841,7 @@ export default function AdminDashboard() {
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Edit Submission</h2>
+            <h2 className="text-xl font-bold mb-4">{isSw ? "Hariri Uwasilishaji" : "Edit Submission"}</h2>
 
             {Object.keys(editForm).map((field) => (
               <div key={field} className="mb-3">
@@ -859,13 +861,13 @@ export default function AdminDashboard() {
                 onClick={() => setEditingUser(null)}
                 className="px-4 py-2 bg-gray-300 rounded-lg"
               >
-                Cancel
+                {isSw ? "Ghairi" : "Cancel"}
               </button>
               <button
                 onClick={handleUpdate}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg"
               >
-                Save
+                {isSw ? "Hifadhi" : "Save"}
               </button>
             </div>
           </div>
@@ -876,19 +878,19 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl max-h-96 overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
-              {editingSystemUser ? "Edit User" : "Create New User"}
+              {editingSystemUser ? (isSw ? "Hariri Mtumiaji" : "Edit User") : (isSw ? "Unda Mtumiaji Mpya" : "Create New User")}
             </h2>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
+                <label className="block text-sm font-medium mb-1">{isSw ? "Jina *" : "Name *"}</label>
                 <input
                   type="text"
                   name="name"
                   value={userFormData.name}
                   onChange={handleUserFormChange}
                   className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Full name"
+                  placeholder={isSw ? "Jina kamili" : "Full name"}
                 />
               </div>
 
@@ -901,12 +903,12 @@ export default function AdminDashboard() {
                   onChange={handleUserFormChange}
                   disabled={!!editingSystemUser}
                   className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-                  placeholder="Unique username"
+                  placeholder={isSw ? "Username ya kipekee" : "Unique username"}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label className="block text-sm font-medium mb-1">{isSw ? "Barua Pepe" : "Email"}</label>
                 <input
                   type="email"
                   name="email"
@@ -918,41 +920,41 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Employee Number</label>
+                <label className="block text-sm font-medium mb-1">{isSw ? "Namba ya Mwajiriwa" : "Employee Number"}</label>
                 <input
                   type="text"
                   name="employeeNumber"
                   value={userFormData.employeeNumber}
                   onChange={handleUserFormChange}
                   className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Optional"
+                  placeholder={isSw ? "Hiari" : "Optional"}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
+                <label className="block text-sm font-medium mb-1">{isSw ? "Nafasi" : "Role"}</label>
                 <select
                   name="role"
                   value={userFormData.role}
                   onChange={handleUserFormChange}
                   className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 >
-                  <option value="CLIENT">Client</option>
-                  <option value="STAFF">Staff</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="CLIENT">{isSw ? "Mteja" : "Client"}</option>
+                  <option value="STAFF">{isSw ? "Staff" : "Staff"}</option>
+                  <option value="ADMIN">{isSw ? "Admin" : "Admin"}</option>
                 </select>
               </div>
 
               {!editingSystemUser && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Password *</label>
+                  <label className="block text-sm font-medium mb-1">{isSw ? "Nywila *" : "Password *"}</label>
                   <input
                     type="password"
                     name="password"
                     value={userFormData.password}
                     onChange={handleUserFormChange}
                     className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="Min. 6 characters"
+                    placeholder={isSw ? "Angalau herufi 6" : "Min. 6 characters"}
                   />
                 </div>
               )}
@@ -963,13 +965,13 @@ export default function AdminDashboard() {
                 onClick={handleCloseUserModal}
                 className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition"
               >
-                Cancel
+                {isSw ? "Ghairi" : "Cancel"}
               </button>
               <button
                 onClick={handleSaveUser}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
-                {editingSystemUser ? "Update" : "Create"}
+                {editingSystemUser ? (isSw ? "Sasisha" : "Update") : (isSw ? "Unda" : "Create")}
               </button>
             </div>
           </div>
