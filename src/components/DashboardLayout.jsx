@@ -12,6 +12,8 @@ import {
 import Swal from "sweetalert2";
 import ChangePasswordPage from "../pages/ChangePassword";
 import BottomNavbar from "./BottomNavbar";
+import { api } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 // Contexts
 export const ChangePwModalContext = createContext(null);
@@ -38,14 +40,56 @@ const getFirstName = (fullName = "") => fullName.trim().split(/\s+/)[0] || "User
 export default function DashboardLayout({ children, menus = [], user }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshUser } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showChangePwModal, setShowChangePwModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileEditMode, setProfileEditMode] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profilePhone2, setProfilePhone2] = useState("");
   const [sectionMenus, setSectionMenus] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!showProfileModal) return;
+    setProfileEmail(user?.email || "");
+    setProfilePhone(user?.phone || "");
+    setProfilePhone2(user?.phone2 || "");
+    setProfileEditMode(false);
+  }, [showProfileModal, user]);
+
+  const handleSaveProfile = async () => {
+    try {
+      setSavingProfile(true);
+      await api.put("/api/profile", {
+        email: profileEmail,
+        phone: profilePhone,
+        phone2: profilePhone2,
+      });
+      await refreshUser();
+      setProfileEditMode(false);
+      Swal.fire({
+        icon: "success",
+        title: "Profile Updated",
+        text: "Your profile details were saved successfully.",
+        timer: 1300,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Update Failed",
+        text: err?.response?.data?.error || "Failed to update profile",
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -399,9 +443,79 @@ export default function DashboardLayout({ children, menus = [], user }) {
                     <p><span className="font-semibold text-slate-700">Role:</span> {user?.role || "-"}</p>
                     <p><span className="font-semibold text-slate-700">Username:</span> {user?.username || "-"}</p>
                     <p><span className="font-semibold text-slate-700">Employee #:</span> {user?.employeeNumber || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">Email:</span> {user?.email || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">Phone:</span> {user?.phone || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">Second Phone:</span> {user?.phone2 || "-"}</p>
+                    {profileEditMode ? (
+                      <>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={profileEmail}
+                            onChange={(e) => setProfileEmail(e.target.value)}
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                            placeholder="your@email.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
+                          <input
+                            type="tel"
+                            value={profilePhone}
+                            onChange={(e) => setProfilePhone(e.target.value)}
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                            placeholder="+255..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Second Phone</label>
+                          <input
+                            type="tel"
+                            value={profilePhone2}
+                            onChange={(e) => setProfilePhone2(e.target.value)}
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                            placeholder="+255..."
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p><span className="font-semibold text-slate-700">Email:</span> {user?.email || "-"}</p>
+                        <p><span className="font-semibold text-slate-700">Phone:</span> {user?.phone || "-"}</p>
+                        <p><span className="font-semibold text-slate-700">Second Phone:</span> {user?.phone2 || "-"}</p>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                    {profileEditMode ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setProfileEditMode(false);
+                            setProfileEmail(user?.email || "");
+                            setProfilePhone(user?.phone || "");
+                            setProfilePhone2(user?.phone2 || "");
+                          }}
+                          className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700"
+                          disabled={savingProfile}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveProfile}
+                          className="px-3 py-2 rounded-lg bg-blue-600 text-white font-semibold disabled:bg-slate-400"
+                          disabled={savingProfile}
+                        >
+                          {savingProfile ? "Saving..." : "Save Changes"}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setProfileEditMode(true)}
+                        className="px-3 py-2 rounded-lg bg-slate-900 text-white font-semibold"
+                      >
+                        Edit Profile
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
