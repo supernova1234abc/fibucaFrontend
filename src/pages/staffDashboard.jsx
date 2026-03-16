@@ -9,6 +9,7 @@ import { DashboardSectionMenuContext } from "../components/DashboardLayout";
 import {
   FaDownload,
   FaFilePdf,
+  FaFileAlt,
   FaLink,
   FaUsers,
   FaChartLine,
@@ -18,6 +19,7 @@ import {
   FaComments,
   FaPaperPlane,
   FaPrint,
+  FaBullhorn,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -37,6 +39,8 @@ export default function StaffDashboard() {
     ? "clients"
     : location.pathname.endsWith("/profile")
     ? "profile"
+    : location.pathname.endsWith("/notices")
+    ? "notices"
     : location.pathname.endsWith("/complaints")
     ? "complaints"
     : "links";
@@ -45,6 +49,7 @@ export default function StaffDashboard() {
     { id: "links", label: "Links", icon: FaLink, href: "/staff/links" },
     { id: "clients", label: "Clients", icon: FaUsers, href: "/staff/clients" },
     { id: "complaints", label: "Complaints", icon: FaComments, href: "/staff/complaints" },
+    { id: "notices", label: "Notices", icon: FaBullhorn, href: "/staff/notices" },
     { id: "profile", label: "Profile", icon: FaChartLine, href: "/staff/profile" },
   ];
 
@@ -62,6 +67,14 @@ export default function StaffDashboard() {
   const [complaints, setComplaints] = useState([]);
   const [loadingComplaints, setLoadingComplaints] = useState(false);
   const [replyDrafts, setReplyDrafts] = useState({});
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  const [officialDocuments, setOfficialDocuments] = useState([]);
+  const [officialUpdates, setOfficialUpdates] = useState([]);
+  const [docForm, setDocForm] = useState({ title: "", description: "", fileUrl: "" });
+  const [updateForm, setUpdateForm] = useState({ title: "", category: "", message: "" });
+  const [publishingDoc, setPublishingDoc] = useState(false);
+  const [publishingUpdate, setPublishingUpdate] = useState(false);
 
   const VITE_FRONTEND_URL =
     import.meta.env.VITE_FRONTEND_URL || window.location.origin;
@@ -70,6 +83,12 @@ export default function StaffDashboard() {
     fetchSubmissions();
     fetchLinks();
     fetchComplaints();
+    fetchOfficialData();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchSubmissions = useCallback(() => {
@@ -98,6 +117,20 @@ export default function StaffDashboard() {
         toast.error("Failed to fetch complaints");
       })
       .finally(() => setLoadingComplaints(false));
+  };
+
+  const fetchOfficialData = async () => {
+    try {
+      const [docsRes, updatesRes] = await Promise.all([
+        api.get("/api/client/documents"),
+        api.get("/api/client/updates"),
+      ]);
+      setOfficialDocuments(Array.isArray(docsRes.data) ? docsRes.data : []);
+      setOfficialUpdates(Array.isArray(updatesRes.data) ? updatesRes.data : []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch official documents/updates");
+    }
   };
 
   const stats = useMemo(() => {
@@ -197,11 +230,11 @@ export default function StaffDashboard() {
       if (!formValues) return;
 
       const res = await api.post("/api/staff/generate-link", formValues);
-      const link = res.data.link;
+      const code = res.data.code;
 
       await Swal.fire({
         title: "Link Generated",
-        html: `<div class="text-left break-all">${link}</div>`,
+        html: `<div class="text-left"><div class="font-semibold mb-1">Share Code:</div><div class="text-lg tracking-wide">${code}</div><div class="text-xs text-gray-500 mt-2">Use Copy to share full link securely.</div></div>`,
         icon: "success",
       });
 
@@ -287,6 +320,53 @@ export default function StaffDashboard() {
     });
   };
 
+  const formatTimeLeft = (expiresAt) => {
+    if (!expiresAt) return "No expiry";
+    const diffMs = new Date(expiresAt).getTime() - nowMs;
+    if (diffMs <= 0) return "Expired";
+    const totalSec = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+  };
+
+  const publishDocument = async () => {
+    if (!docForm.title.trim() || !docForm.fileUrl.trim()) {
+      return toast.error("Title and document URL are required");
+    }
+    try {
+      setPublishingDoc(true);
+      await api.post("/api/staff/documents", docForm);
+      setDocForm({ title: "", description: "", fileUrl: "" });
+      toast.success("Document published");
+      fetchOfficialData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || "Failed to publish document");
+    } finally {
+      setPublishingDoc(false);
+    }
+  };
+
+  const publishUpdate = async () => {
+    if (!updateForm.title.trim() || !updateForm.message.trim()) {
+      return toast.error("Title and message are required");
+    }
+    try {
+      setPublishingUpdate(true);
+      await api.post("/api/staff/updates", updateForm);
+      setUpdateForm({ title: "", category: "", message: "" });
+      toast.success("Update published");
+      fetchOfficialData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || "Failed to publish update");
+    } finally {
+      setPublishingUpdate(false);
+    }
+  };
+
   const updateComplaintStatus = async (id, status) => {
     try {
       await api.put(`/api/staff/complaints/${id}/status`, { status });
@@ -326,18 +406,9 @@ export default function StaffDashboard() {
   const linkColumns = [
     { name: "#", selector: (_, i) => i + 1, width: "60px" },
     {
-      name: "Link",
+      name: "Code",
       wrap: true,
-      cell: (row) => (
-        <a
-          href={`${VITE_FRONTEND_URL}/submission/${row.token}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline break-all"
-        >
-          {row.token}
-        </a>
-      ),
+      cell: (row) => <span className="font-mono text-sm">{String(row.token || "").slice(0, 12)}</span>,
     },
     { name: "Max Uses", selector: (r) => r.maxUses || "Unlimited" },
     { name: "Used", selector: (r) => r.usedCount },
@@ -352,7 +423,12 @@ export default function StaffDashboard() {
           return <span className="text-red-600 font-semibold">Expired</span>;
         }
 
-        return <span className="text-green-600 font-semibold">Active</span>;
+        return (
+          <div className="text-xs">
+            <div className="text-green-600 font-semibold">Active</div>
+            <div className="text-slate-500">{formatTimeLeft(row.expiresAt)} left</div>
+          </div>
+        );
       },
     },
     {
@@ -563,6 +639,90 @@ export default function StaffDashboard() {
             <p><strong>Total Clients Served:</strong> {stats.totalClients}</p>
             <p><strong>Total Links Generated:</strong> {stats.totalLinks}</p>
             <p><strong>Total Complaints:</strong> {stats.totalComplaints}</p>
+          </div>
+        )}
+
+        {activeTab === "notices" && (
+          <div className="space-y-6">
+            <div className="bg-white p-5 rounded shadow space-y-3">
+              <h3 className="text-lg font-bold flex items-center gap-2"><FaFileAlt /> Publish Official Document</h3>
+              <input
+                type="text"
+                placeholder="Document title"
+                value={docForm.title}
+                onChange={(e) => setDocForm((p) => ({ ...p, title: e.target.value }))}
+                className="w-full border rounded px-3 py-2"
+              />
+              <input
+                type="text"
+                placeholder="Document URL (Cloudinary/Drive/etc)"
+                value={docForm.fileUrl}
+                onChange={(e) => setDocForm((p) => ({ ...p, fileUrl: e.target.value }))}
+                className="w-full border rounded px-3 py-2"
+              />
+              <textarea
+                rows={3}
+                placeholder="Description (optional)"
+                value={docForm.description}
+                onChange={(e) => setDocForm((p) => ({ ...p, description: e.target.value }))}
+                className="w-full border rounded px-3 py-2"
+              />
+              <button
+                onClick={publishDocument}
+                disabled={publishingDoc}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                {publishingDoc ? "Publishing..." : "Publish Document"}
+              </button>
+            </div>
+
+            <div className="bg-white p-5 rounded shadow space-y-3">
+              <h3 className="text-lg font-bold flex items-center gap-2"><FaBullhorn /> Publish News / Update</h3>
+              <input
+                type="text"
+                placeholder="Update title"
+                value={updateForm.title}
+                onChange={(e) => setUpdateForm((p) => ({ ...p, title: e.target.value }))}
+                className="w-full border rounded px-3 py-2"
+              />
+              <input
+                type="text"
+                placeholder="Category (optional)"
+                value={updateForm.category}
+                onChange={(e) => setUpdateForm((p) => ({ ...p, category: e.target.value }))}
+                className="w-full border rounded px-3 py-2"
+              />
+              <textarea
+                rows={4}
+                placeholder="Message"
+                value={updateForm.message}
+                onChange={(e) => setUpdateForm((p) => ({ ...p, message: e.target.value }))}
+                className="w-full border rounded px-3 py-2"
+              />
+              <button
+                onClick={publishUpdate}
+                disabled={publishingUpdate}
+                className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-black"
+              >
+                {publishingUpdate ? "Publishing..." : "Publish Update"}
+              </button>
+            </div>
+
+            <div className="bg-white p-5 rounded shadow">
+              <h4 className="font-semibold mb-2">Latest Published Documents</h4>
+              {officialDocuments.length === 0 ? (
+                <p className="text-sm text-gray-500">No documents published yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {officialDocuments.slice(0, 8).map((d) => (
+                    <a key={d.id} href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="block border rounded p-3 hover:bg-slate-50">
+                      <div className="font-medium">{d.title}</div>
+                      <div className="text-xs text-gray-500">{new Date(d.createdAt).toLocaleString()}</div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

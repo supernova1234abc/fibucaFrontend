@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChangePwModalContext } from "../components/DashboardLayout";
-import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt } from "react-icons/fa";
+import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaBullhorn, FaFileAlt } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -48,6 +48,13 @@ export default function ClientDashboard() {
   const [transferNewEmpNo, setTransferNewEmpNo] = useState("");
   const [transferNote, setTransferNote] = useState("");
   const [sendingTransfer, setSendingTransfer] = useState(false);
+  const [transferMode, setTransferMode] = useState("EMPLOYER_CHANGE");
+  const [transferNewBranch, setTransferNewBranch] = useState("");
+  const [transferWorkstation, setTransferWorkstation] = useState("");
+
+  const [officialDocuments, setOfficialDocuments] = useState([]);
+  const [officialUpdates, setOfficialUpdates] = useState([]);
+  const [loadingOfficial, setLoadingOfficial] = useState(false);
 
 
   // ---------------------- FETCH FUNCTIONS ----------------------
@@ -131,13 +138,32 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
+  const fetchOfficialInfo = useCallback(async () => {
+    setLoadingOfficial(true);
+    try {
+      const [docsRes, updatesRes] = await Promise.all([
+        api.get("/api/client/documents"),
+        api.get("/api/client/updates"),
+      ]);
+      setOfficialDocuments(Array.isArray(docsRes.data) ? docsRes.data : []);
+      setOfficialUpdates(Array.isArray(updatesRes.data) ? updatesRes.data : []);
+    } catch (err) {
+      console.warn("Fetch official info failed:", err);
+      setOfficialDocuments([]);
+      setOfficialUpdates([]);
+    } finally {
+      setLoadingOfficial(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user && user.role !== "CLIENT") navigate("/login");
     fetchSubmissions();
     fetchIdCards();
     fetchMyComplaints();
     fetchPhotoRuntime();
-  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime]);
+    fetchOfficialInfo();
+  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime, fetchOfficialInfo]);
 
   const removeBackgroundInBrowser = useCallback(async (file) => {
     const { removeBackground } = await import("@imgly/background-removal");
@@ -278,20 +304,29 @@ export default function ClientDashboard() {
   const submitTransferRequest = async () => {
     const newEmpNo = transferNewEmpNo.trim();
     const newEmployer = transferEmployer.trim();
+    const newBranch = transferNewBranch.trim();
+    const workstation = transferWorkstation.trim();
     const note = transferNote.trim();
 
-    if (!newEmpNo || !newEmployer) {
-      return toast.error("New employer name and new employee number are required.");
+    if (!newBranch) {
+      return toast.error("New branch/workstation is required.");
+    }
+
+    if (transferMode === "EMPLOYER_CHANGE" && (!newEmpNo || !newEmployer)) {
+      return toast.error("New employer and new employee number are required.");
     }
 
     setSendingTransfer(true);
     try {
-      const subject = "TRANSFER REQUEST";
+      const subject = "TRANSFER NOTICE";
       const message =
-        `Client requests transfer/update details:\n` +
+        `Client transfer notice:\n` +
+        `Transfer Type: ${transferMode === "EMPLOYER_CHANGE" ? "Employer change" : "Branch only"}\n` +
         `Old Employee Number: ${user.employeeNumber}\n` +
-        `New Employee Number: ${newEmpNo}\n` +
-        `New Employer/Bank: ${newEmployer}\n` +
+        `New Employee Number: ${transferMode === "EMPLOYER_CHANGE" ? newEmpNo : user.employeeNumber}\n` +
+        `New Employer/Bank: ${transferMode === "EMPLOYER_CHANGE" ? newEmployer : "No change"}\n` +
+        `New Branch: ${newBranch}\n` +
+        `New Workstation: ${workstation || "N/A"}\n` +
         (note ? `Reason/Note: ${note}\n` : "");
 
       await api.post("/api/complaints", { subject, message });
@@ -299,6 +334,8 @@ export default function ClientDashboard() {
       toast.success("✅ Transfer request sent to staff");
       setTransferEmployer("");
       setTransferNewEmpNo("");
+      setTransferNewBranch("");
+      setTransferWorkstation("");
       setTransferNote("");
       fetchMyComplaints();
     } catch (err) {
@@ -316,6 +353,10 @@ export default function ClientDashboard() {
       ? "idcards"
       : location.pathname.endsWith("/generate")
         ? "generate"
+        : location.pathname.endsWith("/documents")
+          ? "documents"
+          : location.pathname.endsWith("/updates")
+            ? "updates"
         : location.pathname.endsWith("/support/complaints")
           ? "support-complaints"
           : location.pathname.endsWith("/support/transfer")
@@ -357,6 +398,56 @@ export default function ClientDashboard() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Documents */}
+      {section === "documents" && (
+        <div className="bg-white rounded shadow p-6">
+          <h2 className="text-lg font-semibold mb-3 flex items-center"><FaFileAlt className="mr-2" /> Official Documents</h2>
+          {loadingOfficial ? (
+            <p className="text-gray-500">Loading documents...</p>
+          ) : officialDocuments.length === 0 ? (
+            <p className="text-gray-500">No documents available yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {officialDocuments.map((d) => (
+                <div key={d.id} className="border rounded p-3">
+                  <p className="font-semibold">{d.title}</p>
+                  {d.description && <p className="text-sm text-gray-600 mt-1">{d.description}</p>}
+                  <p className="text-xs text-gray-400 mt-1">Posted by {d.createdBy?.name || "Staff"} • {new Date(d.createdAt).toLocaleString()}</p>
+                  <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-blue-600 hover:underline">
+                    Open / Download
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* News & Updates */}
+      {section === "updates" && (
+        <div className="bg-white rounded shadow p-6">
+          <h2 className="text-lg font-semibold mb-3 flex items-center"><FaBullhorn className="mr-2" /> News & Updates</h2>
+          {loadingOfficial ? (
+            <p className="text-gray-500">Loading updates...</p>
+          ) : officialUpdates.length === 0 ? (
+            <p className="text-gray-500">No updates posted yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {officialUpdates.map((u) => (
+                <div key={u.id} className="border rounded p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold">{u.title}</p>
+                    {u.category && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{u.category}</span>}
+                  </div>
+                  <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{u.message}</p>
+                  <p className="text-xs text-gray-400 mt-2">Posted by {u.createdBy?.name || "Staff"} • {new Date(u.createdAt).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -597,24 +688,57 @@ export default function ClientDashboard() {
         <div className="space-y-4">
           <div className="bg-white rounded shadow p-6">
             <h2 className="text-lg font-bold mb-3 flex items-center">
-              <FaExchangeAlt className="mr-2" /> Transfer Request
+              <FaExchangeAlt className="mr-2" /> Transfer Notice
             </h2>
+            <div className="mb-3">
+              <label className="block text-sm font-semibold mb-1">Transfer Type</label>
+              <select
+                value={transferMode}
+                onChange={(e) => setTransferMode(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+              >
+                <option value="EMPLOYER_CHANGE">Change to new employer</option>
+                <option value="BRANCH_ONLY">No employer change (branch only)</option>
+              </select>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {transferMode === "EMPLOYER_CHANGE" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">New Employer / Bank</label>
+                    <input
+                      value={transferEmployer}
+                      onChange={(e) => setTransferEmployer(e.target.value)}
+                      placeholder="e.g. CRDB Bank"
+                      className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">New Employee Number</label>
+                    <input
+                      value={transferNewEmpNo}
+                      onChange={(e) => setTransferNewEmpNo(e.target.value)}
+                      placeholder="New employee number"
+                      className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                    />
+                  </div>
+                </>
+              )}
               <div>
-                <label className="block text-sm font-semibold mb-1">New Employer / Bank</label>
+                <label className="block text-sm font-semibold mb-1">New Branch Name</label>
                 <input
-                  value={transferEmployer}
-                  onChange={(e) => setTransferEmployer(e.target.value)}
-                  placeholder="e.g. CRDB Bank"
+                  value={transferNewBranch}
+                  onChange={(e) => setTransferNewBranch(e.target.value)}
+                  placeholder="e.g. Kariakoo Branch"
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">New Employee Number</label>
+                <label className="block text-sm font-semibold mb-1">New Workstation</label>
                 <input
-                  value={transferNewEmpNo}
-                  onChange={(e) => setTransferNewEmpNo(e.target.value)}
-                  placeholder="New employee number"
+                  value={transferWorkstation}
+                  onChange={(e) => setTransferWorkstation(e.target.value)}
+                  placeholder="e.g. Teller Desk 4"
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>

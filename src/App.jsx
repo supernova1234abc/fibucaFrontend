@@ -31,12 +31,14 @@ const clientMenus = [
   { id: 'pdf',      href: '/client/pdf',      label: 'PDF',                     bottomNav: true, icon: FaFilePdf  },
   { id: 'idcards',  href: '/client/idcards',  label: 'ID Card',                 bottomNav: true, icon: FaIdCard   },
   { id: 'generate', href: '/client/generate', label: 'Generate ID' },
+  { id: 'documents', href: '/client/documents', label: 'Documents' },
+  { id: 'updates', href: '/client/updates', label: 'News & Updates' },
   {
     id: 'support',
     label: 'Support',
     children: [
       { id: 'support-complaints', href: '/client/support/complaints', label: 'Complaints' },
-      { id: 'support-transfer', href: '/client/support/transfer', label: 'Transfer' },
+      { id: 'support-transfer', href: '/client/support/transfer', label: 'Transfer Notice' },
     ],
   },
 ];
@@ -50,6 +52,7 @@ const adminMenus = [
 
 const staffMenus = [
   { href: '/staff/links', label: 'Dashboard', exact: true },
+  { href: '/staff/notices', label: 'Notices' },
   { href: '/staff/scan-paper', label: 'Scan paper form' },
 ];
 
@@ -124,6 +127,7 @@ export default function App() {
               <Route path="/staff/links" element={<StaffDashboard />} />
               <Route path="/staff/clients" element={<StaffDashboard />} />
               <Route path="/staff/profile" element={<StaffDashboard />} />
+              <Route path="/staff/notices" element={<StaffDashboard />} />
               <Route path="/staff/scan-paper" element={<ScanPaperForm />} />
               <Route path="/staff/complaints" element={<StaffDashboard />} />
             </Route>
@@ -136,6 +140,8 @@ export default function App() {
               <Route path="/client/pdf" element={<ClientDashboard />} />
               <Route path="/client/generate" element={<ClientDashboard />} />
               <Route path="/client/idcards" element={<ClientDashboard />} />
+              <Route path="/client/documents" element={<ClientDashboard />} />
+              <Route path="/client/updates" element={<ClientDashboard />} />
               <Route path="/client/support" element={<Navigate to="/client/support/complaints" replace />} />
               <Route path="/client/support/complaints" element={<ClientDashboard />} />
               <Route path="/client/support/transfer" element={<ClientDashboard />} />
