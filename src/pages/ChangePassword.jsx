@@ -27,6 +27,15 @@ function PasswordInput({ value, onChange, placeholder, shown, onToggle, disabled
   );
 }
 
+// Password strength check utility
+function getPasswordChecks(password) {
+  return {
+    length: password.length >= 8,
+    letter: /[A-Za-z]/.test(password),
+    number: /[0-9]/.test(password),
+  };
+}
+
 export default function ChangePassword({ inModal = false, onSuccess, onCancel }) {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
@@ -45,6 +54,9 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Password strength state
+  const passwordChecks = getPasswordChecks(newPassword);
 
   const isFirstLoginFlow = !!user && user.passwordChanged === false;
 
@@ -70,6 +82,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
   };
 
   const handleSubmit = async () => {
+
     if (!newPassword.trim() || !confirmPassword.trim()) {
       return alert(isSw ? 'Nywila mpya na uthibitisho vinahitajika.' : 'New password and confirmation are required.');
     }
@@ -78,8 +91,13 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
       return alert(isSw ? 'Nywila mpya na uthibitisho havilingani.' : 'New password and confirmation do not match.');
     }
 
-    if (newPassword.length < 6) {
-      return alert(isSw ? 'Nywila lazima iwe na angalau herufi 6.' : 'Password must be at least 6 characters.');
+    // Strong password requirements for user-set passwords
+    if (newPassword.length < 8 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return alert(
+        isSw
+          ? 'Nywila lazima iwe na angalau herufi 8, herufi moja na nambari moja.'
+          : 'Password must be at least 8 characters, with at least one letter and one number.'
+      );
     }
 
     try {
@@ -140,6 +158,7 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
           />
         )}
 
+
         <PasswordInput
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
@@ -148,6 +167,18 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
           onToggle={() => setShowNew((v) => !v)}
           disabled={loading}
         />
+        {/* Password strength checklist */}
+        <ul className="mb-2 ml-2 text-xs">
+          <li className={passwordChecks.length ? 'text-green-600' : 'text-gray-500'}>
+            {isSw ? 'Angalau herufi 8' : 'At least 8 characters'}
+          </li>
+          <li className={passwordChecks.letter ? 'text-green-600' : 'text-gray-500'}>
+            {isSw ? 'Angalau herufi moja' : 'At least one letter'}
+          </li>
+          <li className={passwordChecks.number ? 'text-green-600' : 'text-gray-500'}>
+            {isSw ? 'Angalau nambari moja' : 'At least one number'}
+          </li>
+        </ul>
 
         <PasswordInput
           value={confirmPassword}

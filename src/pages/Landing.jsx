@@ -3,18 +3,16 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
-  // Remove local lang state; use context
   const [activeSlide, setActiveSlide] = useState(0);
-
   const menuRef = useRef(null);
   const menuButtonRef = useRef(null);
-
   const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu = () => setMenuOpen(false);
-  // Remove toggleLang; use LanguageSwitcher
+  const { lang } = useLanguage();
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto";
@@ -262,8 +260,7 @@ export default function Landing() {
   };
 
   // Use context for language selection
-  import { useLanguage } from "../context/LanguageContext";
-  const { lang } = useLanguage ? useLanguage() : { lang: "en" };
+  // (already imported and used at top)
   const t = content[lang];
   const heroSlides = t.heroSlides;
 

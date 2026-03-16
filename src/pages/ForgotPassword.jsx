@@ -3,6 +3,15 @@ import Swal from 'sweetalert2';
 import { api } from '../lib/api';
 import { useLanguage } from '../context/LanguageContext';
 
+// Password strength check utility
+function getPasswordChecks(password) {
+  return {
+    length: password.length >= 8,
+    letter: /[A-Za-z]/.test(password),
+    number: /[0-9]/.test(password),
+  };
+}
+
 export default function ForgotPassword() {
   const { isSw } = useLanguage();
   const [identifier, setIdentifier] = useState('');
@@ -11,6 +20,7 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [stage, setStage] = useState('request');
+  const passwordChecks = getPasswordChecks(newPassword);
   const [loading, setLoading] = useState(false);
   const [otpHint, setOtpHint] = useState('');
 
@@ -56,8 +66,15 @@ export default function ForgotPassword() {
       return Swal.fire(isSw ? 'Samahani!' : 'Oops!', isSw ? 'Nywila mpya na uthibitisho havilingani.' : 'New password and confirmation do not match.', 'warning');
     }
 
-    if (newPassword.length < 6) {
-      return Swal.fire(isSw ? 'Samahani!' : 'Oops!', isSw ? 'Nywila lazima iwe na angalau herufi 6.' : 'Password must be at least 6 characters.', 'warning');
+    // Strong password requirements for user-set passwords
+    if (newPassword.length < 8 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return Swal.fire(
+        isSw ? 'Samahani!' : 'Oops!',
+        isSw
+          ? 'Nywila lazima iwe na angalau herufi 8, herufi moja na nambari moja.'
+          : 'Password must be at least 8 characters, with at least one letter and one number.',
+        'warning'
+      );
     }
 
     try {
@@ -154,9 +171,21 @@ export default function ForgotPassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={isSw ? 'Angalau herufi 6' : 'At least 6 characters'}
+                placeholder={isSw ? 'Angalau herufi 8' : 'At least 8 characters'}
                 disabled={loading}
               />
+              {/* Password strength checklist */}
+              <ul className="mt-1 ml-2 text-xs">
+                <li className={passwordChecks.length ? 'text-green-600' : 'text-gray-500'}>
+                  {isSw ? 'Angalau herufi 8' : 'At least 8 characters'}
+                </li>
+                <li className={passwordChecks.letter ? 'text-green-600' : 'text-gray-500'}>
+                  {isSw ? 'Angalau herufi moja' : 'At least one letter'}
+                </li>
+                <li className={passwordChecks.number ? 'text-green-600' : 'text-gray-500'}>
+                  {isSw ? 'Angalau nambari moja' : 'At least one number'}
+                </li>
+              </ul>
             </div>
 
             <div className="mb-4">
