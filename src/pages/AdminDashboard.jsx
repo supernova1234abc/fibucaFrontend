@@ -75,9 +75,6 @@ export default function AdminDashboard() {
   const [submissionFilters, setSubmissionFilters] = useState({
     employerName: "",
     branchName: "",
-    employeeName: "",
-    employeeNumber: "",
-    phoneNumber: "",
   });
 
   const [staffLeaderboard, setStaffLeaderboard] = useState([]);
@@ -155,9 +152,6 @@ export default function AdminDashboard() {
       const params = {};
       if (submissionFilters.employerName) params.employerName = submissionFilters.employerName;
       if (submissionFilters.branchName) params.branchName = submissionFilters.branchName;
-      if (submissionFilters.employeeName) params.employeeName = submissionFilters.employeeName;
-      if (submissionFilters.employeeNumber) params.employeeNumber = submissionFilters.employeeNumber;
-      if (submissionFilters.phoneNumber) params.phoneNumber = submissionFilters.phoneNumber;
       const res = await api.get("/submissions", { params });
       const rows = res.data || [];
       setFilteredUsers(rows);
@@ -173,9 +167,6 @@ export default function AdminDashboard() {
     setSubmissionFilters({
       employerName: "",
       branchName: "",
-      employeeName: "",
-      employeeNumber: "",
-      phoneNumber: "",
     });
 
     try {
@@ -617,7 +608,7 @@ export default function AdminDashboard() {
 
         {section === "submissions" && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 space-y-5">
+            <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 space-y-4">
               <div className="flex flex-col md:flex-row justify-between gap-4">
                 <h2 className="text-2xl font-bold">Client Submissions</h2>
 
@@ -632,7 +623,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
                   placeholder="Employer e.g. CRDB"
                   value={submissionFilters.employerName}
@@ -650,51 +641,24 @@ export default function AdminDashboard() {
                   }
                   className="border rounded-lg px-3 py-2"
                 />
-
-                <input
-                  placeholder="Employee name"
-                  value={submissionFilters.employeeName}
-                  onChange={(e) =>
-                    setSubmissionFilters((prev) => ({ ...prev, employeeName: e.target.value }))
-                  }
-                  className="border rounded-lg px-3 py-2"
-                />
-
-                <input
-                  placeholder="Employee number"
-                  value={submissionFilters.employeeNumber}
-                  onChange={(e) =>
-                    setSubmissionFilters((prev) => ({ ...prev, employeeNumber: e.target.value }))
-                  }
-                  className="border rounded-lg px-3 py-2"
-                />
-
-                <input
-                  placeholder="Phone number"
-                  value={submissionFilters.phoneNumber}
-                  onChange={(e) =>
-                    setSubmissionFilters((prev) => ({ ...prev, phoneNumber: e.target.value }))
-                  }
-                  className="border rounded-lg px-3 py-2"
-                />
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={searchSubmissionsAdvanced}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center gap-2"
+                  className="bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-indigo-700 transition flex items-center gap-1.5"
                 >
                   <FaFilter /> Filter
                 </button>
 
                 <button
                   onClick={resetSubmissionFilters}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+                  className="bg-gray-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-gray-700 transition"
                 >
                   Reset
                 </button>
 
-                <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+                <label className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md cursor-pointer hover:bg-blue-700 transition">
                   <FaUpload className="inline mr-2" />
                   {uploading ? "Uploading..." : "Upload Excel"}
                   <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
@@ -702,14 +666,14 @@ export default function AdminDashboard() {
 
                 <button
                   onClick={exportToExcel}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                  className="bg-green-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-green-700 transition"
                 >
                   <FaDownload className="inline mr-2" /> Excel
                 </button>
 
                 <button
                   onClick={exportToPDF}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                  className="bg-red-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-red-700 transition"
                 >
                   <FaFilePdf className="inline mr-2" /> PDF
                 </button>
