@@ -390,7 +390,7 @@ export default function ClientForm() {
       } else {
         await Swal.fire({
           title: isSw ? "Fomu Imewasilishwa" : "Form Submitted",
-          text: isSw ? "Fomu yako imewasilishwa. Angalia barua pepe au wasiliana na admin kupata taarifa za kuingia." : "Your form has been submitted successfully. Check your email or contact admin for login credentials.",
+          text: isSw ? "Fomu yako imewasilishwa. Angalia WhatsApp/barua pepe au wasiliana na admin kupata taarifa za kuingia." : "Your form has been submitted successfully. Check WhatsApp/email or contact admin for login credentials.",
           icon: "success",
           confirmButtonText: isSw ? "Nenda Kuingia" : "Go to Login",
         });

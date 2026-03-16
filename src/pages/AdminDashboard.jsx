@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState, useCallback, useContext } from "react";
+import { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { api, setAuthToken } from "../lib/api";
 import DataTable from "react-data-table-component";
 import BottomNavbar from "../components/BottomNavbar";
@@ -41,17 +41,17 @@ export default function AdminDashboard() {
     ? "reports"
     : "submissions";
 
-  const navbarTabs = [
+  const navbarTabs = useMemo(() => ([
     { id: "submissions", label: isSw ? "Uwasilishaji" : "Submissions", icon: FaFileAlt, href: "/admin/submissions" },
     { id: "users", label: isSw ? "Watumiaji" : "Users", icon: FaUsers, href: "/admin/users" },
     { id: "leaderboard", label: isSw ? "Orodha ya Nafasi" : "Ranking", icon: FaTrophy, href: "/admin/leaderboard" },
     { id: "reports", label: isSw ? "Ripoti" : "Reports", icon: FaChartLine, href: "/admin/reports" },
-  ];
+  ]), [isSw]);
 
   useEffect(() => {
     setSectionMenus(navbarTabs);
     return () => setSectionMenus([]);
-  }, [setSectionMenus]);
+  }, [setSectionMenus, navbarTabs]);
 
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);

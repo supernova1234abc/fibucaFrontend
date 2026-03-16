@@ -47,18 +47,18 @@ export default function StaffDashboard() {
     ? "complaints"
     : "links";
 
-  const navbarTabs = [
+  const navbarTabs = useMemo(() => ([
     { id: "links", label: isSw ? "Viungo" : "Links", icon: FaLink, href: "/staff/links" },
     { id: "clients", label: isSw ? "Wateja" : "Clients", icon: FaUsers, href: "/staff/clients" },
     { id: "complaints", label: isSw ? "Malalamiko" : "Complaints", icon: FaComments, href: "/staff/complaints" },
     { id: "notices", label: isSw ? "Matangazo" : "Notices", icon: FaBullhorn, href: "/staff/notices" },
     { id: "profile", label: isSw ? "Wasifu" : "Profile", icon: FaChartLine, href: "/staff/profile" },
-  ];
+  ]), [isSw]);
 
   useEffect(() => {
     setSectionMenus(navbarTabs);
     return () => setSectionMenus([]);
-  }, [setSectionMenus]);
+  }, [setSectionMenus, navbarTabs]);
 
   const [submissions, setSubmissions] = useState([]);
   const [filteredSubs, setFilteredSubs] = useState([]);
