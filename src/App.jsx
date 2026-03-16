@@ -31,8 +31,14 @@ const clientMenus = [
   { id: 'pdf',      href: '/client/pdf',      label: 'PDF',                     bottomNav: true, icon: FaFilePdf  },
   { id: 'idcards',  href: '/client/idcards',  label: 'ID Card',                 bottomNav: true, icon: FaIdCard   },
   { id: 'generate', href: '/client/generate', label: 'Generate ID' },
-  { id: 'support',  href: '/client/support',  label: 'Support'    },
-  { id: 'profile',  href: '/client/profile',  label: 'My Profile' },
+  {
+    id: 'support',
+    label: 'Support',
+    children: [
+      { id: 'support-complaints', href: '/client/support/complaints', label: 'Complaints' },
+      { id: 'support-transfer', href: '/client/support/transfer', label: 'Transfer' },
+    ],
+  },
 ];
 
 const adminMenus = [
@@ -130,8 +136,9 @@ export default function App() {
               <Route path="/client/pdf" element={<ClientDashboard />} />
               <Route path="/client/generate" element={<ClientDashboard />} />
               <Route path="/client/idcards" element={<ClientDashboard />} />
-              <Route path="/client/support" element={<ClientDashboard />} />
-              <Route path="/client/profile" element={<ClientDashboard />} />
+              <Route path="/client/support" element={<Navigate to="/client/support/complaints" replace />} />
+              <Route path="/client/support/complaints" element={<ClientDashboard />} />
+              <Route path="/client/support/transfer" element={<ClientDashboard />} />
             </Route>
           </Route>
 

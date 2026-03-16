@@ -6,6 +6,8 @@ import {
   FaTimes,
   FaKey,
   FaSignOutAlt,
+  FaChevronDown,
+  FaUser,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ChangePasswordPage from "../pages/ChangePassword";
@@ -40,7 +42,9 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showChangePwModal, setShowChangePwModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [sectionMenus, setSectionMenus] = useState([]);
+  const [expandedMenus, setExpandedMenus] = useState({});
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -98,12 +102,64 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
   const bottomNavMenus = menus.filter((m) => m.bottomNav);
 
+  const isAnyChildActive = (children = []) =>
+    children.some((child) => isActive(child.href, child.exact));
+
   const isActive = (path, exact = false) =>
     exact
       ? location.pathname === path
       : location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const renderMenuButton = (menu, idx, type = "main") => {
+    const hasChildren = Array.isArray(menu.children) && menu.children.length > 0;
+
+    if (hasChildren) {
+      const expanded = !!expandedMenus[menu.id || menu.label || idx];
+      const activeParent = isAnyChildActive(menu.children);
+      const key = `${menu.label}-${idx}`;
+
+      return (
+        <div key={key} className="space-y-1">
+          <button
+            onClick={() => {
+              const menuKey = menu.id || menu.label || idx;
+              setExpandedMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
+            }}
+            className={`no-force-dark group flex items-center justify-between w-full text-left rounded-xl transition-all duration-200 px-4 py-3 text-sm ${
+              activeParent ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow-md" : "text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            <span>{menu.label}</span>
+            <FaChevronDown className={`transition-transform ${expanded ? "rotate-180" : ""}`} size={12} />
+          </button>
+
+          {expanded && (
+            <div className="ml-3 space-y-1">
+              {menu.children.map((child, childIdx) => {
+                const childActive = isActive(child.href, child.exact);
+                return (
+                  <button
+                    key={`${child.href}-${childIdx}`}
+                    onClick={() => {
+                      navigate(child.href);
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full text-left rounded-lg px-3 py-2 text-sm transition ${
+                      childActive
+                        ? "bg-blue-100 text-blue-700 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {child.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     const active = isActive(menu.href, menu.exact);
     const Icon = menu.icon;
     const key = `${menu.href}-${idx}`;
@@ -252,6 +308,17 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
                     <button
                       onClick={() => {
+                        setShowProfileModal(true);
+                        setDropdownOpen(false);
+                      }}
+                      className="no-force-dark flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-slate-50 transition"
+                    >
+                      <FaUser className="text-slate-500" />
+                      <span>My Profile</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         setShowChangePwModal(true);
                         setDropdownOpen(false);
                       }}
@@ -303,6 +370,39 @@ export default function DashboardLayout({ children, menus = [], user }) {
                     onSuccess={() => setShowChangePwModal(false)}
                     onCancel={() => setShowChangePwModal(false)}
                   />
+                </div>
+              </div>
+            </>
+          )}
+
+          {showProfileModal && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30"
+                onClick={() => setShowProfileModal(false)}
+              />
+              <div className="fixed inset-0 flex items-center justify-center z-40 p-4">
+                <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-800">My Profile</h3>
+                    <button
+                      className="text-slate-500 hover:text-slate-700"
+                      onClick={() => setShowProfileModal(false)}
+                      aria-label="Close profile modal"
+                    >
+                      <FaTimes size={16} />
+                    </button>
+                  </div>
+
+                  <div className="px-5 py-4 space-y-3 text-sm">
+                    <p><span className="font-semibold text-slate-700">Name:</span> {user?.name || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">Role:</span> {user?.role || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">Username:</span> {user?.username || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">Employee #:</span> {user?.employeeNumber || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">Email:</span> {user?.email || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">Phone:</span> {user?.phone || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">Second Phone:</span> {user?.phone2 || "-"}</p>
+                  </div>
                 </div>
               </div>
             </>

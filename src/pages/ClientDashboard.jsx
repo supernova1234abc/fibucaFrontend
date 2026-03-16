@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChangePwModalContext } from "../components/DashboardLayout";
-import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaUser, FaSave } from "react-icons/fa";
+import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -49,15 +49,6 @@ export default function ClientDashboard() {
   const [transferNote, setTransferNote] = useState("");
   const [sendingTransfer, setSendingTransfer] = useState(false);
 
-  // ✅ support sub-tab
-  const [supportTab, setSupportTab] = useState("complaint");
-
-  // ✅ profile edit
-  const [profileEmail, setProfileEmail] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
-  const [profilePhone2, setProfilePhone2] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // ---------------------- FETCH FUNCTIONS ----------------------
   const fetchSubmissions = useCallback(async () => {
@@ -140,45 +131,13 @@ export default function ClientDashboard() {
     }
   }, [user]);
 
-  const fetchProfile = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { data } = await api.get("/api/me");
-      const u = data?.user || {};
-      setProfileEmail(u.email || "");
-      setProfilePhone(u.phone || "");
-      setProfilePhone2(u.phone2 || "");
-      setProfileLoaded(true);
-    } catch (err) {
-      console.warn("Fetch profile failed:", err);
-    }
-  }, [user]);
-
-  const saveProfile = async () => {
-    setSavingProfile(true);
-    try {
-      const payload = {};
-      if (profileEmail !== undefined) payload.email = profileEmail;
-      if (profilePhone !== undefined) payload.phone = profilePhone;
-      if (profilePhone2 !== undefined) payload.phone2 = profilePhone2;
-      await api.put("/api/profile", payload);
-      toast.success("✅ Profile updated");
-    } catch (err) {
-      const msg = err?.response?.data?.error || "Failed to update profile";
-      toast.error(msg);
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
   useEffect(() => {
     if (user && user.role !== "CLIENT") navigate("/login");
     fetchSubmissions();
     fetchIdCards();
     fetchMyComplaints();
     fetchPhotoRuntime();
-    fetchProfile();
-  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime, fetchProfile]);
+  }, [user, navigate, fetchSubmissions, fetchIdCards, fetchMyComplaints, fetchPhotoRuntime]);
 
   const removeBackgroundInBrowser = useCallback(async (file) => {
     const { removeBackground } = await import("@imgly/background-removal");
@@ -357,10 +316,10 @@ export default function ClientDashboard() {
       ? "idcards"
       : location.pathname.endsWith("/generate")
         ? "generate"
-        : location.pathname.endsWith("/support")
-          ? "support"
-          : location.pathname.endsWith("/profile")
-            ? "profile"
+        : location.pathname.endsWith("/support/complaints")
+          ? "support-complaints"
+          : location.pathname.endsWith("/support/transfer")
+            ? "support-transfer"
             : "overview";
 
   const getCardRole = () => "Member";
@@ -400,14 +359,14 @@ export default function ClientDashboard() {
 
           <div className="flex flex-wrap gap-2 mt-4">
             <button
-              onClick={() => navigate("/client/support")}
+              onClick={() => navigate("/client/support/complaints")}
               className="inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
             >
               <FaRegCommentDots className="mr-2" /> Complaints / Support
             </button>
 
             <button
-              onClick={() => navigate("/client/support")}
+              onClick={() => navigate("/client/support/transfer")}
               className="inline-flex items-center px-4 py-2 rounded bg-gray-900 text-white hover:bg-gray-800"
             >
               <FaExchangeAlt className="mr-2" /> Transfer Request
@@ -570,118 +529,37 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* ✅ Support: Complaints + Transfer Request (tabbed) */}
-      {section === "support" && (
+      {/* ✅ Support: Complaints */}
+      {section === "support-complaints" && (
         <div className="space-y-4">
-          {/* Sub-tab switcher */}
-          <div className="bg-white rounded shadow px-4 pt-4 pb-3 flex gap-2">
-            <button
-              onClick={() => setSupportTab("complaint")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                supportTab === "complaint"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <FaRegCommentDots size={13} /> Complaint
-            </button>
-            <button
-              onClick={() => setSupportTab("transfer")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                supportTab === "transfer"
-                  ? "bg-gray-900 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <FaExchangeAlt size={13} /> Transfer
-            </button>
+          <div className="bg-white rounded shadow p-6">
+            <h2 className="text-lg font-bold mb-3 flex items-center">
+              <FaRegCommentDots className="mr-2" /> New Complaint
+            </h2>
+            <div className="space-y-3">
+              <input
+                value={complaintSubject}
+                onChange={(e) => setComplaintSubject(e.target.value)}
+                placeholder="Subject / Head"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+              />
+              <textarea
+                value={complaintMessage}
+                onChange={(e) => setComplaintMessage(e.target.value)}
+                placeholder="Write your complaint/message..."
+                rows={4}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+              />
+              <button
+                onClick={submitComplaint}
+                disabled={sendingComplaint}
+                className={`px-4 py-2 rounded text-white ${sendingComplaint ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+              >
+                Send Complaint
+              </button>
+            </div>
           </div>
 
-          {/* Complaint form */}
-          {supportTab === "complaint" && (
-            <div className="bg-white rounded shadow p-6">
-              <h2 className="text-lg font-bold mb-3 flex items-center">
-                <FaRegCommentDots className="mr-2" /> New Complaint
-              </h2>
-              <div className="space-y-3">
-                <input
-                  value={complaintSubject}
-                  onChange={(e) => setComplaintSubject(e.target.value)}
-                  placeholder="Subject / Head"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
-                />
-                <textarea
-                  value={complaintMessage}
-                  onChange={(e) => setComplaintMessage(e.target.value)}
-                  placeholder="Write your complaint/message..."
-                  rows={4}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
-                />
-                <button
-                  onClick={submitComplaint}
-                  disabled={sendingComplaint}
-                  className={`px-4 py-2 rounded text-white ${
-                    sendingComplaint ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-                >
-                  Send Complaint
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Transfer form */}
-          {supportTab === "transfer" && (
-            <div className="bg-white rounded shadow p-6">
-              <h2 className="text-lg font-bold mb-3 flex items-center">
-                <FaExchangeAlt className="mr-2" /> Transfer Request
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">New Employer / Bank</label>
-                  <input
-                    value={transferEmployer}
-                    onChange={(e) => setTransferEmployer(e.target.value)}
-                    placeholder="e.g. CRDB Bank"
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">New Employee Number</label>
-                  <input
-                    value={transferNewEmpNo}
-                    onChange={(e) => setTransferNewEmpNo(e.target.value)}
-                    placeholder="New employee number"
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold mb-1">Reason / Note (optional)</label>
-                  <textarea
-                    value={transferNote}
-                    onChange={(e) => setTransferNote(e.target.value)}
-                    rows={3}
-                    placeholder="Explain why you are changing bank/employer..."
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={submitTransferRequest}
-                disabled={sendingTransfer}
-                className={`mt-3 px-4 py-2 rounded text-white ${
-                  sendingTransfer ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"
-                }`}
-              >
-                Submit Transfer Request
-              </button>
-              <p className="text-xs text-gray-500 mt-2">
-                Note: Staff must approve the transfer before your employee number changes in the system.
-              </p>
-            </div>
-          )}
-
-          {/* My Requests — always visible below the forms */}
           <div className="bg-white rounded shadow p-6">
             <h3 className="font-semibold mb-2">My Requests / Complaints</h3>
             {loadingComplaints ? (
@@ -729,71 +607,99 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* Profile */}
-      {section === "profile" && (
-        <div className="bg-white rounded shadow p-6 max-w-lg">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <FaUser /> My Profile
-          </h2>
-
-          {!profileLoaded ? (
-            <p className="text-gray-400 animate-pulse">Loading...</p>
-          ) : (
-            <div className="space-y-4">
+      {/* ✅ Support: Transfer */}
+      {section === "support-transfer" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded shadow p-6">
+            <h2 className="text-lg font-bold mb-3 flex items-center">
+              <FaExchangeAlt className="mr-2" /> Transfer Request
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <p className="text-sm text-gray-500 mb-1"><strong>Name:</strong> {user?.name}</p>
-                <p className="text-sm text-gray-500 mb-1"><strong>Employee #:</strong> {user?.employeeNumber}</p>
-                <p className="text-sm text-gray-500 mb-3"><strong>Username:</strong> {user?.username}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Email Address</label>
+                <label className="block text-sm font-semibold mb-1">New Employer / Bank</label>
                 <input
-                  type="email"
-                  value={profileEmail}
-                  onChange={(e) => setProfileEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  value={transferEmployer}
+                  onChange={(e) => setTransferEmployer(e.target.value)}
+                  placeholder="e.g. CRDB Bank"
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Phone Number {profilePhone && <span className="text-xs text-gray-400">(cannot be deleted)</span>}
-                </label>
+                <label className="block text-sm font-semibold mb-1">New Employee Number</label>
                 <input
-                  type="tel"
-                  value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
-                  placeholder="+255 7XX XXX XXX"
+                  value={transferNewEmpNo}
+                  onChange={(e) => setTransferNewEmpNo(e.target.value)}
+                  placeholder="New employee number"
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Second Phone Number {profilePhone2 && <span className="text-xs text-gray-400">(cannot be deleted)</span>}
-                </label>
-                <input
-                  type="tel"
-                  value={profilePhone2}
-                  onChange={(e) => setProfilePhone2(e.target.value)}
-                  placeholder="+255 7XX XXX XXX (optional)"
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-1">Reason / Note (optional)</label>
+                <textarea
+                  value={transferNote}
+                  onChange={(e) => setTransferNote(e.target.value)}
+                  rows={3}
+                  placeholder="Explain why you are changing bank/employer..."
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
                 />
               </div>
-
-              <button
-                onClick={saveProfile}
-                disabled={savingProfile}
-                className={`flex items-center gap-2 px-5 py-2 rounded text-white font-semibold ${
-                  savingProfile ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                }`}
-              >
-                <FaSave /> {savingProfile ? "Saving..." : "Save Changes"}
-              </button>
             </div>
-          )}
+            <button
+              onClick={submitTransferRequest}
+              disabled={sendingTransfer}
+              className={`mt-3 px-4 py-2 rounded text-white ${sendingTransfer ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"}`}
+            >
+              Submit Transfer Request
+            </button>
+            <p className="text-xs text-gray-500 mt-2">
+              Note: Staff must approve the transfer before your employee number changes in the system.
+            </p>
+          </div>
+
+          <div className="bg-white rounded shadow p-6">
+            <h3 className="font-semibold mb-2">My Requests / Complaints</h3>
+            {loadingComplaints ? (
+              <p className="text-gray-500">Loading…</p>
+            ) : complaints.length === 0 ? (
+              <p className="text-gray-500">No complaints yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {complaints.map((c) => (
+                  <div key={c.id} className="border border-gray-200 rounded p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{c.subject}</p>
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          c.status === "OPEN"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : c.status === "RESOLVED"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{c.message}</p>
+                    <p className="text-xs text-gray-400 mt-2">{new Date(c.createdAt).toLocaleString()}</p>
+                    {c.replies?.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {c.replies.map((r) => (
+                          <div key={r.id} className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
+                            <p className="text-sm font-semibold text-blue-900">
+                              {r.sender?.name} ({r.sender?.role})
+                            </p>
+                            <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap">{r.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
