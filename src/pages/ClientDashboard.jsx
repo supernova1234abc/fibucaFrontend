@@ -59,6 +59,10 @@ function complaintHasAttachment(complaint) {
   });
 }
 
+function complaintHasUnread(complaint) {
+  return !!complaint?.unreadForClient;
+}
+
 export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
@@ -189,6 +193,17 @@ export default function ClientDashboard() {
       setLoadingComplaints(false);
     }
   }, [user]);
+
+  const markAllMyComplaintsRead = async () => {
+    try {
+      await api.post("/api/complaints/mark-read");
+      setComplaints((prev) => prev.map((c) => ({ ...c, unreadForClient: false })));
+      toast.success(isSw ? "Ujumbe wote umewekwa kuwa umesomwa" : "All messages marked as read");
+    } catch (err) {
+      console.error(err);
+      toast.error(isSw ? "Imeshindikana kuweka kama umesomwa" : "Failed to mark as read");
+    }
+  };
 
   const fetchOfficialInfo = useCallback(async () => {
     setLoadingOfficial(true);
@@ -690,6 +705,14 @@ export default function ClientDashboard() {
 
           <div className="bg-white rounded shadow p-6">
             <h3 className="font-semibold mb-2">{isSw ? "Maombi / Malalamiko Yangu" : "My Requests / Complaints"}</h3>
+            {!!complaints.some((c) => c.unreadForClient) && (
+              <button
+                onClick={markAllMyComplaintsRead}
+                className="mb-3 px-3 py-2 rounded text-sm bg-slate-800 text-white hover:bg-black"
+              >
+                {isSw ? "Weka Yote Kama Umesoma" : "Mark All as Read"}
+              </button>
+            )}
             {loadingComplaints ? (
               <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
             ) : complaints.length === 0 ? (
@@ -704,6 +727,11 @@ export default function ClientDashboard() {
                         {complaintHasAttachment(c) && (
                           <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
                             <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
+                          </span>
+                        )}
+                        {complaintHasUnread(c) && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
+                            {isSw ? "Mpya / Haijasomwa" : "New / Unread"}
                           </span>
                         )}
                         <span
@@ -865,6 +893,14 @@ export default function ClientDashboard() {
 
           <div className="bg-white rounded shadow p-6">
             <h3 className="font-semibold mb-2">{isSw ? "Maombi / Malalamiko Yangu" : "My Requests / Complaints"}</h3>
+            {!!complaints.some((c) => c.unreadForClient) && (
+              <button
+                onClick={markAllMyComplaintsRead}
+                className="mb-3 px-3 py-2 rounded text-sm bg-slate-800 text-white hover:bg-black"
+              >
+                {isSw ? "Weka Yote Kama Umesoma" : "Mark All as Read"}
+              </button>
+            )}
             {loadingComplaints ? (
               <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
             ) : complaints.length === 0 ? (
@@ -879,6 +915,11 @@ export default function ClientDashboard() {
                         {complaintHasAttachment(c) && (
                           <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
                             <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
+                          </span>
+                        )}
+                        {complaintHasUnread(c) && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
+                            {isSw ? "Mpya / Haijasomwa" : "New / Unread"}
                           </span>
                         )}
                         <span

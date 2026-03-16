@@ -99,9 +99,7 @@ function complaintHasAttachment(complaint) {
 }
 
 function complaintHasUnread(complaint) {
-  if (!complaint) return false;
-  if (complaint.status === "OPEN" && (!complaint.replies || complaint.replies.length === 0)) return true;
-  return false;
+  return !!complaint?.unreadForStaff;
 }
 
 function getUploadErrorMessage(err, fallbackEn, fallbackSw, isSw) {
@@ -211,6 +209,17 @@ export default function StaffDashboard() {
         toast.error(isSw ? "Imeshindikana kupakia malalamiko" : "Failed to fetch complaints");
       })
       .finally(() => setLoadingComplaints(false));
+  };
+
+  const markAllComplaintsRead = async () => {
+    try {
+      await api.post("/api/staff/complaints/mark-read");
+      setComplaints((prev) => prev.map((c) => ({ ...c, unreadForStaff: false })));
+      toast.success(isSw ? "Malalamiko yote yamewekwa kuwa yamesomwa" : "All complaints marked as read");
+    } catch (err) {
+      console.error(err);
+      toast.error(isSw ? "Imeshindikana kuweka kama yamesomwa" : "Failed to mark complaints as read");
+    }
   };
 
   const fetchOfficialData = async () => {
@@ -847,6 +856,16 @@ export default function StaffDashboard() {
 
         {activeTab === "complaints" && (
           <div className="space-y-4">
+            {!!complaints.some((c) => c.unreadForStaff) && (
+              <div>
+                <button
+                  onClick={markAllComplaintsRead}
+                  className="px-3 py-2 rounded text-sm bg-slate-800 text-white hover:bg-black"
+                >
+                  {isSw ? "Weka Yote Kama Yamesomwa" : "Mark All as Read"}
+                </button>
+              </div>
+            )}
             {loadingComplaints ? (
               <div className="bg-white p-6 rounded shadow text-gray-500">{isSw ? "Inapakia malalamiko..." : "Loading complaints..."}</div>
             ) : complaints.length === 0 ? (
