@@ -2,10 +2,11 @@ import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [lang, setLang] = useState("en");
+  // Remove local lang state; use context
   const [activeSlide, setActiveSlide] = useState(0);
 
   const menuRef = useRef(null);
@@ -13,7 +14,7 @@ export default function Landing() {
 
   const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu = () => setMenuOpen(false);
-  const toggleLang = () => setLang((prev) => (prev === "en" ? "sw" : "en"));
+  // Remove toggleLang; use LanguageSwitcher
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto";
@@ -260,6 +261,9 @@ export default function Landing() {
     },
   };
 
+  // Use context for language selection
+  import { useLanguage } from "../context/LanguageContext";
+  const { lang } = useLanguage ? useLanguage() : { lang: "en" };
   const t = content[lang];
   const heroSlides = t.heroSlides;
 
@@ -336,20 +340,13 @@ export default function Landing() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggleLang}
-              className="rounded-lg border border-blue-300 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-50"
-            >
-              {lang === "en" ? "SW" : "EN"}
-            </button>
-
+            <LanguageSwitcher compact />
             <Link
               to="/login"
               className="hidden rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 hover:bg-blue-500 sm:inline-flex"
             >
               {t.btnLogin}
             </Link>
-
             <button
               ref={menuButtonRef}
               onClick={toggleMenu}
