@@ -21,6 +21,8 @@ import {
   FaPrint,
   FaBullhorn,
   FaPaperclip,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -35,6 +37,9 @@ function parseReplyContent(raw = "") {
   const lines = String(raw || "").split(/\r?\n/);
   let attachmentFileUrl = "";
   let attachmentLinkUrl = "";
+  let editedAt = "";
+  let deletedAt = "";
+  let deleted = false;
   const cleanLines = [];
 
   lines.forEach((line) => {
@@ -46,6 +51,18 @@ function parseReplyContent(raw = "") {
       attachmentLinkUrl = line.replace("__ATTACHMENT_LINK__:", "").trim();
       return;
     }
+    if (line.startsWith("__EDITED_AT__:")) {
+      editedAt = line.replace("__EDITED_AT__:", "").trim();
+      return;
+    }
+    if (line.startsWith("__DELETED__:")) {
+      deleted = line.replace("__DELETED__:", "").trim() === "true";
+      return;
+    }
+    if (line.startsWith("__DELETED_AT__:")) {
+      deletedAt = line.replace("__DELETED_AT__:", "").trim();
+      return;
+    }
     cleanLines.push(line);
   });
 
@@ -53,6 +70,9 @@ function parseReplyContent(raw = "") {
     message: cleanLines.join("\n").trim(),
     attachmentFileUrl,
     attachmentLinkUrl,
+    editedAt,
+    deleted,
+    deletedAt,
   };
 }
 
@@ -76,6 +96,12 @@ function complaintHasAttachment(complaint) {
     const parsed = parseReplyContent(reply?.message || "");
     return !!parsed.attachmentFileUrl || !!parsed.attachmentLinkUrl;
   });
+}
+
+function complaintHasUnread(complaint) {
+  if (!complaint) return false;
+  if (complaint.status === "OPEN" && (!complaint.replies || complaint.replies.length === 0)) return true;
+  return false;
 }
 
 function getUploadErrorMessage(err, fallbackEn, fallbackSw, isSw) {
@@ -463,6 +489,161 @@ export default function StaffDashboard() {
     }
   };
 
+  const canManageItem = (createdById) => {
+    if (!user) return false;
+    if (["ADMIN", "SUPERADMIN"].includes(user.role)) return true;
+    return Number(createdById) === Number(user.id);
+  };
+
+  const handleEditReply = async (reply) => {
+    const parsed = parseReplyContent(reply.message);
+    if (parsed.deleted) {
+      return toast.error(isSw ? "Jibu hili limefutwa tayari" : "This reply is already deleted");
+    }
+
+    const { value: newMessage } = await Swal.fire({
+      title: isSw ? "Hariri Jibu" : "Edit Reply",
+      input: "textarea",
+      inputValue: parsed.message,
+      inputPlaceholder: isSw ? "Andika ujumbe mpya" : "Write updated message",
+      showCancelButton: true,
+      confirmButtonText: isSw ? "Hifadhi" : "Save",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+      inputValidator: (v) => (!String(v || "").trim() ? (isSw ? "Ujumbe unahitajika" : "Message is required") : null),
+    });
+
+    if (typeof newMessage !== "string") return;
+
+    try {
+      await api.put(`/api/staff/complaint-replies/${reply.id}`, { message: newMessage.trim() });
+      toast.success(isSw ? "Jibu limehaririwa" : "Reply edited");
+      fetchComplaints();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuhariri jibu" : "Failed to edit reply"));
+    }
+  };
+
+  const handleDeleteReply = async (reply) => {
+    const confirm = await Swal.fire({
+      title: isSw ? "Futa Jibu?" : "Delete Reply?",
+      text: isSw ? "Litawekwa alama kuwa limefutwa." : "It will be marked as deleted.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: isSw ? "Ndiyo, futa" : "Yes, delete",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/staff/complaint-replies/${reply.id}`);
+      toast.success(isSw ? "Jibu limefutwa" : "Reply deleted");
+      fetchComplaints();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kufuta jibu" : "Failed to delete reply"));
+    }
+  };
+
+  const handleEditDocument = async (doc) => {
+    const { value: values } = await Swal.fire({
+      title: isSw ? "Hariri Nyaraka" : "Edit Document",
+      html:
+        `<input id="swal-doc-title" class="swal2-input" placeholder="${isSw ? "Kichwa" : "Title"}" value="${(doc.title || "").replace(/"/g, "&quot;")}">` +
+        `<input id="swal-doc-url" class="swal2-input" placeholder="URL" value="${(doc.fileUrl || "").replace(/"/g, "&quot;")}">` +
+        `<textarea id="swal-doc-desc" class="swal2-textarea" placeholder="${isSw ? "Maelezo" : "Description"}">${doc.description || ""}</textarea>`,
+      showCancelButton: true,
+      confirmButtonText: isSw ? "Hifadhi" : "Save",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+      preConfirm: () => ({
+        title: document.getElementById("swal-doc-title")?.value || "",
+        fileUrl: document.getElementById("swal-doc-url")?.value || "",
+        description: document.getElementById("swal-doc-desc")?.value || "",
+      }),
+    });
+    if (!values) return;
+
+    try {
+      await api.put(`/api/staff/documents/${doc.id}`, values);
+      toast.success(isSw ? "Nyaraka zimehaririwa" : "Document updated");
+      fetchOfficialData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuhariri nyaraka" : "Failed to edit document"));
+    }
+  };
+
+  const handleDeleteDocument = async (doc) => {
+    const confirm = await Swal.fire({
+      title: isSw ? "Futa Nyaraka?" : "Delete Document?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: isSw ? "Ndiyo, futa" : "Yes, delete",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/staff/documents/${doc.id}`);
+      toast.success(isSw ? "Nyaraka zimefutwa" : "Document deleted");
+      fetchOfficialData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kufuta nyaraka" : "Failed to delete document"));
+    }
+  };
+
+  const handleEditUpdate = async (item) => {
+    const { value: values } = await Swal.fire({
+      title: isSw ? "Hariri Taarifa" : "Edit Update",
+      html:
+        `<input id="swal-up-title" class="swal2-input" placeholder="${isSw ? "Kichwa" : "Title"}" value="${(item.title || "").replace(/"/g, "&quot;")}">` +
+        `<input id="swal-up-cat" class="swal2-input" placeholder="${isSw ? "Kundi" : "Category"}" value="${(item.category || "").replace(/"/g, "&quot;")}">` +
+        `<textarea id="swal-up-msg" class="swal2-textarea" placeholder="${isSw ? "Ujumbe" : "Message"}">${item.message || ""}</textarea>`,
+      showCancelButton: true,
+      confirmButtonText: isSw ? "Hifadhi" : "Save",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+      preConfirm: () => ({
+        title: document.getElementById("swal-up-title")?.value || "",
+        category: document.getElementById("swal-up-cat")?.value || "",
+        message: document.getElementById("swal-up-msg")?.value || "",
+      }),
+    });
+    if (!values) return;
+
+    try {
+      await api.put(`/api/staff/updates/${item.id}`, values);
+      toast.success(isSw ? "Taarifa imehaririwa" : "Update edited");
+      fetchOfficialData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuhariri taarifa" : "Failed to edit update"));
+    }
+  };
+
+  const handleDeleteUpdate = async (item) => {
+    const confirm = await Swal.fire({
+      title: isSw ? "Futa Taarifa?" : "Delete Update?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: isSw ? "Ndiyo, futa" : "Yes, delete",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/staff/updates/${item.id}`);
+      toast.success(isSw ? "Taarifa imefutwa" : "Update deleted");
+      fetchOfficialData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kufuta taarifa" : "Failed to delete update"));
+    }
+  };
+
   const updateComplaintStatus = async (id, status) => {
     try {
       await api.put(`/api/staff/complaints/${id}/status`, { status });
@@ -685,6 +866,11 @@ export default function StaffDashboard() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {complaintHasUnread(c) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-amber-100 text-amber-800">
+                          {isSw ? "Mpya / Haijasomwa" : "New / Unread"}
+                        </span>
+                      )}
                       {complaintHasAttachment(c) && (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                           <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
@@ -731,6 +917,7 @@ export default function StaffDashboard() {
                     <div className="space-y-2">
                       {c.replies.map((r) => {
                         const parsed = parseReplyContent(r.message);
+                        const canManageReply = canManageItem(r.sender?.id);
                         return (
                           <div key={r.id} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded">
                             <div className="text-sm font-semibold text-blue-900">
@@ -739,9 +926,23 @@ export default function StaffDashboard() {
                             <div className="text-xs text-gray-500 mb-1">
                               {new Date(r.createdAt).toLocaleString()}
                             </div>
-                            {!!parsed.message && <p className="text-sm whitespace-pre-wrap">{parsed.message}</p>}
+                            {parsed.deleted ? (
+                              <p className="text-sm italic text-gray-500">
+                                {isSw ? "Ujumbe umefutwa na mtumaji." : "Message deleted by sender."}
+                              </p>
+                            ) : (
+                              !!parsed.message && <p className="text-sm whitespace-pre-wrap">{parsed.message}</p>
+                            )}
 
-                            {!!parsed.attachmentFileUrl && (
+                            {(parsed.editedAt || parsed.deleted) && (
+                              <div className="text-[11px] text-gray-500 mt-1">
+                                {parsed.deleted
+                                  ? (isSw ? "Imefutwa" : "Deleted")
+                                  : (isSw ? "Imehaririwa" : "Edited")}
+                              </div>
+                            )}
+
+                            {!parsed.deleted && !!parsed.attachmentFileUrl && (
                               <a
                                 href={parsed.attachmentFileUrl}
                                 target="_blank"
@@ -753,7 +954,7 @@ export default function StaffDashboard() {
                               </a>
                             )}
 
-                            {!!parsed.attachmentLinkUrl && (
+                            {!parsed.deleted && !!parsed.attachmentLinkUrl && (
                               <a
                                 href={parsed.attachmentLinkUrl}
                                 target="_blank"
@@ -762,6 +963,23 @@ export default function StaffDashboard() {
                               >
                                 <FaLink /> {isSw ? "Fungua Link" : "Open Link"}
                               </a>
+                            )}
+
+                            {canManageReply && !parsed.deleted && (
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={() => handleEditReply(r)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-slate-200 hover:bg-slate-300"
+                                >
+                                  <FaEdit /> {isSw ? "Hariri" : "Edit"}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteReply(r)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-rose-100 text-rose-700 hover:bg-rose-200"
+                                >
+                                  <FaTrash /> {isSw ? "Futa" : "Delete"}
+                                </button>
+                              </div>
                             )}
                           </div>
                         );
@@ -951,10 +1169,65 @@ export default function StaffDashboard() {
               ) : (
                 <div className="space-y-2">
                   {officialDocuments.slice(0, 8).map((d) => (
-                    <a key={d.id} href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="block border rounded p-3 hover:bg-slate-50">
+                    <div key={d.id} className="block border rounded p-3 hover:bg-slate-50">
                       <div className="font-medium">{d.title}</div>
                       <div className="text-xs text-gray-500">{new Date(d.createdAt).toLocaleString()}</div>
-                    </a>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200">
+                          {isSw ? "Fungua" : "Open"}
+                        </a>
+                        {canManageItem(d.createdById) && (
+                          <>
+                            <button
+                              onClick={() => handleEditDocument(d)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-slate-200 hover:bg-slate-300"
+                            >
+                              <FaEdit /> {isSw ? "Hariri" : "Edit"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDocument(d)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-rose-100 text-rose-700 hover:bg-rose-200"
+                            >
+                              <FaTrash /> {isSw ? "Futa" : "Delete"}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white p-5 rounded shadow">
+              <h4 className="font-semibold mb-2">{isSw ? "Taarifa za Hivi Karibuni" : "Latest News / Updates"}</h4>
+              {officialUpdates.length === 0 ? (
+                <p className="text-sm text-gray-500">{isSw ? "Bado hakuna taarifa zilizochapishwa." : "No updates published yet."}</p>
+              ) : (
+                <div className="space-y-2">
+                  {officialUpdates.slice(0, 8).map((u) => (
+                    <div key={u.id} className="block border rounded p-3 hover:bg-slate-50">
+                      <div className="font-medium">{u.title}</div>
+                      {u.category && <div className="text-xs text-blue-700 mt-1">{u.category}</div>}
+                      <div className="text-xs text-gray-500 mt-1">{new Date(u.createdAt).toLocaleString()}</div>
+                      <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{u.message}</p>
+                      {canManageItem(u.createdById) && (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleEditUpdate(u)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-slate-200 hover:bg-slate-300"
+                          >
+                            <FaEdit /> {isSw ? "Hariri" : "Edit"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUpdate(u)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-rose-100 text-rose-700 hover:bg-rose-200"
+                          >
+                            <FaTrash /> {isSw ? "Futa" : "Delete"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

@@ -13,6 +13,9 @@ function parseReplyContent(raw = "") {
   const lines = String(raw || "").split(/\r?\n/);
   let attachmentFileUrl = "";
   let attachmentLinkUrl = "";
+  let editedAt = "";
+  let deletedAt = "";
+  let deleted = false;
   const cleanLines = [];
 
   lines.forEach((line) => {
@@ -24,6 +27,18 @@ function parseReplyContent(raw = "") {
       attachmentLinkUrl = line.replace("__ATTACHMENT_LINK__:", "").trim();
       return;
     }
+    if (line.startsWith("__EDITED_AT__:")) {
+      editedAt = line.replace("__EDITED_AT__:", "").trim();
+      return;
+    }
+    if (line.startsWith("__DELETED__:")) {
+      deleted = line.replace("__DELETED__:", "").trim() === "true";
+      return;
+    }
+    if (line.startsWith("__DELETED_AT__:")) {
+      deletedAt = line.replace("__DELETED_AT__:", "").trim();
+      return;
+    }
     cleanLines.push(line);
   });
 
@@ -31,6 +46,9 @@ function parseReplyContent(raw = "") {
     message: cleanLines.join("\n").trim(),
     attachmentFileUrl,
     attachmentLinkUrl,
+    editedAt,
+    deleted,
+    deletedAt,
   };
 }
 
@@ -713,9 +731,23 @@ export default function ClientDashboard() {
                                 {r.sender?.name} ({r.sender?.role})
                               </p>
                               <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
-                              {!!parsed.message && <p className="text-sm text-gray-800 whitespace-pre-wrap">{parsed.message}</p>}
+                              {parsed.deleted ? (
+                                <p className="text-sm italic text-gray-500">
+                                  {isSw ? "Ujumbe umefutwa na mtumaji." : "Message deleted by sender."}
+                                </p>
+                              ) : (
+                                !!parsed.message && <p className="text-sm text-gray-800 whitespace-pre-wrap">{parsed.message}</p>
+                              )}
 
-                              {!!parsed.attachmentFileUrl && (
+                              {(parsed.editedAt || parsed.deleted) && (
+                                <div className="text-[11px] text-gray-500 mt-1">
+                                  {parsed.deleted
+                                    ? (isSw ? "Imefutwa" : "Deleted")
+                                    : (isSw ? "Imehaririwa" : "Edited")}
+                                </div>
+                              )}
+
+                              {!parsed.deleted && !!parsed.attachmentFileUrl && (
                                 <a
                                   href={parsed.attachmentFileUrl}
                                   target="_blank"
@@ -726,7 +758,7 @@ export default function ClientDashboard() {
                                 </a>
                               )}
 
-                              {!!parsed.attachmentLinkUrl && (
+                              {!parsed.deleted && !!parsed.attachmentLinkUrl && (
                                 <a
                                   href={parsed.attachmentLinkUrl}
                                   target="_blank"
@@ -874,9 +906,23 @@ export default function ClientDashboard() {
                                 {r.sender?.name} ({r.sender?.role})
                               </p>
                               <p className="text-xs text-gray-500 mb-1">{new Date(r.createdAt).toLocaleString()}</p>
-                              {!!parsed.message && <p className="text-sm text-gray-800 whitespace-pre-wrap">{parsed.message}</p>}
+                              {parsed.deleted ? (
+                                <p className="text-sm italic text-gray-500">
+                                  {isSw ? "Ujumbe umefutwa na mtumaji." : "Message deleted by sender."}
+                                </p>
+                              ) : (
+                                !!parsed.message && <p className="text-sm text-gray-800 whitespace-pre-wrap">{parsed.message}</p>
+                              )}
 
-                              {!!parsed.attachmentFileUrl && (
+                              {(parsed.editedAt || parsed.deleted) && (
+                                <div className="text-[11px] text-gray-500 mt-1">
+                                  {parsed.deleted
+                                    ? (isSw ? "Imefutwa" : "Deleted")
+                                    : (isSw ? "Imehaririwa" : "Edited")}
+                                </div>
+                              )}
+
+                              {!parsed.deleted && !!parsed.attachmentFileUrl && (
                                 <a
                                   href={parsed.attachmentFileUrl}
                                   target="_blank"
@@ -887,7 +933,7 @@ export default function ClientDashboard() {
                                 </a>
                               )}
 
-                              {!!parsed.attachmentLinkUrl && (
+                              {!parsed.deleted && !!parsed.attachmentLinkUrl && (
                                 <a
                                   href={parsed.attachmentLinkUrl}
                                   target="_blank"
