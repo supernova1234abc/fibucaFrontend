@@ -404,9 +404,9 @@ export default function AdminDashboard() {
       if (result.isConfirmed) {
         api
           .delete(`/submissions/${id}`)
-          .then(() => {
+          .then((res) => {
             fetchSubmissions();
-            Swal.fire("Deleted!", "", "success");
+            Swal.fire("Deleted!", res?.data?.message || "Submission archived successfully.", "success");
           })
           .catch((err) => {
             console.error(err);
