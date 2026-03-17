@@ -59,6 +59,9 @@ export default function AdminDashboard() {
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  const [archivedSubmissions, setArchivedSubmissions] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
 
   const [systemUsers, setSystemUsers] = useState([]);
   const [filteredSystemUsers, setFilteredSystemUsers] = useState([]);
@@ -96,6 +99,17 @@ export default function AdminDashboard() {
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
+  }, []);
+
+  const fetchArchivedSubmissions = useCallback(() => {
+    api
+      .get("/submissions/archived/list")
+      .then((res) => {
+        setArchivedSubmissions(res.data || []);
+      })
+      .catch((err) => {
+        console.error("❌ Failed to fetch archived submissions:", err);
+      });
   }, []);
 
   const fetchSystemUsers = useCallback(() => {
@@ -144,9 +158,10 @@ export default function AdminDashboard() {
     if (token) setAuthToken(token);
 
     fetchSubmissions();
+    fetchArchivedSubmissions();
     fetchSystemUsers();
     fetchStaffLeaderboard();
-  }, [navigate, fetchSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
+  }, [navigate, fetchSubmissions, fetchArchivedSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
 
   const searchSubmissionsAdvanced = async () => {
     try {
@@ -611,8 +626,36 @@ export default function AdminDashboard() {
         {section === "submissions" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 space-y-4">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <h2 className="text-2xl font-bold">{isSw ? "Uwasilishaji wa Wateja" : "Client Submissions"}</h2>
+              <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    {showArchived 
+                      ? (isSw ? "Uwasilishaji Ulioachivwa" : "Archived Submissions") 
+                      : (isSw ? "Uwasilishaji wa Wateja" : "Client Submissions")}
+                  </h2>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => setShowArchived(false)}
+                      className={`px-3 py-1 text-sm rounded-md transition ${
+                        !showArchived
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      }`}
+                    >
+                      {isSw ? "Wenye Ipo" : "Active"}
+                    </button>
+                    <button
+                      onClick={() => setShowArchived(true)}
+                      className={`px-3 py-1 text-sm rounded-md transition flex items-center gap-1.5 ${
+                        showArchived
+                          ? "bg-orange-600 text-white"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      }`}
+                    >
+                      <FaHistory /> {isSw ? "Uchivaji" : "Archived"} ({archivedSubmissions.length})
+                    </button>
+                  </div>
+                </div>
 
                 <div className="relative w-full md:w-80">
                   <FaSearch className="absolute top-3 left-3 text-gray-400" />
@@ -625,73 +668,126 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input
-                  placeholder={isSw ? "Mwajiri mf. CRDB" : "Employer e.g. CRDB"}
-                  value={submissionFilters.employerName}
-                  onChange={(e) =>
-                    setSubmissionFilters((prev) => ({ ...prev, employerName: e.target.value }))
-                  }
-                  className="border rounded-lg px-3 py-2"
-                />
+              {!showArchived && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      placeholder={isSw ? "Mwajiri mf. CRDB" : "Employer e.g. CRDB"}
+                      value={submissionFilters.employerName}
+                      onChange={(e) =>
+                        setSubmissionFilters((prev) => ({ ...prev, employerName: e.target.value }))
+                      }
+                      className="border rounded-lg px-3 py-2"
+                    />
 
-                <input
-                  placeholder={isSw ? "Tawi mf. Kariakoo" : "Branch e.g. Kariakoo"}
-                  value={submissionFilters.branchName}
-                  onChange={(e) =>
-                    setSubmissionFilters((prev) => ({ ...prev, branchName: e.target.value }))
-                  }
-                  className="border rounded-lg px-3 py-2"
-                />
-              </div>
+                    <input
+                      placeholder={isSw ? "Tawi mf. Kariakoo" : "Branch e.g. Kariakoo"}
+                      value={submissionFilters.branchName}
+                      onChange={(e) =>
+                        setSubmissionFilters((prev) => ({ ...prev, branchName: e.target.value }))
+                      }
+                      className="border rounded-lg px-3 py-2"
+                    />
+                  </div>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={searchSubmissionsAdvanced}
-                  className="bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-indigo-700 transition flex items-center gap-1.5"
-                >
-                  <FaFilter /> {isSw ? "Chuja" : "Filter"}
-                </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={searchSubmissionsAdvanced}
+                      className="bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-indigo-700 transition flex items-center gap-1.5"
+                    >
+                      <FaFilter /> {isSw ? "Chuja" : "Filter"}
+                    </button>
 
-                <button
-                  onClick={resetSubmissionFilters}
-                  className="bg-gray-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-gray-700 transition"
-                >
-                  {isSw ? "Weka upya" : "Reset"}
-                </button>
+                    <button
+                      onClick={resetSubmissionFilters}
+                      className="bg-gray-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-gray-700 transition"
+                    >
+                      {isSw ? "Weka upya" : "Reset"}
+                    </button>
 
-                <label className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md cursor-pointer hover:bg-blue-700 transition">
-                  <FaUpload className="inline mr-2" />
-                  {uploading ? (isSw ? "Inapakia..." : "Uploading...") : (isSw ? "Pakia Excel" : "Upload Excel")}
-                  <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
-                </label>
+                    <label className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md cursor-pointer hover:bg-blue-700 transition">
+                      <FaUpload className="inline mr-2" />
+                      {uploading ? (isSw ? "Inapakia..." : "Uploading...") : (isSw ? "Pakia Excel" : "Upload Excel")}
+                      <input type="file" accept=".xlsx,.xls" hidden onChange={handleUploadExcel} />
+                    </label>
 
-                <button
-                  onClick={exportToExcel}
-                  className="bg-green-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-green-700 transition"
-                >
-                  <FaDownload className="inline mr-2" /> Excel
-                </button>
+                    <button
+                      onClick={exportToExcel}
+                      className="bg-green-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-green-700 transition"
+                    >
+                      <FaDownload className="inline mr-2" /> Excel
+                    </button>
 
-                <button
-                  onClick={exportToPDF}
-                  className="bg-red-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-red-700 transition"
-                >
-                  <FaFilePdf className="inline mr-2" /> PDF
-                </button>
-              </div>
+                    <button
+                      onClick={exportToPDF}
+                      className="bg-red-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-red-700 transition"
+                    >
+                      <FaFilePdf className="inline mr-2" /> PDF
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <DataTable
-                columns={submissionColumns}
-                data={filteredUsers}
-                pagination
-                progressPending={loading}
-                highlightOnHover
-                responsive
-                striped
-              />
+              {showArchived ? (
+                <div className="p-6">
+                  {archivedSubmissions.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      {isSw ? "Hakuna uwasilishaji ulioachivwa" : "No archived submissions"}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-4 py-2 text-left">{isSw ? "Jina" : "Name"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Namba" : "Number"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Mwajiri" : "Employer"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Tawi" : "Branch"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Watumiaji Aliezwa" : "User Deleted"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Tarehe ya Uchivaji" : "Archived Date"}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {archivedSubmissions.map((sub) => (
+                            <tr key={sub.id} className="border-b hover:bg-gray-50">
+                              <td className="px-4 py-2">{sub.employeeName}</td>
+                              <td className="px-4 py-2">{sub.employeeNumber}</td>
+                              <td className="px-4 py-2">{sub.employerName || "-"}</td>
+                              <td className="px-4 py-2">{sub.branchName || "-"}</td>
+                              <td className="px-4 py-2">
+                                {sub.userDeletedAt ? (
+                                  <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                                    {isSw ? "ILIYOACHWA" : "DELETED"}
+                                  </span>
+                                ) : (
+                                  <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold">
+                                    {isSw ? "IMECHIVWA TU" : "ARCHIVED ONLY"}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-xs text-gray-600">
+                                {new Date(sub.deletedAt).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <DataTable
+                  columns={submissionColumns}
+                  data={filteredUsers}
+                  pagination
+                  progressPending={loading}
+                  highlightOnHover
+                  responsive
+                  striped
+                />
+              )}
             </div>
           </div>
         )}
