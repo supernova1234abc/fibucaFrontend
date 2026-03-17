@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 // Password strength check utility
 function getPasswordChecks(password) {
@@ -14,6 +16,7 @@ function getPasswordChecks(password) {
 
 export default function ForgotPassword() {
   const { isSw } = useLanguage();
+  const navigate = useNavigate();
   const [identifier, setIdentifier] = useState('');
   const [channel, setChannel] = useState('EMAIL');
   const [otp, setOtp] = useState('');
@@ -91,6 +94,8 @@ export default function ForgotPassword() {
       setNewPassword('');
       setConfirmPassword('');
       setOtpHint('');
+      // Redirect to login after successful password reset
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       await Swal.fire(isSw ? 'Hitilafu' : 'Error', err?.response?.data?.error || (isSw ? 'Imeshindikana kubadili nywila.' : 'Failed to reset password.'), 'error');
     } finally {
@@ -100,6 +105,14 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
+      <div className="absolute top-4 left-4">
+        <Link to="/" className="text-blue-600 hover:underline text-sm font-medium">
+          {isSw ? '🏠 Nyumbani' : '🏠 Home'}
+        </Link>
+      </div>
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher compact />
+      </div>
       <form
         onSubmit={stage === 'request' ? handleRequestOtp : handleResetPassword}
         className="bg-white p-8 rounded-xl shadow-md w-full max-w-md"

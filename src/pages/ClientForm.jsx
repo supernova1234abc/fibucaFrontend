@@ -1,12 +1,13 @@
 // src/pages/ClientForm.jsx
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import SignatureCanvas from "react-signature-canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
 import { FaSpinner } from "react-icons/fa";
 import { api } from "../lib/api";
 import { useLanguage } from "../context/LanguageContext";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function ClientForm() {
   const navigate = useNavigate();
@@ -436,6 +437,14 @@ export default function ClientForm() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4">
+      <div className="absolute top-4 left-4">
+        <Link to="/" className="text-blue-600 hover:underline text-sm font-medium">
+          {isSw ? '🏠 Nyumbani' : '🏠 Home'}
+        </Link>
+      </div>
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher compact />
+      </div>
       <div className="bg-white shadow-xl rounded-lg w-full max-w-4xl p-8">
         <div className="text-center">
           <h1 className="italic text-sm">Employment and Labour Relations (General)</h1>

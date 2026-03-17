@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 function PasswordInput({ value, onChange, placeholder, shown, onToggle, disabled }) {
   return (
@@ -135,7 +136,19 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
   if (!user) return null;
 
   return (
-    <div className={inModal ? '' : 'min-h-screen flex items-center justify-center bg-blue-50 p-4'}>
+    <div className={inModal ? '' : 'min-h-screen flex items-center justify-center bg-blue-50 p-4 relative'}>
+      {!inModal && (
+        <>
+          <div className="absolute top-4 left-4">
+            <Link to="/" className="text-blue-600 hover:underline text-sm font-medium">
+              {isSw ? '🏠 Nyumbani' : '🏠 Home'}
+            </Link>
+          </div>
+          <div className="absolute top-4 right-4">
+            <LanguageSwitcher compact />
+          </div>
+        </>
+      )}
       <div className={`bg-white shadow-md rounded p-6 w-full max-w-md ${inModal ? '' : 'mx-auto'}`}>
         <h2 className={`text-xl font-bold mb-4 text-center ${isFirstLoginFlow ? 'text-blue-700' : 'text-gray-800'}`}>
           {isFirstLoginFlow ? (isSw ? 'Mipangilio ya Kuingia Mara ya Kwanza' : 'First Login Setup') : (isSw ? 'Badili Nywila' : 'Change Password')}
