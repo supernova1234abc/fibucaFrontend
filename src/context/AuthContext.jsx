@@ -7,6 +7,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const getActiveStorage = () => {
+    if (localStorage.getItem('fibuca_token')) return localStorage;
+    if (sessionStorage.getItem('fibuca_token')) return sessionStorage;
+    return null;
+  };
+
   // Listen for global unauthorized event
   useEffect(() => {
     const handleUnauthorized = () => logout();
@@ -17,13 +23,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const cachedUser = localStorage.getItem('fibuca_user');
-    const cachedToken = localStorage.getItem('fibuca_token');
+    const storage = getActiveStorage();
+    const cachedToken = storage?.getItem('fibuca_token');
+    const cachedUser = storage?.getItem('fibuca_user');
 
     // ✅ ALWAYS restore token if it exists - critical for mobile networks & page refresh
     if (cachedToken) {
       setAuthToken(cachedToken);
-      console.log('🔐 Token restored from localStorage');
     }
 
     if (cachedUser && cachedToken) {
@@ -38,7 +44,12 @@ export function AuthProvider({ children }) {
       .then(res => {
         const u = res.data.user;
         setUser({ ...u, passwordChanged: !u.firstLogin });
-        localStorage.setItem('fibuca_user', JSON.stringify(u));
+        const activeStorage = getActiveStorage();
+        if (activeStorage) {
+          activeStorage.setItem('fibuca_user', JSON.stringify(u));
+        } else {
+          localStorage.setItem('fibuca_user', JSON.stringify(u));
+        }
       })
       .catch(err => {
         console.warn('⚠️ Auth check failed (may be offline or network issue):', err.message);
@@ -49,6 +60,10 @@ export function AuthProvider({ children }) {
 
   function logout() {
     setAuthToken(null); // clear in-memory token
+    localStorage.removeItem('fibuca_token');
+    localStorage.removeItem('fibuca_user');
+    sessionStorage.removeItem('fibuca_token');
+    sessionStorage.removeItem('fibuca_user');
     api.post('/api/logout').catch(() => {}).finally(() => setUser(null));
   }
 
@@ -56,6 +71,8 @@ export function AuthProvider({ children }) {
     if (!user) {
       localStorage.removeItem('fibuca_token');
       localStorage.removeItem('fibuca_user');
+      sessionStorage.removeItem('fibuca_token');
+      sessionStorage.removeItem('fibuca_user');
     }
   }, [user]);
 
@@ -64,7 +81,12 @@ export function AuthProvider({ children }) {
       const res = await api.get('/api/me');
       const u = res.data.user;
       setUser({ ...u, passwordChanged: !u.firstLogin });
-      localStorage.setItem('fibuca_user', JSON.stringify(u));
+      const activeStorage = getActiveStorage();
+      if (activeStorage) {
+        activeStorage.setItem('fibuca_user', JSON.stringify(u));
+      } else {
+        localStorage.setItem('fibuca_user', JSON.stringify(u));
+      }
     } catch {
       setUser(null);
     }

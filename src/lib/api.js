@@ -2,6 +2,10 @@ import axios from 'axios';
 
 // Determine backend URL with fallback for network issues
 const getBackendURL = () => {
+  if (typeof window === 'undefined') {
+    return (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+  }
+
   // Use localhost for dev
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:3000';
@@ -46,6 +50,9 @@ api.interceptors.response.use(
     if (err.response && err.response.status === 401) {
       currentToken = null; // clear in-memory token
       localStorage.removeItem('fibuca_token'); // ✅ Also clear stored token
+      localStorage.removeItem('fibuca_user');
+      sessionStorage.removeItem('fibuca_token');
+      sessionStorage.removeItem('fibuca_user');
 
       // Optional: emit a custom event for AuthContext to listen to
       document.dispatchEvent(new CustomEvent('fibuca-unauthorized'));
@@ -53,7 +60,7 @@ api.interceptors.response.use(
       // Don't force a redirect here — let your app handle it
     }
     // ✅ Better error logging for mobile network issues
-    if (err.code === 'ECONNABORTED' || err.message === 'Network Error' || !window.navigator.onLine) {
+    if (err.code === 'ECONNABORTED' || err.message === 'Network Error' || (typeof window !== 'undefined' && !window.navigator.onLine)) {
       console.error('❌ Network issue detected:', err.message);
     }
     return Promise.reject(err);

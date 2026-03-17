@@ -46,6 +46,11 @@ export default function Login() {
       if (token) {
         setAuthToken(token);
         const storage = remember ? localStorage : sessionStorage;
+        const otherStorage = remember ? sessionStorage : localStorage;
+
+        // Enforce a single source of truth for auth persistence mode.
+        otherStorage.removeItem('fibuca_token');
+        otherStorage.removeItem('fibuca_user');
         storage.setItem('fibuca_token', token);
         storage.setItem('fibuca_user', JSON.stringify(fibucaUser));
       }
