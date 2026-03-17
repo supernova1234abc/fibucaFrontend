@@ -65,6 +65,8 @@ export default function AdminDashboard() {
 
   const [systemUsers, setSystemUsers] = useState([]);
   const [filteredSystemUsers, setFilteredSystemUsers] = useState([]);
+  const [archivedUsers, setArchivedUsers] = useState([]);
+  const [showArchivedUsers, setShowArchivedUsers] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingSystemUser, setEditingSystemUser] = useState(null);
   const [userLoading, setUserLoading] = useState(false);
@@ -127,6 +129,17 @@ export default function AdminDashboard() {
       .finally(() => setUserLoading(false));
   }, []);
 
+  const fetchArchivedUsers = useCallback(() => {
+    api
+      .get("/api/admin/users/archived/list")
+      .then((res) => {
+        setArchivedUsers(res.data || []);
+      })
+      .catch((err) => {
+        console.error("❌ Failed to fetch archived users:", err);
+      });
+  }, []);
+
   const fetchStaffLeaderboard = useCallback(() => {
     setLeaderboardLoading(true);
     api
@@ -160,8 +173,9 @@ export default function AdminDashboard() {
     fetchSubmissions();
     fetchArchivedSubmissions();
     fetchSystemUsers();
+    fetchArchivedUsers();
     fetchStaffLeaderboard();
-  }, [navigate, fetchSubmissions, fetchArchivedSubmissions, fetchSystemUsers, fetchStaffLeaderboard]);
+  }, [navigate, fetchSubmissions, fetchArchivedSubmissions, fetchSystemUsers, fetchArchivedUsers, fetchStaffLeaderboard]);
 
   const searchSubmissionsAdvanced = async () => {
     try {
@@ -426,6 +440,100 @@ export default function AdminDashboard() {
           .catch((err) => {
             console.error(err);
             Swal.fire("Error", err.response?.data?.error || "Failed to delete submission", "error");
+          });
+      }
+    });
+  };
+
+  const handleRestoreSubmission = (id) => {
+    Swal.fire({
+      title: isSw ? "Kurudisha uwasilishaji?" : "Restore submission?",
+      text: isSw ? "Uwasilishaji utarudi katika ulinganifu wa kawaida." : "This submission will be restored to active records.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        api
+          .patch(`/submissions/${id}/restore`)
+          .then((res) => {
+            fetchArchivedSubmissions();
+            fetchSubmissions();
+            Swal.fire(isSw ? "Imefanikiwa" : "Restored!", res?.data?.message, "success");
+          })
+          .catch((err) => {
+            console.error(err);
+            Swal.fire("Error", err.response?.data?.error || (isSw ? "Imeshindikana kurudisha" : "Failed to restore"), "error");
+          });
+      }
+    });
+  };
+
+  const handlePermanentDeleteSubmission = (id) => {
+    Swal.fire({
+      title: isSw ? "Kumfuta kabisa?" : "Permanently delete?",
+      text: isSw ? "Hii sio inaweza kutengenezwa. Taarifa hii itafutwa kabisa." : "This cannot be undone. This record will be deleted permanently.",
+      icon: "error",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        api
+          .delete(`/submissions/${id}/permanent`)
+          .then((res) => {
+            fetchArchivedSubmissions();
+            Swal.fire(isSw ? "Imefutwa Kabisa!" : "Permanently Deleted!", res?.data?.message, "success");
+          })
+          .catch((err) => {
+            console.error(err);
+            Swal.fire("Error", err.response?.data?.error || (isSw ? "Imeshindikana kufuta" : "Failed to delete"), "error");
+          });
+      }
+    });
+  };
+
+  const handleRestoreUser = (id) => {
+    Swal.fire({
+      title: isSw ? "Kurudisha mtumiaji?" : "Restore user?",
+      text: isSw ? "Akaunti ya mtumiaji itarudi katika mfumo." : "This user account will be restored to active users.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        api
+          .patch(`/api/admin/users/${id}/restore`)
+          .then((res) => {
+            fetchArchivedUsers();
+            fetchSystemUsers();
+            Swal.fire(isSw ? "Imefanikiwa" : "Restored!", res?.data?.message, "success");
+          })
+          .catch((err) => {
+            console.error(err);
+            Swal.fire("Error", err.response?.data?.error || (isSw ? "Imeshindikana kurudisha" : "Failed to restore"), "error");
+          });
+      }
+    });
+  };
+
+  const handlePermanentDeleteUser = (id) => {
+    Swal.fire({
+      title: isSw ? "Kumfuta mtumiaji kabisa?" : "Permanently delete user?",
+      text: isSw ? "Hii sio inaweza kutengenezwa. Akaunti ya mtumiaji itafutwa kabisa pamoja na taarifa zote." : "This cannot be undone. The user account and all related data will be deleted permanently.",
+      icon: "error",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        api
+          .delete(`/api/admin/users/${id}/permanent`)
+          .then((res) => {
+            fetchArchivedUsers();
+            Swal.fire(isSw ? "Imefutwa Kabisa!" : "Permanently Deleted!", res?.data?.message, "success");
+          })
+          .catch((err) => {
+            console.error(err);
+            Swal.fire("Error", err.response?.data?.error || (isSw ? "Imeshindikana kufuta" : "Failed to delete"), "error");
           });
       }
     });
@@ -747,6 +855,7 @@ export default function AdminDashboard() {
                             <th className="px-4 py-2 text-left">{isSw ? "Tawi" : "Branch"}</th>
                             <th className="px-4 py-2 text-left">{isSw ? "Watumiaji Aliezwa" : "User Deleted"}</th>
                             <th className="px-4 py-2 text-left">{isSw ? "Tarehe ya Uchivaji" : "Archived Date"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Hatua" : "Actions"}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -769,6 +878,24 @@ export default function AdminDashboard() {
                               </td>
                               <td className="px-4 py-2 text-xs text-gray-600">
                                 {new Date(sub.deletedAt).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleRestoreSubmission(sub.id)}
+                                    className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 text-xs rounded transition"
+                                    title={isSw ? "Kurudisha" : "Restore"}
+                                  >
+                                    ↺
+                                  </button>
+                                  <button
+                                    onClick={() => handlePermanentDeleteSubmission(sub.id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 text-xs rounded transition"
+                                    title={isSw ? "Kumfuta kabisa" : "Permanently Delete"}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -795,8 +922,37 @@ export default function AdminDashboard() {
         {section === "users" && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <h2 className="text-2xl font-bold">{isSw ? "Watumiaji wa Mfumo" : "System Users"}</h2>
+              <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    {showArchivedUsers 
+                      ? (isSw ? "Watumiaji Walioachivwa" : "Archived Users") 
+                      : (isSw ? "Watumiaji wa Mfumo" : "System Users")}
+                  </h2>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => setShowArchivedUsers(false)}
+                      className={`px-3 py-1 text-sm rounded-md transition ${
+                        !showArchivedUsers
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      }`}
+                    >
+                      {isSw ? "Wenye Ipo" : "Active"}
+                    </button>
+                    <button
+                      onClick={() => setShowArchivedUsers(true)}
+                      className={`px-3 py-1 text-sm rounded-md transition flex items-center gap-1.5 ${
+                        showArchivedUsers
+                          ? "bg-orange-600 text-white"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      }`}
+                    >
+                      <FaHistory /> {isSw ? "Uchivaji" : "Archived"} ({archivedUsers.length})
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="flex gap-3 flex-wrap">
                   <div className="relative w-full md:w-80">
                     <FaSearch className="absolute top-3 left-3 text-gray-400" />
@@ -808,26 +964,98 @@ export default function AdminDashboard() {
                     />
                   </div>
 
-                  <button
-                    onClick={() => handleOpenUserModal()}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
-                  >
-                    <FaPlus /> {isSw ? "Ongeza Mtumiaji" : "Add User"}
-                  </button>
+                  {!showArchivedUsers && (
+                    <button
+                      onClick={() => handleOpenUserModal()}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <FaPlus /> {isSw ? "Ongeza Mtumiaji" : "Add User"}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <DataTable
-                columns={userColumns}
-                data={filteredSystemUsers}
-                pagination
-                progressPending={userLoading}
-                highlightOnHover
-                responsive
-                striped
-              />
+              {showArchivedUsers ? (
+                <div className="p-6">
+                  {archivedUsers.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      {isSw ? "Hakuna watumiaji walioachivwa" : "No archived users"}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-4 py-2 text-left">{isSw ? "Jina" : "Name"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Jina la Mtumiaji" : "Username"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Barua Pepe" : "Email"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Rol" : "Role"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Uwasilishaji" : "Submissions"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Tarehe ya Uchivaji" : "Archived Date"}</th>
+                            <th className="px-4 py-2 text-left">{isSw ? "Hatua" : "Actions"}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {archivedUsers.map((user) => (
+                            <tr key={user.id} className="border-b hover:bg-gray-50">
+                              <td className="px-4 py-2">{user.name}</td>
+                              <td className="px-4 py-2">{user.username}</td>
+                              <td className="px-4 py-2">{user.email || "-"}</td>
+                              <td className="px-4 py-2">
+                                <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                  user.role === 'ADMIN' ? 'bg-red-100 text-red-700' :
+                                  user.role === 'STAFF' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {user.role}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2">
+                                <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                  {user.submissionsCount}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 text-xs text-gray-600">
+                                {new Date(user.deletedAt).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleRestoreUser(user.id)}
+                                    className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 text-xs rounded transition"
+                                    title={isSw ? "Kurudisha" : "Restore"}
+                                  >
+                                    ↺
+                                  </button>
+                                  <button
+                                    onClick={() => handlePermanentDeleteUser(user.id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 text-xs rounded transition"
+                                    title={isSw ? "Kumfuta kabisa" : "Permanently Delete"}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <DataTable
+                  columns={userColumns}
+                  data={filteredSystemUsers}
+                  pagination
+                  progressPending={userLoading}
+                  highlightOnHover
+                  responsive
+                  striped
+                />
+              )}
             </div>
           </div>
         )}
