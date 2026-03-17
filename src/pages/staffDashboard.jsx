@@ -102,6 +102,16 @@ function complaintHasUnread(complaint) {
   return !!complaint?.unreadForStaff;
 }
 
+function isTransferNoticeComplaint(complaint) {
+  return String(complaint?.subject || "").trim().toUpperCase() === "TRANSFER NOTICE";
+}
+
+function hasTransferApprovalReply(complaint) {
+  return Array.isArray(complaint?.replies) && complaint.replies.some((r) =>
+    String(r?.message || "").includes("__TRANSFER_APPROVED__:true")
+  );
+}
+
 function getUploadErrorMessage(err, fallbackEn, fallbackSw, isSw) {
   const status = err?.response?.status;
   const raw = String(err?.response?.data?.error || err?.message || "");
@@ -664,6 +674,32 @@ export default function StaffDashboard() {
     }
   };
 
+  const approveTransferNotice = async (complaint) => {
+    const confirm = await Swal.fire({
+      title: isSw ? "Thibitisha Uhamisho?" : "Approve Transfer Notice?",
+      text: isSw
+        ? "Hatua hii itabadilisha taarifa za mteja kwenye mfumo na kuhifadhi historia ya uhamisho."
+        : "This will update client records in the database and save transfer history.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#2563eb",
+      confirmButtonText: isSw ? "Ndiyo, idhinisha" : "Yes, approve",
+      cancelButtonText: isSw ? "Ghairi" : "Cancel",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await api.post(`/api/staff/complaints/${complaint.id}/approve-transfer`);
+      toast.success(res?.data?.message || (isSw ? "Uhamisho umeidhinishwa" : "Transfer approved"));
+      fetchComplaints();
+      fetchSubmissions();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || (isSw ? "Imeshindikana kuidhinisha uhamisho" : "Failed to approve transfer"));
+    }
+  };
+
   const sendReply = async (complaintId) => {
     const message = (replyDrafts[complaintId] || "").trim();
     const attachmentFile = replyAttachmentFiles[complaintId] || null;
@@ -893,6 +929,24 @@ export default function StaffDashboard() {
                       {complaintHasAttachment(c) && (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                           <FaPaperclip /> {isSw ? "Ina kiambatisho" : "Has attachment"}
+                        </span>
+                      )}
+                      {isTransferNoticeComplaint(c) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-indigo-100 text-indigo-800">
+                          {isSw ? "Taarifa ya Uhamisho" : "Transfer Notice"}
+                        </span>
+                      )}
+                      {isTransferNoticeComplaint(c) && !hasTransferApprovalReply(c) && (
+                        <button
+                          onClick={() => approveTransferNotice(c)}
+                          className="px-3 py-1 rounded text-sm bg-indigo-600 text-white hover:bg-indigo-700"
+                        >
+                          {isSw ? "Idhinisha Uhamisho" : "Approve Transfer"}
+                        </button>
+                      )}
+                      {isTransferNoticeComplaint(c) && hasTransferApprovalReply(c) && (
+                        <span className="px-3 py-1 rounded text-sm bg-green-100 text-green-800">
+                          {isSw ? "Uhamisho Umeidhinishwa" : "Transfer Approved"}
                         </span>
                       )}
                       <button
