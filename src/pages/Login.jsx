@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, setAuthToken } from '../lib/api';
-import { FaSpinner, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaSpinner, FaEye, FaEyeSlash, FaHome } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -88,7 +88,10 @@ return (
 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-blue-700">FIBUCA</h2>
-          <span className="text-xs text-gray-400">&nbsp;</span>
+          <Link to="/" className="inline-flex items-center gap-1 text-xl font-bold text-blue-500 hover:underline">
+            <FaHome className="text-base" />
+            <span>{isSw ? 'Mwanzo' : 'Home'}</span>
+          </Link>
         </div>
 
         <form onSubmit={handleSubmit}>

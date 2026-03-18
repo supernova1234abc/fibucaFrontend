@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { api, setAuthToken } from '../lib/api';
 
 const AuthContext = createContext();
+const INACTIVITY_LOGOUT_MS = 40 * 1000;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -74,6 +75,33 @@ export function AuthProvider({ children }) {
       sessionStorage.removeItem('fibuca_token');
       sessionStorage.removeItem('fibuca_user');
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    let timeoutId;
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+
+    const resetInactivityTimer = () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        logout();
+      }, INACTIVITY_LOGOUT_MS);
+    };
+
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+
+    resetInactivityTimer();
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, resetInactivityTimer);
+      });
+    };
   }, [user]);
 
   async function refreshUser() {
