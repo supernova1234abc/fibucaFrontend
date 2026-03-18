@@ -147,7 +147,6 @@ export default function StaffDashboard() {
     { id: "clients", label: isSw ? "Wateja" : "Clients", icon: FaUsers, href: "/staff/clients" },
     { id: "complaints", label: isSw ? "Malalamiko" : "Complaints", icon: FaComments, href: "/staff/complaints" },
     { id: "notices", label: isSw ? "Matangazo" : "Notices", icon: FaBullhorn, href: "/staff/notices" },
-    { id: "profile", label: isSw ? "Wasifu" : "Profile", icon: FaChartLine, href: "/staff/profile" },
   ]), [isSw]);
 
   useEffect(() => {
