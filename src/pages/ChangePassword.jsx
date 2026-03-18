@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -139,11 +139,6 @@ export default function ChangePassword({ inModal = false, onSuccess, onCancel })
     <div className={inModal ? '' : 'min-h-screen flex items-center justify-center bg-blue-50 p-4 relative'}>
       {!inModal && (
         <>
-          <div className="absolute top-4 left-4">
-            <Link to="/" className="text-blue-600 hover:underline text-sm font-medium">
-              {isSw ? '🏠 Nyumbani' : '🏠 Home'}
-            </Link>
-          </div>
           <div className="absolute top-4 right-4">
             <LanguageSwitcher compact />
           </div>

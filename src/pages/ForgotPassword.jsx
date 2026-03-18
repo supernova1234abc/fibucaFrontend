@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -105,11 +105,6 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      <div className="absolute top-4 left-4">
-        <Link to="/" className="text-blue-600 hover:underline text-sm font-medium">
-          {isSw ? '🏠 Nyumbani' : '🏠 Home'}
-        </Link>
-      </div>
       <div className="absolute top-4 right-4">
         <LanguageSwitcher compact />
       </div>

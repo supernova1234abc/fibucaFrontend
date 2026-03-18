@@ -22,6 +22,7 @@ import AdminIdCards from './pages/AdminIdCards';
 import PrivateRoute from './components/PrivateRoute';
 import DashboardLayout from './components/DashboardLayout';
 import LoadingIntro from './components/LoadingIntro';
+import RouteBackArrow from './components/RouteBackArrow';
 import { useAuth } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
 import './index.css';
@@ -91,6 +92,7 @@ export default function App() {
     <>
       <Toaster position="top-center" reverseOrder={false} />
       <Router>
+        <RouteBackArrow />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />

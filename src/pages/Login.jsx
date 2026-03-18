@@ -88,9 +88,7 @@ return (
 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-blue-700">FIBUCA</h2>
-          <Link to="/" className="text-xl font-bold text-blue-500 hover:underline">
-            {isSw ? '← Mwanzo' : '← Home'}
-          </Link>
+          <span className="text-xs text-gray-400">&nbsp;</span>
         </div>
 
         <form onSubmit={handleSubmit}>
