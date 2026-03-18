@@ -432,7 +432,7 @@ export default function ClientForm() {
     { name: "employerName", label: isSw ? "Jina la Mwajiri" : "Employer Name", tip: isSw ? "Jaza jina la kampuni/taasisi unayofanyia kazi." : "Provide the current employer/company name.", required: true },
     { name: "branchName", label: isSw ? "Jina la Tawi (Hiari)" : "Branch Name (Optional)", tip: isSw ? "Tawi/eneo la kazi (si lazima)." : "Your branch/location (optional).", required: false },
     { name: "phoneNumber", label: isSw ? "Namba ya Simu" : "Phone Number", tip: isSw ? "Namba ya mawasiliano inayopatikana kwa urahisi." : "Reachable phone number for communication.", required: true },
-    { name: "witness", label: isSw ? "Shahidi" : "Witness", tip: isSw ? "Jina la shahidi anayethibitisha taarifa." : "Name of the witness validating this form.", required: true },
+    { name: "witness", label: isSw ? "Jina la Shahidi" : "Witness Name", tip: isSw ? "Jina la shahidi anayethibitisha taarifa." : "Name of the witness validating this form.", required: true },
   ];
 
   return (
