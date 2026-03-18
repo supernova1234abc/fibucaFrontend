@@ -433,6 +433,10 @@ export default function ClientDashboard() {
   const getCardRole = () => "Member";
 
   const latestCard = useMemo(() => (idCards?.length ? idCards[0] : null), [idCards]);
+  const transferRequests = useMemo(
+    () => complaints.filter((c) => String(c?.subject || "").trim().toUpperCase() === "TRANSFER NOTICE"),
+    [complaints]
+  );
 
   // ---------------------- RENDER ----------------------
   return (
@@ -704,8 +708,8 @@ export default function ClientDashboard() {
           </div>
 
           <div className="bg-white rounded shadow p-6">
-            <h3 className="font-semibold mb-2">{isSw ? "Maombi / Malalamiko Yangu" : "My Requests / Complaints"}</h3>
-            {!!complaints.some((c) => c.unreadForClient) && (
+            <h3 className="font-semibold mb-2">{isSw ? "Maombi Yangu ya Uhamisho" : "My Transfer Requests"}</h3>
+            {!!transferRequests.some((c) => c.unreadForClient) && (
               <button
                 onClick={markAllMyComplaintsRead}
                 className="mb-3 px-3 py-2 rounded text-sm bg-slate-800 text-white hover:bg-black"
@@ -715,11 +719,11 @@ export default function ClientDashboard() {
             )}
             {loadingComplaints ? (
               <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
-            ) : complaints.length === 0 ? (
-              <p className="text-gray-500">{isSw ? "Bado hakuna malalamiko." : "No complaints yet."}</p>
+            ) : transferRequests.length === 0 ? (
+              <p className="text-gray-500">{isSw ? "Bado hakuna maombi ya uhamisho." : "No transfer requests yet."}</p>
             ) : (
               <div className="space-y-2">
-                {complaints.map((c) => (
+                {transferRequests.map((c) => (
                   <div key={c.id} className="border border-gray-200 rounded p-3">
                     <div className="flex items-center justify-between">
                       <p className="font-semibold">{c.subject}</p>
