@@ -16,10 +16,7 @@ export default function RouteBackArrow() {
   const location = useLocation();
   const { isSw } = useLanguage();
 
-  const hidden = useMemo(
-    () => location.pathname === '/' || location.pathname === '/login',
-    [location.pathname]
-  );
+  const hidden = useMemo(() => location.pathname !== '/forgot-password', [location.pathname]);
 
   if (hidden) return null;
 

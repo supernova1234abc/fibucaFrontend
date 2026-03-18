@@ -73,7 +73,8 @@ export default function Login() {
 return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex items-center justify-center px-4 py-12">
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <div className="flex justify-end mb-3">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-blue-700">FIBUCA</h2>
           <LanguageSwitcher compact />
         </div>
         <div className="flex justify-center mb-4">
@@ -86,8 +87,7 @@ return (
 
         <hr className="mb-6" />
 
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-blue-700">FIBUCA</h2>
+        <div className="mb-6 flex justify-end">
           <Link to="/" className="inline-flex items-center gap-1 text-xl font-bold text-blue-500 hover:underline">
             <FaHome className="text-base" />
             <span>{isSw ? 'Mwanzo' : 'Home'}</span>
