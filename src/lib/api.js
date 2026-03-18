@@ -36,8 +36,10 @@ export const setAuthToken = (token) => {
 
 // Attach token from memory if present
 api.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
+  config.headers['X-Requested-With'] = 'XMLHttpRequest';
+
   if (currentToken) {
-    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${currentToken}`;
   }
   return config;
