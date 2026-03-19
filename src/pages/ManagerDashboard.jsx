@@ -43,6 +43,7 @@ export default function ManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState(null);
+  const [overviewRouteMissing, setOverviewRouteMissing] = useState(false);
 
   const sectionMenus = useMemo(() => ([
     { href: '/superadmin', label: isSw ? 'Amri Kuu' : 'Control Center', exact: true },
@@ -64,19 +65,32 @@ export default function ManagerDashboard() {
   }, [location.pathname]);
 
   const load = useCallback(async (initial = false) => {
+    if (!initial && overviewRouteMissing) return;
+
     try {
       if (initial) setLoading(true);
       else setRefreshing(true);
       const res = await api.get('/api/superadmin/overview');
       setData(res.data || null);
+      setOverviewRouteMissing(false);
     } catch (err) {
       console.error('Failed to load superadmin overview', err);
-      toast.error(isSw ? 'Imeshindikana kupakia dashibodi ya superadmin' : 'Failed to load superadmin dashboard');
+
+      if (err?.response?.status === 404) {
+        setOverviewRouteMissing(true);
+        toast.error(
+          isSw
+            ? 'API ya superadmin haijapatikana bado kwenye deployment. Bonyeza Refresh baada ya redeploy.'
+            : 'Superadmin API is not deployed yet. Press Refresh after backend redeploy.'
+        );
+      } else {
+        toast.error(isSw ? 'Imeshindikana kupakia dashibodi ya superadmin' : 'Failed to load superadmin dashboard');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isSw]);
+  }, [isSw, overviewRouteMissing]);
 
   useEffect(() => {
     load(true);
@@ -115,6 +129,14 @@ export default function ManagerDashboard() {
 
   return (
     <div className="space-y-6">
+      {overviewRouteMissing && (
+        <section className="rounded-2xl border border-amber-700 bg-amber-900/20 p-4 text-amber-100">
+          {isSw
+            ? 'Route /api/superadmin/overview haijapatikana kwenye deployment ya backend. Jaribu tena baada ya redeploy kukamilika.'
+            : 'Route /api/superadmin/overview is missing in the current backend deployment. Retry after redeploy completes.'}
+        </section>
+      )}
+
       <section className="rounded-2xl border border-slate-800 bg-[#0a0f14] p-5 text-slate-100 shadow-[0_0_0_1px_rgba(20,28,40,0.4),0_18px_40px_rgba(0,0,0,0.45)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -127,7 +149,10 @@ export default function ManagerDashboard() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => load(false)}
+              onClick={() => {
+                setOverviewRouteMissing(false);
+                load(false);
+              }}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
             >
               <FaRedo className={refreshing ? 'animate-spin' : ''} />
