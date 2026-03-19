@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { FaHome, FaFilePdf, FaIdCard } from 'react-icons/fa';
+import { FaHome, FaFilePdf, FaIdCard, FaShieldAlt, FaUsers, FaHistory } from 'react-icons/fa';
 
 import Landing from './pages/Landing';
 import ClientForm from './pages/ClientForm';
@@ -64,8 +64,10 @@ export default function App() {
   ];
 
   const superMenus = [
-    { href: '/superadmin', label: isSw ? 'Watumiaji' : 'Users', exact: true },
-    { href: '/superadmin/reports', label: isSw ? 'Ripoti zote' : 'All Reports' },
+    { href: '/superadmin', label: isSw ? 'Amri Kuu' : 'Control Center', exact: true, icon: FaShieldAlt },
+    { href: '/superadmin/security', label: isSw ? 'Ulinzi Hai' : 'Live Security', icon: FaShieldAlt },
+    { href: '/superadmin/users', label: isSw ? 'Watumiaji' : 'Users', icon: FaUsers },
+    { href: '/superadmin/audit', label: isSw ? 'Ukaguzi' : 'Audit', icon: FaHistory },
   ];
 
   useEffect(() => {
@@ -106,6 +108,9 @@ export default function App() {
           <Route element={<PrivateRoute role="SUPERADMIN" />}>
             <Route element={<DashboardLayout user={user} menus={superMenus} />}>
               <Route path="/superadmin" element={<ManagerDashboard />} />
+              <Route path="/superadmin/security" element={<ManagerDashboard />} />
+              <Route path="/superadmin/users" element={<ManagerDashboard />} />
+              <Route path="/superadmin/audit" element={<ManagerDashboard />} />
               <Route path="/superadmin/reports" element={<ManagerDashboard />} />
             </Route>
           </Route>

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { api, setAuthToken } from '../lib/api';
 
 const AuthContext = createContext();
-const INACTIVITY_LOGOUT_MS = 40 * 1000;
+const INACTIVITY_LOGOUT_MS = 120 * 1000;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
