@@ -6,7 +6,7 @@ import {
   FaBolt, FaShieldAlt, FaUserSecret, FaUsers, FaExclamationTriangle,
   FaHistory, FaRedo, FaUserCheck, FaDatabase, FaLock, FaBell,
   FaExchangeAlt, FaTerminal, FaServer, FaWifi,
-  FaEdit, FaTrash, FaKey,
+  FaEdit, FaTrash, FaKey, FaPlus,
 } from 'react-icons/fa';
 import { DashboardSectionMenuContext } from '../components/DashboardLayout';
 import { useLanguage } from '../context/LanguageContext';
@@ -305,6 +305,54 @@ export default function ManagerDashboard() {
       load(false);
     } catch (err) {
       toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kusasisha mtumiaji' : 'Failed to update user'));
+    }
+  };
+
+  const handleCreateUser = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: isSw ? 'Unda mtumiaji mpya' : 'Create new user',
+      html:
+        `<input id="swal-create-name" class="swal2-input" placeholder="${isSw ? 'Jina *' : 'Name *'}">` +
+        `<input id="swal-create-username" class="swal2-input" placeholder="${isSw ? 'Username *' : 'Username *'}">` +
+        `<input id="swal-create-email" class="swal2-input" placeholder="${isSw ? 'Barua pepe' : 'Email'}">` +
+        `<input id="swal-create-emp" class="swal2-input" placeholder="${isSw ? 'Namba ya mwajiriwa *' : 'Employee # *'}">` +
+        `<select id="swal-create-role" class="swal2-input"><option value="CLIENT">CLIENT</option><option value="STAFF">STAFF</option><option value="ADMIN">ADMIN</option><option value="SUPERADMIN">SUPERADMIN</option></select>` +
+        `<input id="swal-create-password" type="password" class="swal2-input" placeholder="${isSw ? 'Nywila *' : 'Password *'}">`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Unda' : 'Create',
+      preConfirm: () => {
+        const name = document.getElementById('swal-create-name')?.value?.trim();
+        const username = document.getElementById('swal-create-username')?.value?.trim();
+        const email = document.getElementById('swal-create-email')?.value?.trim();
+        const employeeNumber = document.getElementById('swal-create-emp')?.value?.trim();
+        const role = document.getElementById('swal-create-role')?.value;
+        const password = document.getElementById('swal-create-password')?.value;
+
+        if (!name || !username || !employeeNumber || !password) {
+          Swal.showValidationMessage(isSw ? 'Jaza sehemu zote zilizo na *' : 'Fill all required fields marked *');
+          return null;
+        }
+
+        if (password.length < 6) {
+          Swal.showValidationMessage(isSw ? 'Nywila lazima iwe na angalau herufi 6' : 'Password must be at least 6 characters');
+          return null;
+        }
+
+        return { name, username, email, employeeNumber, role, password };
+      },
+    });
+
+    if (!formValues) return;
+
+    try {
+      await api.post('/api/admin/users', formValues);
+      toast.success(isSw ? 'Mtumiaji ameundwa' : 'User created');
+      setUserView('all');
+      setUserSearch('');
+      load(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kuunda mtumiaji' : 'Failed to create user'));
     }
   };
 
@@ -701,12 +749,21 @@ export default function ManagerDashboard() {
                   </button>
                 </div>
               </div>
-              <input
-                value={userSearch}
-                onChange={(event) => setUserSearch(event.target.value)}
-                placeholder={isSw ? 'Tafuta jina, email, role...' : 'Search name, email, role...'}
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={userSearch}
+                  onChange={(event) => setUserSearch(event.target.value)}
+                  placeholder={isSw ? 'Tafuta jina, email, role...' : 'Search name, email, role...'}
+                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
+                />
+                <button
+                  onClick={handleCreateUser}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-black px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-slate-900"
+                >
+                  <FaPlus />
+                  {isSw ? 'Unda Mtumiaji' : 'Create User'}
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
