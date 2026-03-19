@@ -1,10 +1,12 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import {
   FaBolt, FaShieldAlt, FaUserSecret, FaUsers, FaExclamationTriangle,
   FaHistory, FaRedo, FaUserCheck, FaDatabase, FaLock, FaBell,
   FaExchangeAlt, FaTerminal, FaServer, FaWifi,
+  FaEdit, FaTrash, FaKey,
 } from 'react-icons/fa';
 import { DashboardSectionMenuContext } from '../components/DashboardLayout';
 import { useLanguage } from '../context/LanguageContext';
@@ -206,6 +208,7 @@ export default function ManagerDashboard() {
   const [data, setData] = useState(null);
   const [overviewRouteMissing, setOverviewRouteMissing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
 
   const sectionMenus = useMemo(() => ([
     { href: '/superadmin',          label: isSw ? 'Amri Kuu'   : 'Overview',  exact: true },
@@ -270,6 +273,81 @@ export default function ManagerDashboard() {
     }
   };
 
+  const handleEditUser = async (targetUser) => {
+    const { value: formValues } = await Swal.fire({
+      title: isSw ? 'Hariri mtumiaji' : 'Edit user',
+      html:
+        `<input id="swal-name" class="swal2-input" placeholder="${isSw ? 'Jina' : 'Name'}" value="${targetUser.name || ''}">` +
+        `<input id="swal-email" class="swal2-input" placeholder="${isSw ? 'Barua pepe' : 'Email'}" value="${targetUser.email || ''}">` +
+        `<input id="swal-emp" class="swal2-input" placeholder="${isSw ? 'Namba ya mwajiriwa' : 'Employee #'}" value="${targetUser.employeeNumber || ''}">` +
+        `<select id="swal-role" class="swal2-input"><option value="CLIENT">CLIENT</option><option value="STAFF">STAFF</option><option value="ADMIN">ADMIN</option><option value="SUPERADMIN">SUPERADMIN</option></select>`,
+      didOpen: () => {
+        const roleEl = document.getElementById('swal-role');
+        if (roleEl) roleEl.value = targetUser.role || 'CLIENT';
+      },
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Hifadhi' : 'Save',
+      preConfirm: () => ({
+        name: document.getElementById('swal-name')?.value?.trim(),
+        email: document.getElementById('swal-email')?.value?.trim(),
+        employeeNumber: document.getElementById('swal-emp')?.value?.trim(),
+        role: document.getElementById('swal-role')?.value,
+      }),
+    });
+
+    if (!formValues) return;
+
+    try {
+      await api.put(`/api/admin/users/${targetUser.id}`, formValues);
+      toast.success(isSw ? 'Mtumiaji amesasishwa' : 'User updated');
+      load(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kusasisha mtumiaji' : 'Failed to update user'));
+    }
+  };
+
+  const handleResetPassword = async (targetUser) => {
+    const { value: newPassword } = await Swal.fire({
+      title: isSw ? 'Weka upya nywila' : 'Reset password',
+      input: 'password',
+      inputLabel: `${targetUser.name || targetUser.username || 'User'}`,
+      inputPlaceholder: isSw ? 'Angalau herufi 6' : 'Min. 6 characters',
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Weka upya' : 'Reset',
+      inputValidator: (value) => (!value || value.length < 6 ? (isSw ? 'Nywila lazima iwe na angalau herufi 6' : 'Password must be at least 6 characters') : null),
+    });
+
+    if (!newPassword) return;
+
+    try {
+      await api.post(`/api/admin/users/${targetUser.id}/reset-password`, { newPassword });
+      toast.success(isSw ? 'Nywila imewekwa upya' : 'Password reset');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kuweka upya nywila' : 'Failed to reset password'));
+    }
+  };
+
+  const handleDeleteUser = async (targetUser) => {
+    const result = await Swal.fire({
+      title: isSw ? 'Futa mtumiaji?' : 'Delete user?',
+      text: isSw ? 'Mtumiaji ataachivwa kwanza.' : 'The user will be archived first.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Futa' : 'Delete',
+      confirmButtonColor: '#14532d',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/admin/users/${targetUser.id}`);
+      toast.success(isSw ? 'Mtumiaji amefutwa' : 'User deleted');
+      load(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kufuta mtumiaji' : 'Failed to delete user'));
+    }
+  };
+
   // ── Loading splash ─────────────────────────────────────────────────────────
   if (loading && !data) {
     return (
@@ -291,8 +369,16 @@ export default function ManagerDashboard() {
   const transfers   = m.transfers          || {};
   const security    = m.security           || {};
   const sessions    = data?.activeSessions || [];
+  const allUsers    = (data?.recentAllUsers || data?.allUsers || data?.recentUsers || []);
   const onlineCnt   = sessions.filter((s) => s.status === 'online').length;
   const idleCnt     = sessions.filter((s) => s.status === 'idle').length;
+  const filteredAllUsers = allUsers.filter((entry) => {
+    if (!userSearch) return true;
+    const q = userSearch.toLowerCase();
+    return [entry.name, entry.username, entry.email, entry.employeeNumber, entry.role]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(q));
+  });
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -543,18 +629,26 @@ export default function ManagerDashboard() {
           </div>
 
           <Card>
-            <SectionHead icon={FaUsers} title={isSw ? 'Watumiaji Waliongezwa Karibuni' : 'Recently Added Users'} count={data?.recentUsers?.length ?? 0} />
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <SectionHead icon={FaUsers} title={isSw ? 'Usimamizi wa Watumiaji' : 'User Management'} count={filteredAllUsers.length} />
+              <input
+                value={userSearch}
+                onChange={(event) => setUserSearch(event.target.value)}
+                placeholder={isSw ? 'Tafuta jina, email, role...' : 'Search name, email, role...'}
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-800">
-                    {[isSw ? 'Jina' : 'Name', isSw ? 'Namba' : 'Employee #', isSw ? 'Nafasi' : 'Role', isSw ? 'Hali' : 'State', isSw ? 'Muda' : 'Created'].map((h) => (
+                    {[isSw ? 'Jina' : 'Name', 'Username', 'Email', isSw ? 'Namba' : 'Employee #', isSw ? 'Nafasi' : 'Role', isSw ? 'Hali' : 'State', isSw ? 'Hatua' : 'Actions'].map((h) => (
                       <th key={h} className="pb-2 pr-4 text-left text-[11px] font-medium uppercase tracking-widest text-slate-500">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {(data?.recentUsers || []).map((u) => (
+                  {filteredAllUsers.map((u) => (
                       <tr key={u.id} className="transition-colors hover:bg-slate-900/70">
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
@@ -562,6 +656,8 @@ export default function ManagerDashboard() {
                           <span className="font-medium text-white">{u.name}</span>
                         </div>
                       </td>
+                      <td className="py-3 pr-4 text-slate-400">{u.username || '-'}</td>
+                      <td className="py-3 pr-4 text-slate-400">{u.email || '-'}</td>
                       <td className="py-3 pr-4 font-mono text-slate-400">{u.employeeNumber}</td>
                       <td className="py-3 pr-4"><RoleBadge role={u.role} /></td>
                       <td className="py-3 pr-4">
@@ -569,7 +665,19 @@ export default function ManagerDashboard() {
                             ? <span className="rounded-full border border-slate-700 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">ARCHIVED</span>
                             : <span className="rounded-full border border-slate-700 bg-black px-2 py-0.5 text-[10px] font-semibold text-emerald-300">ACTIVE</span>}
                       </td>
-                      <td className="py-3 text-xs text-slate-400">{timeAgo(u.createdAt)}</td>
+                      <td className="py-3">
+                        <div className="flex gap-2">
+                          <button onClick={() => handleEditUser(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-white transition hover:bg-slate-900" title={isSw ? 'Hariri mtumiaji' : 'Edit user'}>
+                            <FaEdit />
+                          </button>
+                          <button onClick={() => handleResetPassword(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Weka upya nywila' : 'Reset password'}>
+                            <FaKey />
+                          </button>
+                          <button onClick={() => handleDeleteUser(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Futa mtumiaji' : 'Delete user'}>
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

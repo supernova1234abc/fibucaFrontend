@@ -86,6 +86,11 @@ export default function AdminDashboard() {
 
   const [staffLeaderboard, setStaffLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const currentUser =
+    JSON.parse(localStorage.getItem("fibuca_user")) ||
+    JSON.parse(sessionStorage.getItem("fibuca_user"));
+
+  const isProtectedSuperadmin = (targetUser) => targetUser?.role === "SUPERADMIN" && currentUser?.role === "ADMIN";
 
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "https://fibuca-backend.vercel.app";
@@ -214,6 +219,10 @@ export default function AdminDashboard() {
   };
 
   const handleOpenUserModal = (user = null) => {
+    if (isProtectedSuperadmin(user)) {
+      Swal.fire(isSw ? "Hairuhusiwi" : "Forbidden", isSw ? "Admin hawezi kuhariri superadmin" : "Admin cannot edit superadmin users", "warning");
+      return;
+    }
     if (user) {
       setEditingSystemUser(user);
       setUserFormData({
@@ -278,6 +287,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = (userId) => {
+    const targetUser = systemUsers.find((entry) => entry.id === userId);
+    if (isProtectedSuperadmin(targetUser)) {
+      Swal.fire(isSw ? "Hairuhusiwi" : "Forbidden", isSw ? "Admin hawezi kufuta superadmin" : "Admin cannot delete superadmin users", "warning");
+      return;
+    }
     Swal.fire({
       title: isSw ? "Futa Mtumiaji?" : "Delete User?",
       text: isSw ? "Kitendo hiki hakiwezi kurejeshwa." : "This action cannot be undone.",
@@ -300,6 +314,10 @@ export default function AdminDashboard() {
   };
 
   const handleResetPassword = async (user) => {
+    if (isProtectedSuperadmin(user)) {
+      return Swal.fire(isSw ? "Hairuhusiwi" : "Forbidden", isSw ? "Admin hawezi kuweka upya nywila ya superadmin" : "Admin cannot reset a superadmin password", "warning");
+    }
+
     const { value: newPassword } = await Swal.fire({
       title: isSw ? "Weka Upya Nywila" : "Reset Password",
       html: `<p style="margin-bottom:8px">${isSw ? "Weka nywila ya muda kwa" : "Set a temporary password for"} <b>${user.name || user.username}</b>.<br/>${isSw ? "Ataombwa kuibadilisha wakati wa kuingia tena." : "They will be prompted to change it on next login."}</p>`,
@@ -493,6 +511,12 @@ export default function AdminDashboard() {
   };
 
   const handleRestoreUser = (id) => {
+    const targetUser = archivedUsers.find((entry) => entry.id === id);
+    if (isProtectedSuperadmin(targetUser)) {
+      Swal.fire(isSw ? "Hairuhusiwi" : "Forbidden", isSw ? "Admin hawezi kurudisha superadmin" : "Admin cannot restore superadmin users", "warning");
+      return;
+    }
+
     Swal.fire({
       title: isSw ? "Kurudisha mtumiaji?" : "Restore user?",
       text: isSw ? "Akaunti ya mtumiaji itarudi katika mfumo." : "This user account will be restored to active users.",
@@ -517,6 +541,12 @@ export default function AdminDashboard() {
   };
 
   const handlePermanentDeleteUser = (id) => {
+    const targetUser = archivedUsers.find((entry) => entry.id === id);
+    if (isProtectedSuperadmin(targetUser)) {
+      Swal.fire(isSw ? "Hairuhusiwi" : "Forbidden", isSw ? "Admin hawezi kufuta kabisa superadmin" : "Admin cannot permanently delete superadmin users", "warning");
+      return;
+    }
+
     Swal.fire({
       title: isSw ? "Kumfuta mtumiaji kabisa?" : "Permanently delete user?",
       text: isSw ? "Hii sio inaweza kutengenezwa. Akaunti ya mtumiaji itafutwa kabisa pamoja na taarifa zote." : "This cannot be undone. The user account and all related data will be deleted permanently.",
@@ -699,21 +729,24 @@ export default function AdminDashboard() {
         <div className="flex gap-2">
           <button
             onClick={() => handleOpenUserModal(row)}
-            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+            disabled={isProtectedSuperadmin(row)}
+            className={`p-2 rounded-lg transition ${isProtectedSuperadmin(row) ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"}`}
             title={isSw ? "Hariri mtumiaji" : "Edit user"}
           >
             <FaEdit />
           </button>
           <button
             onClick={() => handleResetPassword(row)}
-            className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
+            disabled={isProtectedSuperadmin(row)}
+            className={`p-2 rounded-lg transition ${isProtectedSuperadmin(row) ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-amber-500 text-white hover:bg-amber-600"}`}
             title={isSw ? "Weka upya nywila" : "Reset password"}
           >
             <FaKey />
           </button>
           <button
             onClick={() => handleDeleteUser(row.id)}
-            className="p-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition"
+            disabled={isProtectedSuperadmin(row)}
+            className={`p-2 rounded-lg transition ${isProtectedSuperadmin(row) ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-rose-600 text-white hover:bg-rose-700"}`}
             title={isSw ? "Futa mtumiaji" : "Delete user"}
           >
             <FaTrash />
@@ -1024,14 +1057,16 @@ export default function AdminDashboard() {
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => handleRestoreUser(user.id)}
-                                    className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 text-xs rounded transition"
+                                    disabled={isProtectedSuperadmin(user)}
+                                    className={`px-2 py-1 text-xs rounded transition ${isProtectedSuperadmin(user) ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 text-white"}`}
                                     title={isSw ? "Kurudisha" : "Restore"}
                                   >
                                     ↺
                                   </button>
                                   <button
                                     onClick={() => handlePermanentDeleteUser(user.id)}
-                                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 text-xs rounded transition"
+                                    disabled={isProtectedSuperadmin(user)}
+                                    className={`px-2 py-1 text-xs rounded transition ${isProtectedSuperadmin(user) ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 text-white"}`}
                                     title={isSw ? "Kumfuta kabisa" : "Permanently Delete"}
                                   >
                                     ✕
