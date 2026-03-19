@@ -196,6 +196,19 @@ function EmptyState({ text }) {
   return <p className="py-4 text-center text-sm text-slate-500">{text}</p>;
 }
 
+function userAuditLabel(type, isSw) {
+  const labels = {
+    user_created: isSw ? 'Mtumiaji ameundwa' : 'User created',
+    user_updated: isSw ? 'Mtumiaji amehaririwa' : 'User updated',
+    user_password_reset: isSw ? 'Nywila imewekwa upya' : 'Password reset',
+    user_first_login_otp_reset: isSw ? 'OTP ya kuingia mara ya kwanza imewekwa upya' : 'First-login OTP reset',
+    user_soft_deleted: isSw ? 'Mtumiaji amehifadhiwa' : 'User archived',
+    user_restored: isSw ? 'Mtumiaji amerudishwa' : 'User restored',
+    user_permanently_deleted: isSw ? 'Mtumiaji amefutwa kabisa' : 'User permanently deleted',
+  };
+  return labels[type] || type;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ManagerDashboard() {
@@ -459,6 +472,7 @@ export default function ManagerDashboard() {
   const security    = m.security           || {};
   const sessions    = data?.activeSessions || [];
   const allUsers    = (data?.recentAllUsers || data?.allUsers || data?.recentUsers || []);
+  const userAuditEvents = data?.userAuditEvents || [];
   const onlineCnt   = sessions.filter((s) => s.status === 'online').length;
   const idleCnt     = sessions.filter((s) => s.status === 'idle').length;
   const activeSystemUsers = allUsers.filter((entry) => !entry.deletedAt);
@@ -830,6 +844,36 @@ export default function ManagerDashboard() {
       {/* ════════ VIEW: AUDIT ════════ */}
       {activeView === 'audit' && (
         <>
+          <Card>
+            <SectionHead icon={FaUserSecret} title={isSw ? 'Ukaguzi wa Watumiaji' : 'User Action Audit'} live count={userAuditEvents.length} />
+            <div className="max-h-[24rem] space-y-2 overflow-y-auto pr-1">
+              {userAuditEvents.map((event) => (
+                <div key={event.id} className="rounded-lg border border-slate-800 bg-slate-900/70 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <EventBadge type={event.type} />
+                    <span className="text-sm font-medium text-white">{userAuditLabel(event.type, isSw)}</span>
+                    <span className="ml-auto text-[11px] text-emerald-500/80">{timeAgo(event.createdAt)}</span>
+                  </div>
+                  <div className="mt-2 grid gap-1 text-xs text-slate-400 md:grid-cols-2">
+                    <p>
+                      {isSw ? 'Mhusika' : 'Actor'}: <span className="text-slate-300">#{event.details?.actorId || '-'} {event.details?.actorRole || '-'}</span>
+                    </p>
+                    <p>
+                      {isSw ? 'Mlengo' : 'Target'}: <span className="text-slate-300">{event.details?.targetName || '-'} ({event.details?.targetRole || '-'})</span>
+                    </p>
+                    <p>
+                      Username: <span className="text-slate-300">{event.details?.targetUsername || '-'}</span>
+                    </p>
+                    <p>
+                      {isSw ? 'Namba' : 'Employee #'}: <span className="text-slate-300">{event.details?.targetEmployeeNumber || '-'}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {!userAuditEvents.length && <EmptyState text={isSw ? 'Hakuna matukio ya ukaguzi wa watumiaji bado.' : 'No user audit events yet.'} />}
+            </div>
+          </Card>
+
           <Card>
             <SectionHead icon={FaTerminal} title={isSw ? 'Maombi ya Hivi Karibuni' : 'Request Telemetry'} live count={data?.recentRequests?.length ?? 0} />
             <div className="max-h-[22rem] overflow-x-auto overflow-y-auto">
