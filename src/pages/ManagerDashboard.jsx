@@ -15,30 +15,30 @@ const REFRESH_MS = 8000;
 // ─── Style maps ──────────────────────────────────────────────────────────────
 
 const ROLE_STYLES = {
-  SUPERADMIN: 'bg-violet-900/60 text-violet-300 border border-violet-700/50',
+  SUPERADMIN: 'bg-black text-emerald-300 border border-slate-700',
   ADMIN: 'bg-sky-900/60 text-sky-300 border border-sky-700/50',
   STAFF: 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50',
   CLIENT: 'bg-slate-800 text-slate-300 border border-slate-600/50',
 };
 
 const METHOD_STYLES = {
-  GET: 'bg-sky-900/60 text-sky-300',
-  POST: 'bg-emerald-900/60 text-emerald-300',
-  PUT: 'bg-amber-900/60 text-amber-300',
-  PATCH: 'bg-orange-900/60 text-orange-300',
-  DELETE: 'bg-rose-900/60 text-rose-300',
+  GET: 'bg-black text-emerald-300 border border-slate-700',
+  POST: 'bg-black text-white border border-slate-700',
+  PUT: 'bg-black text-emerald-300 border border-slate-700',
+  PATCH: 'bg-black text-white border border-slate-700',
+  DELETE: 'bg-black text-emerald-300 border border-slate-700',
 };
 
 const EVENT_STYLE_MAP = {
-  login_success: 'bg-emerald-900/50 text-emerald-200',
-  login_invalid_password: 'bg-rose-900/50 text-rose-300',
-  login_lockout_attempt: 'bg-red-900/70 text-red-200',
-  login_user_not_found: 'bg-rose-900/40 text-rose-300',
-  invalid_jwt: 'bg-amber-900/50 text-amber-300',
-  blocked_origin: 'bg-orange-900/60 text-orange-300',
-  api_rate_limited: 'bg-yellow-900/50 text-yellow-300',
-  auth_rate_limited: 'bg-yellow-900/50 text-yellow-300',
-  security_state_reset: 'bg-violet-900/50 text-violet-300',
+  login_success: 'bg-black text-emerald-300 border border-emerald-900/70',
+  login_invalid_password: 'bg-black text-white border border-slate-700',
+  login_lockout_attempt: 'bg-black text-emerald-300 border border-slate-700',
+  login_user_not_found: 'bg-black text-white border border-slate-700',
+  invalid_jwt: 'bg-black text-emerald-300 border border-slate-700',
+  blocked_origin: 'bg-black text-white border border-slate-700',
+  api_rate_limited: 'bg-black text-emerald-300 border border-slate-700',
+  auth_rate_limited: 'bg-black text-emerald-300 border border-slate-700',
+  security_state_reset: 'bg-black text-emerald-300 border border-slate-700',
 };
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -81,10 +81,8 @@ function MethodBadge({ method }) {
 
 function StatusCodeBadge({ code }) {
   const cls =
-    code >= 500 ? 'bg-red-900/60 text-red-300' :
-    code >= 400 ? 'bg-amber-900/60 text-amber-300' :
-    code >= 300 ? 'bg-sky-900/60 text-sky-300' :
-    'bg-emerald-900/60 text-emerald-300';
+    code >= 400 ? 'bg-black text-white border border-slate-700' :
+    'bg-black text-emerald-300 border border-slate-700';
   return (
     <span className={`inline-block rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${cls}`}>
       {code}
@@ -120,7 +118,7 @@ function StatusDot({ status }) {
 
 function Avatar({ name, role }) {
   const ring = {
-    SUPERADMIN: 'ring-violet-500',
+    SUPERADMIN: 'ring-emerald-500',
     ADMIN:      'ring-sky-500',
     STAFF:      'ring-emerald-500',
     CLIENT:     'ring-slate-500',
@@ -135,12 +133,12 @@ function Avatar({ name, role }) {
 
 function MetricCard({ icon: Icon, title, value, sub, tone = 'neutral' }) {
   const tones = {
-    neutral: { card: 'border-slate-700/50 bg-slate-900',       num: 'text-white',       icon: 'text-slate-400',   sub: 'text-slate-500' },
-    success: { card: 'border-emerald-700/40 bg-emerald-950/40', num: 'text-emerald-300', icon: 'text-emerald-400', sub: 'text-emerald-500' },
-    warning: { card: 'border-amber-700/40 bg-amber-950/40',     num: 'text-amber-300',   icon: 'text-amber-400',   sub: 'text-amber-500' },
-    danger:  { card: 'border-rose-700/40 bg-rose-950/40',       num: 'text-rose-300',    icon: 'text-rose-400',    sub: 'text-rose-500' },
-    info:    { card: 'border-sky-700/40 bg-sky-950/40',         num: 'text-sky-300',     icon: 'text-sky-400',     sub: 'text-sky-500' },
-    purple:  { card: 'border-violet-700/40 bg-violet-950/40',   num: 'text-violet-300',  icon: 'text-violet-400',  sub: 'text-violet-500' },
+    neutral: { card: 'border-slate-700 bg-black',          num: 'text-white',       icon: 'text-slate-300',   sub: 'text-slate-500' },
+    success: { card: 'border-emerald-800 bg-black',        num: 'text-emerald-300', icon: 'text-emerald-400', sub: 'text-emerald-500' },
+    warning: { card: 'border-slate-700 bg-black',          num: 'text-white',       icon: 'text-emerald-400', sub: 'text-emerald-500' },
+    danger:  { card: 'border-emerald-800 bg-black',        num: 'text-emerald-300', icon: 'text-emerald-400', sub: 'text-emerald-500' },
+    info:    { card: 'border-slate-700 bg-black',          num: 'text-white',       icon: 'text-emerald-400', sub: 'text-emerald-500' },
+    purple:  { card: 'border-slate-700 bg-black',          num: 'text-white',       icon: 'text-emerald-400', sub: 'text-emerald-500' },
   }[tone] || {};
 
   return (
@@ -171,12 +169,12 @@ function SectionHead({ icon: Icon, title, live = false, count = null }) {
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        {Icon && <Icon className="text-slate-400" />}
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-300">{title}</h3>
+        {Icon && <Icon className="text-emerald-400" />}
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-white">{title}</h3>
         {live && <LiveChip />}
       </div>
       {count !== null && (
-        <span className="rounded-full border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">
+        <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] text-emerald-300">
           {count}
         </span>
       )}
@@ -186,7 +184,7 @@ function SectionHead({ icon: Icon, title, live = false, count = null }) {
 
 function Card({ children, className = '' }) {
   return (
-    <div className={`rounded-xl border border-slate-700/50 bg-slate-900 p-5 ${className}`}>
+    <div className={`rounded-xl border border-slate-700 bg-black p-5 ${className}`}>
       {children}
     </div>
   );
@@ -275,9 +273,10 @@ export default function ManagerDashboard() {
   // ── Loading splash ─────────────────────────────────────────────────────────
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-slate-800 bg-slate-900/50 p-14 text-slate-400">
+      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-black p-14 text-slate-400 shadow-[0_0_0_1px_rgba(15,23,42,0.4),0_0_32px_rgba(16,185,129,0.06)]">
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px)] [background-size:26px_26px]" />
         <div className="flex items-center gap-3">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-700 border-t-emerald-400" />
           <span className="text-sm">{isSw ? 'Inapakia kituo cha udhibiti...' : 'Loading control center...'}</span>
         </div>
       </div>
@@ -297,11 +296,14 @@ export default function ManagerDashboard() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5 pb-10">
+    <div className="relative space-y-5 overflow-hidden pb-10">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-black" />
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-30 [background-image:linear-gradient(rgba(16,185,129,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.05)_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
 
       {/* ── MISSING ROUTE BANNER ─────────────────────────────────────────── */}
       {overviewRouteMissing && (
-        <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
+        <div className="rounded-xl border border-slate-700 bg-black px-4 py-3 text-sm text-white shadow-[0_0_22px_rgba(16,185,129,0.05)]">
           <strong>Warning: Backend not deployed yet.</strong>{' '}
           {isSw
             ? 'Route haijapatikana. Subiri redeploy kukamilika.'
@@ -310,18 +312,18 @@ export default function ManagerDashboard() {
       )}
 
       {/* ── CONTROL BAR ──────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-slate-700/40 bg-slate-900 px-5 py-4">
+      <div className="rounded-xl border border-slate-700 bg-black px-5 py-4 shadow-[0_0_0_1px_rgba(15,23,42,0.35),0_0_26px_rgba(16,185,129,0.05)]">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-700/50 bg-violet-900/60">
-              <FaShieldAlt className="text-lg text-violet-300" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 shadow-[0_0_18px_rgba(16,185,129,0.07)]">
+              <FaShieldAlt className="text-lg text-emerald-300" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-sm font-bold uppercase tracking-widest text-white">
+                <h1 className="text-sm font-bold uppercase tracking-[0.3em] text-white">
                   Fibuca Control Tower
                 </h1>
-                <span className="rounded-full border border-violet-700/50 bg-violet-900/50 px-2 py-0.5 text-[10px] uppercase tracking-widest text-violet-300 font-semibold">
+                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[10px] uppercase tracking-widest text-emerald-300 font-semibold">
                   SUPERADMIN
                 </span>
                 <LiveChip />
@@ -339,14 +341,14 @@ export default function ManagerDashboard() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setOverviewRouteMissing(false); load(false); }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-700 active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-black px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-900 active:scale-95"
             >
               <FaRedo className={`text-xs ${refreshing ? 'animate-spin' : ''}`} />
               {isSw ? 'Sasisha' : 'Refresh'}
             </button>
             <button
               onClick={handleResetSecurity}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-700/50 bg-rose-950/50 px-3 py-1.5 text-xs font-medium text-rose-300 transition hover:bg-rose-900/60 active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-black px-3 py-1.5 text-xs font-medium text-emerald-300 transition hover:bg-slate-900 active:scale-95"
             >
               <FaBolt className="text-xs" />
               {isSw ? 'Reset Ulinzi' : 'Reset Security'}
@@ -378,7 +380,7 @@ export default function ManagerDashboard() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {sessions.map((sess) => (
-                  <div key={sess.userId} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3 transition-colors hover:border-slate-700">
+                  <div key={sess.userId} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3 transition-colors hover:border-emerald-900/60 hover:bg-slate-900">
                     <Avatar name={sess.name} role={sess.role} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -387,7 +389,7 @@ export default function ManagerDashboard() {
                       </div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                         <RoleBadge role={sess.role} />
-                        <span className="text-[11px] text-slate-500">{timeAgo(sess.lastSeen)}</span>
+                        <span className="text-[11px] text-emerald-500/80">{timeAgo(sess.lastSeen)}</span>
                       </div>
                       <p className="mt-0.5 truncate font-mono text-[11px] text-slate-500">
                         {sess.employeeNumber && <span className="mr-1 text-slate-400">{sess.employeeNumber}</span>}
@@ -406,12 +408,12 @@ export default function ManagerDashboard() {
               <SectionHead icon={FaShieldAlt} title={isSw ? 'Matukio ya Usalama' : 'Security Events'} live count={data?.securityEvents?.length ?? 0} />
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                 {(data?.securityEvents || []).slice(0, 10).map((ev) => (
-                  <div key={ev.id} className="flex items-start gap-2 rounded-lg bg-slate-800/60 p-2.5">
+                  <div key={ev.id} className="flex items-start gap-2 rounded-lg border border-slate-800 bg-slate-900/70 p-2.5">
                     <EventBadge type={ev.type} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs text-slate-400">{ev.method} {ev.path} · IP {ev.ip}</p>
+                      <p className="truncate text-xs text-slate-300">{ev.method} {ev.path} · IP {ev.ip}</p>
                     </div>
-                    <span className="shrink-0 text-[11px] text-slate-500">{timeAgo(ev.createdAt)}</span>
+                    <span className="shrink-0 text-[11px] text-emerald-500/80">{timeAgo(ev.createdAt)}</span>
                   </div>
                 ))}
                 {!data?.securityEvents?.length && <EmptyState text={isSw ? 'Hakuna matukio ya usalama bado.' : 'No security events yet.'} />}
@@ -422,12 +424,12 @@ export default function ManagerDashboard() {
               <SectionHead icon={FaBell} title={isSw ? 'Malalamiko ya Karibuni' : 'Recent Complaints'} count={data?.recentComplaints?.length ?? 0} />
               <div className="space-y-2">
                 {(data?.recentComplaints || []).map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 rounded-lg bg-slate-800/60 p-3 transition-colors hover:bg-slate-800">
+                  <div key={c.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3 transition-colors hover:border-emerald-900/60 hover:bg-slate-900">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-white">#{c.id} {c.subject}</p>
                       <p className="text-[11px] text-slate-400">{c.user?.name || '-'} · {timeAgo(c.updatedAt)}</p>
                     </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.status === 'OPEN' ? 'border-amber-700/40 bg-amber-900/60 text-amber-300' : 'border-emerald-700/40 bg-emerald-900/60 text-emerald-300'}`}>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.status === 'OPEN' ? 'border-slate-700 bg-black text-white' : 'border-slate-700 bg-black text-emerald-300'}`}>
                       {c.status}
                     </span>
                   </div>
@@ -446,12 +448,12 @@ export default function ManagerDashboard() {
             <SectionHead icon={FaShieldAlt} title={isSw ? 'Matukio Yote ya Usalama' : 'All Security Events'} live count={data?.securityEvents?.length ?? 0} />
             <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
               {(data?.securityEvents || []).map((ev) => (
-                <div key={ev.id} className="rounded-lg border border-slate-800 bg-slate-800/40 p-3">
+                <div key={ev.id} className="rounded-lg border border-slate-800 bg-slate-900/70 p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <EventBadge type={ev.type} />
-                    <span className="ml-auto text-[11px] text-slate-500">{timeAgo(ev.createdAt)}</span>
+                    <span className="ml-auto text-[11px] text-emerald-500/80">{timeAgo(ev.createdAt)}</span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{ev.method} {ev.path}{ev.userId ? ` · uid:${ev.userId}` : ''}</p>
+                  <p className="mt-1 text-xs text-slate-300">{ev.method} {ev.path}{ev.userId ? ` · uid:${ev.userId}` : ''}</p>
                   <p className="text-[11px] text-slate-500">IP: {ev.ip}{ev.userAgent ? ` · ${ev.userAgent.slice(0, 55)}${ev.userAgent.length > 55 ? '…' : ''}` : ''}</p>
                 </div>
               ))}
@@ -467,9 +469,9 @@ export default function ManagerDashboard() {
               ) : (
                 <div className="space-y-2">
                   {(data?.lockouts || []).map((l) => (
-                    <div key={l.key} className="rounded-lg border border-rose-800/50 bg-rose-950/30 p-3">
-                      <p className="break-all font-mono text-sm font-semibold text-rose-300">{l.key}</p>
-                      <p className="mt-1 text-xs text-rose-400/80">
+                    <div key={l.key} className="rounded-lg border border-slate-700 bg-black p-3">
+                      <p className="break-all font-mono text-sm font-semibold text-emerald-300">{l.key}</p>
+                      <p className="mt-1 text-xs text-slate-400">
                         {isSw ? 'Majaribio' : 'Failures'}: {l.count} · {isSw ? 'Inabaki' : 'Remaining'}: {l.remainingSec}s
                       </p>
                     </div>
@@ -505,7 +507,7 @@ export default function ManagerDashboard() {
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
                     {sessions.map((sess) => (
-                      <tr key={sess.userId} className="transition-colors hover:bg-slate-800/40">
+                      <tr key={sess.userId} className="transition-colors hover:bg-slate-900/70">
                         <td className="py-3 pr-4">
                           <div className="flex items-center gap-2">
                             <Avatar name={sess.name} role={sess.role} />
@@ -553,7 +555,7 @@ export default function ManagerDashboard() {
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {(data?.recentUsers || []).map((u) => (
-                    <tr key={u.id} className="transition-colors hover:bg-slate-800/40">
+                      <tr key={u.id} className="transition-colors hover:bg-slate-900/70">
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
                           <Avatar name={u.name} role={u.role} />
@@ -564,8 +566,8 @@ export default function ManagerDashboard() {
                       <td className="py-3 pr-4"><RoleBadge role={u.role} /></td>
                       <td className="py-3 pr-4">
                         {u.deletedAt
-                          ? <span className="rounded-full border border-rose-700/40 bg-rose-900/50 px-2 py-0.5 text-[10px] font-semibold text-rose-300">ARCHIVED</span>
-                          : <span className="rounded-full border border-emerald-700/40 bg-emerald-900/50 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">ACTIVE</span>}
+                            ? <span className="rounded-full border border-slate-700 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">ARCHIVED</span>
+                            : <span className="rounded-full border border-slate-700 bg-black px-2 py-0.5 text-[10px] font-semibold text-emerald-300">ACTIVE</span>}
                       </td>
                       <td className="py-3 text-xs text-slate-400">{timeAgo(u.createdAt)}</td>
                     </tr>
@@ -593,7 +595,7 @@ export default function ManagerDashboard() {
                 </thead>
                 <tbody className="divide-y divide-slate-800/40">
                   {(data?.recentRequests || []).slice(0, 40).map((row) => (
-                    <tr key={row.id} className="transition-colors hover:bg-slate-800/40">
+                    <tr key={row.id} className="transition-colors hover:bg-slate-900/70">
                       <td className="whitespace-nowrap py-2 pr-4"><MethodBadge method={row.method} /></td>
                       <td className="max-w-[16rem] truncate py-2 pr-4 font-mono text-slate-300">{row.path}</td>
                       <td className="whitespace-nowrap py-2 pr-4"><StatusCodeBadge code={row.statusCode} /></td>
@@ -612,7 +614,7 @@ export default function ManagerDashboard() {
             <SectionHead icon={FaExchangeAlt} title={isSw ? 'Uhamisho wa Karibuni' : 'Recent Transfers'} count={data?.recentTransfers?.length ?? 0} />
             <div className="space-y-2">
               {(data?.recentTransfers || []).map((t) => (
-                <div key={t.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3 transition-colors hover:bg-slate-800">
+                <div key={t.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3 transition-colors hover:border-emerald-900/60 hover:bg-slate-900">
                   <Avatar name={t.user?.name || '?'} role={t.performedBy?.role} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-white">{t.user?.name || '-'}</p>
