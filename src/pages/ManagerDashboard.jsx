@@ -209,6 +209,7 @@ export default function ManagerDashboard() {
   const [overviewRouteMissing, setOverviewRouteMissing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [userSearch, setUserSearch] = useState('');
+  const [userView, setUserView] = useState('all');
 
   const sectionMenus = useMemo(() => ([
     { href: '/superadmin',          label: isSw ? 'Amri Kuu'   : 'Overview',  exact: true },
@@ -348,6 +349,46 @@ export default function ManagerDashboard() {
     }
   };
 
+  const handleRestoreUser = async (targetUser) => {
+    const result = await Swal.fire({
+      title: isSw ? 'Rudisha mtumiaji?' : 'Restore user?',
+      text: isSw ? 'Akaunti itarudi kuwa hai tena.' : 'This account will be restored to active users.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Rudisha' : 'Restore',
+      confirmButtonColor: '#14532d',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.patch(`/api/admin/users/${targetUser.id}/restore`);
+      toast.success(isSw ? 'Mtumiaji amerudishwa' : 'User restored');
+      load(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kurudisha mtumiaji' : 'Failed to restore user'));
+    }
+  };
+
+  const handlePermanentDeleteUser = async (targetUser) => {
+    const result = await Swal.fire({
+      title: isSw ? 'Futa kabisa mtumiaji?' : 'Permanently delete user?',
+      text: isSw ? 'Hii haiwezi kurejeshwa. Akaunti itafutwa kabisa.' : 'This cannot be undone. The account will be removed permanently.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Futa kabisa' : 'Delete forever',
+      confirmButtonColor: '#14532d',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.delete(`/api/admin/users/${targetUser.id}/permanent`);
+      toast.success(isSw ? 'Mtumiaji amefutwa kabisa' : 'User permanently deleted');
+      load(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kufuta kabisa mtumiaji' : 'Failed to permanently delete user'));
+    }
+  };
+
   // ── Loading splash ─────────────────────────────────────────────────────────
   if (loading && !data) {
     return (
@@ -372,7 +413,14 @@ export default function ManagerDashboard() {
   const allUsers    = (data?.recentAllUsers || data?.allUsers || data?.recentUsers || []);
   const onlineCnt   = sessions.filter((s) => s.status === 'online').length;
   const idleCnt     = sessions.filter((s) => s.status === 'idle').length;
-  const filteredAllUsers = allUsers.filter((entry) => {
+  const activeSystemUsers = allUsers.filter((entry) => !entry.deletedAt);
+  const archivedSystemUsers = allUsers.filter((entry) => !!entry.deletedAt);
+  const visibleUsers = allUsers.filter((entry) => {
+    if (userView === 'active') return !entry.deletedAt;
+    if (userView === 'archived') return !!entry.deletedAt;
+    return true;
+  });
+  const filteredAllUsers = visibleUsers.filter((entry) => {
     if (!userSearch) return true;
     const q = userSearch.toLowerCase();
     return [entry.name, entry.username, entry.email, entry.employeeNumber, entry.role]
@@ -630,7 +678,29 @@ export default function ManagerDashboard() {
 
           <Card>
             <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <SectionHead icon={FaUsers} title={isSw ? 'Usimamizi wa Watumiaji' : 'User Management'} count={filteredAllUsers.length} />
+              <div className="flex flex-col gap-3">
+                <SectionHead icon={FaUsers} title={isSw ? 'Usimamizi wa Watumiaji' : 'User Management'} count={filteredAllUsers.length} />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setUserView('all')}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${userView === 'all' ? 'border-slate-700 bg-black text-emerald-300' : 'border-slate-800 bg-slate-950 text-slate-400 hover:bg-slate-900'}`}
+                  >
+                    {isSw ? 'Wote' : 'All'} ({allUsers.length})
+                  </button>
+                  <button
+                    onClick={() => setUserView('active')}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${userView === 'active' ? 'border-slate-700 bg-black text-emerald-300' : 'border-slate-800 bg-slate-950 text-slate-400 hover:bg-slate-900'}`}
+                  >
+                    {isSw ? 'Hai' : 'Active'} ({activeSystemUsers.length})
+                  </button>
+                  <button
+                    onClick={() => setUserView('archived')}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${userView === 'archived' ? 'border-slate-700 bg-black text-emerald-300' : 'border-slate-800 bg-slate-950 text-slate-400 hover:bg-slate-900'}`}
+                  >
+                    {isSw ? 'Uliohifadhiwa' : 'Archived'} ({archivedSystemUsers.length})
+                  </button>
+                </div>
+              </div>
               <input
                 value={userSearch}
                 onChange={(event) => setUserSearch(event.target.value)}
@@ -667,15 +737,28 @@ export default function ManagerDashboard() {
                       </td>
                       <td className="py-3">
                         <div className="flex gap-2">
-                          <button onClick={() => handleEditUser(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-white transition hover:bg-slate-900" title={isSw ? 'Hariri mtumiaji' : 'Edit user'}>
-                            <FaEdit />
-                          </button>
-                          <button onClick={() => handleResetPassword(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Weka upya nywila' : 'Reset password'}>
-                            <FaKey />
-                          </button>
-                          <button onClick={() => handleDeleteUser(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Futa mtumiaji' : 'Delete user'}>
-                            <FaTrash />
-                          </button>
+                          {u.deletedAt ? (
+                            <>
+                              <button onClick={() => handleRestoreUser(u)} className="rounded-lg border border-slate-700 bg-black px-3 py-2 text-xs font-medium text-white transition hover:bg-slate-900" title={isSw ? 'Rudisha mtumiaji' : 'Restore user'}>
+                                {isSw ? 'Rudisha' : 'Restore'}
+                              </button>
+                              <button onClick={() => handlePermanentDeleteUser(u)} className="rounded-lg border border-slate-700 bg-black px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Futa kabisa mtumiaji' : 'Permanently delete user'}>
+                                {isSw ? 'Futa Kabisa' : 'Delete Forever'}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => handleEditUser(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-white transition hover:bg-slate-900" title={isSw ? 'Hariri mtumiaji' : 'Edit user'}>
+                                <FaEdit />
+                              </button>
+                              <button onClick={() => handleResetPassword(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Weka upya nywila' : 'Reset password'}>
+                                <FaKey />
+                              </button>
+                              <button onClick={() => handleDeleteUser(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Futa mtumiaji' : 'Delete user'}>
+                                <FaTrash />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
