@@ -813,6 +813,9 @@ export default function ManagerDashboard() {
                               <button onClick={() => handleRestoreUser(u)} className="rounded-lg border border-slate-700 bg-black px-3 py-2 text-xs font-medium text-white transition hover:bg-slate-900" title={isSw ? 'Rudisha mtumiaji' : 'Restore user'}>
                                 {isSw ? 'Rudisha' : 'Restore'}
                               </button>
+                              <button onClick={() => handleResetPassword(u)} className="rounded-lg border border-slate-700 bg-black p-2 text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Weka upya nywila' : 'Reset password'}>
+                                <FaKey />
+                              </button>
                               <button onClick={() => handlePermanentDeleteUser(u)} className="rounded-lg border border-slate-700 bg-black px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-slate-900" title={isSw ? 'Futa kabisa mtumiaji' : 'Permanently delete user'}>
                                 {isSw ? 'Futa Kabisa' : 'Delete Forever'}
                               </button>
