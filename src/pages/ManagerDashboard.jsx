@@ -546,7 +546,7 @@ export default function ManagerDashboard() {
               <FaShieldAlt className="text-lg text-emerald-300" />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 justify-center">
                 <h1 className="text-sm font-bold uppercase tracking-[0.3em] text-white">
                   Fibuca Control Tower
                 </h1>

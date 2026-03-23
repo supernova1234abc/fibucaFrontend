@@ -476,7 +476,7 @@ export default function ClientDashboard() {
       {/* Overview */}
       {section === "overview" && (
         <div>
-          <h1 className="text-2xl font-bold text-blue-700">{isSw ? `Habari, ${user.name}` : `Hello, ${user.name}`}</h1>
+          <h1 className="text-xl font-bold text-blue-700 text-center">{isSw ? `Habari, ${user.name}` : `Hello, ${user.name}`}</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="bg-white p-4 rounded shadow">

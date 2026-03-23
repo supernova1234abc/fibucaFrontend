@@ -821,15 +821,17 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 pb-28 md:pb-0">
       <div className="max-w-7xl mx-auto space-y-6 p-6">
-        <h1 className="text-3xl font-bold">{isSw ? "Dashibodi ya Staff" : "Staff Dashboard"}</h1>
+        <h1 className="text-xl font-bold text-center">{isSw ? "Dashibodi ya Staff" : "Staff Dashboard"}</h1>
 
-        <div className="grid md:grid-cols-5 gap-4">
-          <StatCard icon={<FaUsers />} label={isSw ? "Wateja" : "Clients"} value={stats.totalClients} />
-          <StatCard icon={<FaLink />} label={isSw ? "Viungo Vyote" : "Total Links"} value={stats.totalLinks} />
-          <StatCard icon={<FaChartLine />} label={isSw ? "Viungo Hai" : "Active Links"} value={stats.activeLinks} />
-          <StatCard icon={<FaClock />} label={isSw ? "Viungo Vilivyoisha" : "Expired Links"} value={stats.expiredLinks} />
-          <StatCard icon={<FaComments />} label={isSw ? "Malalamiko Wazi" : "Open Complaints"} value={stats.openComplaints} />
-        </div>
+        {activeTab === "links" && (
+          <div className="grid md:grid-cols-5 gap-4">
+            <StatCard icon={<FaUsers />} label={isSw ? "Wateja" : "Clients"} value={stats.totalClients} />
+            <StatCard icon={<FaLink />} label={isSw ? "Viungo Vyote" : "Total Links"} value={stats.totalLinks} />
+            <StatCard icon={<FaChartLine />} label={isSw ? "Viungo Hai" : "Active Links"} value={stats.activeLinks} />
+            <StatCard icon={<FaClock />} label={isSw ? "Viungo Vilivyoisha" : "Expired Links"} value={stats.expiredLinks} />
+            <StatCard icon={<FaComments />} label={isSw ? "Malalamiko Wazi" : "Open Complaints"} value={stats.openComplaints} />
+          </div>
+        )}
 
         {activeTab === "links" && (
           <>
