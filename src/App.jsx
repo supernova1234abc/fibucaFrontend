@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { FaHome, FaFilePdf, FaIdCard, FaShieldAlt, FaUsers, FaHistory } from 'react-icons/fa';
+import { FaHome, FaFilePdf, FaIdCard, FaShieldAlt, FaUsers, FaHistory, FaVoteYea } from 'react-icons/fa';
 
 import Landing from './pages/Landing';
 import ClientForm from './pages/ClientForm';
@@ -15,8 +15,10 @@ import SubmissionValidator from './pages/SubmissionValidator';
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminReports from './pages/AdminReports';
+import AdminVoting from './pages/AdminVoting';
 import ClientDashboard from './pages/ClientDashboard';
 import StaffDashboard from './pages/staffDashboard';
+import VotingPage from './pages/VotingPage';
 import AdminIdCards from './pages/AdminIdCards';
 
 import PrivateRoute from './components/PrivateRoute';
@@ -55,12 +57,14 @@ export default function App() {
     { href: '/admin/scan-paper', label: isSw ? 'Skani Fomu' : 'Scan Paper' },
     { href: '/admin/idcards', label: isSw ? 'Vitambulisho' : 'ID Cards' },
     { href: '/admin/reports', label: isSw ? 'Ripoti' : 'Reports' },
+    { href: '/admin/voting', label: isSw ? 'Kura' : 'Voting', icon: FaVoteYea },
   ];
 
   const staffMenus = [
     { href: '/staff/links', label: isSw ? 'Dashibodi' : 'Dashboard', exact: true },
     { href: '/staff/notices', label: isSw ? 'Matangazo' : 'Notices' },
     { href: '/staff/scan-paper', label: isSw ? 'Fomu ya skani' : 'Scan paper form' },
+    { href: '/staff/voting', label: isSw ? 'Piga Kura' : 'Vote', icon: FaVoteYea },
   ];
 
   const superMenus = [
@@ -68,6 +72,7 @@ export default function App() {
     { href: '/superadmin/security', label: isSw ? 'Ulinzi Hai' : 'Live Security', icon: FaShieldAlt },
     { href: '/superadmin/users', label: isSw ? 'Watumiaji' : 'Users', icon: FaUsers },
     { href: '/superadmin/audit', label: isSw ? 'Ukaguzi' : 'Audit', icon: FaHistory },
+    { href: '/superadmin/voting', label: isSw ? 'Kura' : 'Voting', icon: FaVoteYea },
   ];
 
   useEffect(() => {
@@ -112,6 +117,7 @@ export default function App() {
               <Route path="/superadmin/users" element={<ManagerDashboard />} />
               <Route path="/superadmin/audit" element={<ManagerDashboard />} />
               <Route path="/superadmin/reports" element={<ManagerDashboard />} />
+              <Route path="/superadmin/voting" element={<AdminVoting />} />
             </Route>
           </Route>
 
@@ -125,6 +131,7 @@ export default function App() {
               <Route path="/admin/idcards" element={<AdminIdCards />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/scan-paper" element={<ScanPaperForm />} />
+              <Route path="/admin/voting" element={<AdminVoting />} />
             </Route>
           </Route>
 
@@ -138,6 +145,7 @@ export default function App() {
               <Route path="/staff/notices" element={<StaffDashboard />} />
               <Route path="/staff/scan-paper" element={<ScanPaperForm />} />
               <Route path="/staff/complaints" element={<StaffDashboard />} />
+              <Route path="/staff/voting" element={<VotingPage />} />
             </Route>
           </Route>
 
