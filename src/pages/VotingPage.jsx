@@ -95,10 +95,10 @@ export default function VotingPage() {
     loadDetail(s.id);
   }, [loadDetail]);
 
-  // Poll detail for ACTIVE + not-voted sessions every 15s to refresh total count
+  // Poll detail for ACTIVE sessions every 15s so staff can see live vote counts.
   useEffect(() => {
     if (!activeSession || !detail) return;
-    if (activeSession.status !== 'ACTIVE' || detail.hasVoted) {
+    if (activeSession.status !== 'ACTIVE') {
       clearInterval(pollRef.current);
       return;
     }
@@ -181,6 +181,11 @@ export default function VotingPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-white">{s.title}</h2>
+              {s.position && (
+                <p className="mt-1 inline-flex rounded-full border border-sky-800 bg-sky-950/30 px-2.5 py-0.5 text-[11px] font-semibold text-sky-300">
+                  {isSw ? 'Cheo Kinachogombewa:' : 'Contested Position:'} {s.position}
+                </p>
+              )}
               {s.description && <p className="mt-1 text-sm text-slate-400">{s.description}</p>}
               <p className="mt-1 text-xs text-slate-600">{timeAgo(s.createdAt)}</p>
             </div>
@@ -235,33 +240,69 @@ export default function VotingPage() {
               </div>
             )}
 
-            {/* Ballot — ACTIVE + not voted */}
-            {s.status === 'ACTIVE' && !hasVoted && (
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <FaLock className="text-xs text-slate-600" />
-                  <p className="text-xs text-slate-500">
-                    {isSw ? 'Kura yako italindwa na blockchain. Haiwezi kubadilishwa.' : 'Your vote is sealed with blockchain. It cannot be changed.'}
-                  </p>
+            {/* ACTIVE session: voting panel + live read-only tally */}
+            {s.status === 'ACTIVE' && (
+              <div className="grid gap-5 lg:grid-cols-2">
+                <div>
+                  {!hasVoted && (
+                    <>
+                      <div className="mb-3 flex items-center gap-2">
+                        <FaLock className="text-xs text-slate-600" />
+                        <p className="text-xs text-slate-500">
+                          {isSw ? 'Kura yako italindwa na blockchain. Haiwezi kubadilishwa.' : 'Your vote is sealed with blockchain. It cannot be changed.'}
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {cands.map((c, i) => (
+                          <button
+                            key={c.id}
+                            onClick={() => handleVote(c.id)}
+                            disabled={voting}
+                            className="group relative flex flex-col items-center rounded-2xl border-2 border-slate-700 bg-slate-900 p-6 text-center transition hover:border-emerald-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <CandidateInitials name={c.name} idx={i} />
+                            <p className="mt-4 text-base font-bold text-white">{c.name}</p>
+                            {c.description && (
+                              <p className="mt-1 text-xs text-slate-400">{c.description}</p>
+                            )}
+                            <span className="mt-4 rounded-full border border-emerald-700 bg-emerald-900/30 px-4 py-1 text-xs font-semibold text-emerald-300 transition group-hover:bg-emerald-700 group-hover:text-white">
+                              {voting ? (isSw ? 'Inatuma...' : 'Submitting...') : (isSw ? 'Piga Kura' : 'Vote')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {hasVoted && (
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-sm text-slate-400">
+                      {isSw
+                        ? 'Umechagua tayari. Upande wa kulia unaona matokeo ya moja kwa moja (view only).'
+                        : 'You already voted. Live results are shown on the right (view only).'}
+                    </div>
+                  )}
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {cands.map((c, i) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleVote(c.id)}
-                      disabled={voting}
-                      className="group relative flex flex-col items-center rounded-2xl border-2 border-slate-700 bg-slate-900 p-6 text-center transition hover:border-emerald-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <CandidateInitials name={c.name} idx={i} />
-                      <p className="mt-4 text-base font-bold text-white">{c.name}</p>
-                      {c.description && (
-                        <p className="mt-1 text-xs text-slate-400">{c.description}</p>
-                      )}
-                      <span className="mt-4 rounded-full border border-emerald-700 bg-emerald-900/30 px-4 py-1 text-xs font-semibold text-emerald-300 transition group-hover:bg-emerald-700 group-hover:text-white">
-                        {voting ? (isSw ? 'Inatuma...' : 'Submitting...') : (isSw ? 'Piga Kura' : 'Vote')}
-                      </span>
-                    </button>
-                  ))}
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white">
+                      {isSw ? 'Matokeo ya Moja kwa Moja' : 'Live Vote Count'}
+                    </h3>
+                    <span className="rounded-full border border-emerald-700 bg-emerald-900/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                      {isSw ? 'VIEW ONLY' : 'VIEW ONLY'}
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {(detail.tally || []).map((t, i) => (
+                      <div key={t.candidate.id} className="flex items-center gap-4">
+                        <CandidateInitials name={t.candidate.name} idx={i} />
+                        <div className="flex-1">
+                          <p className="mb-1 font-semibold text-white">{t.candidate.name}</p>
+                          <ResultBar count={t.count} total={totalVotes} color={i} label="" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -340,6 +381,11 @@ export default function VotingPage() {
 
                 {/* Title */}
                 <p className="mb-1 font-bold text-white">{s.title}</p>
+                {s.position && (
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-sky-300">
+                    {isSw ? 'Cheo:' : 'Position:'} {s.position}
+                  </p>
+                )}
                 {s.description && <p className="mb-3 text-xs text-slate-500 line-clamp-2">{s.description}</p>}
 
                 {/* Candidate avatars row */}

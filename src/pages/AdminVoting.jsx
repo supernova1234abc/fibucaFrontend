@@ -53,7 +53,7 @@ export default function AdminVoting() {
   const pollRef = useRef(null);
 
   // Create form state
-  const [form, setForm] = useState({ title: '', description: '' });
+  const [form, setForm] = useState({ title: '', position: '', description: '' });
   const [candidates, setCandidates] = useState([
     { key: Date.now(),     name: '', description: '' },
     { key: Date.now() + 1, name: '', description: '' },
@@ -90,7 +90,7 @@ export default function AdminVoting() {
   }, [sessions]);
 
   const resetForm = () => {
-    setForm({ title: '', description: '' });
+    setForm({ title: '', position: '', description: '' });
     setCandidates([
       { key: Date.now(),     name: '', description: '' },
       { key: Date.now() + 1, name: '', description: '' },
@@ -104,12 +104,14 @@ export default function AdminVoting() {
 
   const handleCreate = async () => {
     if (!form.title.trim()) { toast.error(isSw ? 'Kichwa kinahitajika' : 'Title required'); return; }
+    if (!form.position.trim()) { toast.error(isSw ? 'Cheo kinahitajika' : 'Contested position required'); return; }
     const named = candidates.filter((c) => c.name.trim());
     if (named.length < 2) { toast.error(isSw ? 'Angalau wagombea 2 wanahitajika' : 'At least 2 candidates required'); return; }
     setSaving(true);
     try {
       await api.post('/api/admin/voting/sessions', {
         title: form.title.trim(),
+        position: form.position.trim(),
         description: form.description.trim() || undefined,
         candidates: named.map((c, i) => ({ id: `c${i + 1}`, name: c.name.trim(), description: c.description.trim() || undefined })),
       });
@@ -236,6 +238,12 @@ export default function AdminVoting() {
               placeholder={isSw ? 'Kichwa cha Kikao *' : 'Session Title *'}
               className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-600 focus:outline-none"
             />
+            <input
+              value={form.position}
+              onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+              placeholder={isSw ? 'Cheo Kinachogombewa * mfano: Mwenyekiti' : 'Contested Position * e.g. Chairperson'}
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-600 focus:outline-none"
+            />
             <textarea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -322,6 +330,11 @@ export default function AdminVoting() {
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-base font-semibold text-white">{s.title}</h3>
+                      {s.position && (
+                        <p className="mt-1 inline-flex rounded-full border border-sky-800 bg-sky-950/30 px-2.5 py-0.5 text-[11px] font-semibold text-sky-300">
+                          {isSw ? 'Cheo:' : 'Position:'} {s.position}
+                        </p>
+                      )}
                       {s.description && <p className="mt-0.5 text-xs text-slate-400">{s.description}</p>}
                       <p className="mt-1 text-xs text-slate-600">
                         {isSw ? 'Iliundwa na' : 'Created by'} {s.createdBy?.name} · {timeAgo(s.createdAt)}
@@ -420,7 +433,12 @@ export default function AdminVoting() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setResultModal(null)}>
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-950 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">{resultModal.session?.title}</h3>
+              <div>
+                <h3 className="text-lg font-bold text-white">{resultModal.session?.title}</h3>
+                {resultModal.session?.position && (
+                  <p className="mt-1 text-xs font-semibold text-sky-300">{isSw ? 'Cheo:' : 'Position:'} {resultModal.session.position}</p>
+                )}
+              </div>
               <button onClick={() => setResultModal(null)} className="text-slate-500 hover:text-white"><FaTimes /></button>
             </div>
 
