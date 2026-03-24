@@ -223,6 +223,7 @@ export default function ManagerDashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [userSearch, setUserSearch] = useState('');
   const [userView, setUserView] = useState('all');
+  const [selectedUsers, setSelectedUsers] = useState(new Set());
 
   const sectionMenus = useMemo(() => ([
     { href: '/superadmin',          label: isSw ? 'Amri Kuu'   : 'Overview',  exact: true },
@@ -447,6 +448,36 @@ export default function ManagerDashboard() {
       load(false);
     } catch (err) {
       toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kufuta kabisa mtumiaji' : 'Failed to permanently delete user'));
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    const ids = [...selectedUsers];
+    if (ids.length === 0) return;
+    const labelMap = {
+      delete: isSw ? 'archive' : 'archive',
+      restore: isSw ? 'restore' : 'restore',
+      permanent_delete: isSw ? 'permanently delete' : 'permanently delete',
+    };
+    const result = await Swal.fire({
+      title: isSw ? 'Una uhakika?' : 'Are you sure?',
+      text: `${labelMap[action]} ${ids.length} user(s)?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: isSw ? 'Ndiyo' : 'Yes',
+      background: '#0f172a',
+      color: '#f1f5f9',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#334155',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      const res = await api.post('/api/admin/users/bulk', { action, userIds: ids });
+      toast.success(res.data?.message || `Done`);
+      setSelectedUsers(new Set());
+      load(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Bulk action failed');
     }
   };
 
@@ -778,6 +809,15 @@ export default function ManagerDashboard() {
                   {isSw ? 'Unda Mtumiaji' : 'Create User'}
                 </button>
               </div>
+              {selectedUsers.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
+                  <span className="text-xs text-slate-400">{selectedUsers.size} {isSw ? 'wamechaguliwa' : 'selected'}</span>
+                  <button onClick={() => handleBulkAction('delete')} className="rounded border border-slate-700 bg-black px-3 py-1 text-xs text-white transition hover:bg-slate-900">{isSw ? 'Archive Zote' : 'Archive All'}</button>
+                  <button onClick={() => handleBulkAction('restore')} className="rounded border border-slate-700 bg-black px-3 py-1 text-xs text-emerald-300 transition hover:bg-slate-900">{isSw ? 'Rudisha Zote' : 'Restore All'}</button>
+                  <button onClick={() => handleBulkAction('permanent_delete')} className="rounded border border-red-900/60 bg-black px-3 py-1 text-xs text-red-400 transition hover:bg-slate-900">{isSw ? 'Futa Kabisa Zote' : 'Delete Forever All'}</button>
+                  <button onClick={() => setSelectedUsers(new Set())} className="ml-auto text-xs text-slate-500 hover:text-white">{isSw ? 'Ghairi' : 'Clear'}</button>
+                </div>
+              )}
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -786,6 +826,18 @@ export default function ManagerDashboard() {
                     {[isSw ? 'Jina' : 'Name', 'Username', 'Email', isSw ? 'Namba' : 'Employee #', isSw ? 'Nafasi' : 'Role', isSw ? 'Hali' : 'State', isSw ? 'Hatua' : 'Actions'].map((h) => (
                       <th key={h} className="pb-2 pr-4 text-left text-[11px] font-medium uppercase tracking-widest text-slate-500">{h}</th>
                     ))}
+                    <th className="pb-2 pr-2 text-left text-[11px] font-medium uppercase tracking-widest text-slate-500">
+                      <input
+                        type="checkbox"
+                        className="accent-emerald-400"
+                        checked={filteredAllUsers.length > 0 && filteredAllUsers.every((u) => selectedUsers.has(u.id))}
+                        onChange={(e) => {
+                          const next = new Set(selectedUsers);
+                          filteredAllUsers.forEach((u) => e.target.checked ? next.add(u.id) : next.delete(u.id));
+                          setSelectedUsers(next);
+                        }}
+                      />
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -835,6 +887,18 @@ export default function ManagerDashboard() {
                           )}
                         </div>
                       </td>
+                      <td className="py-3 pr-2">
+                        <input
+                          type="checkbox"
+                          className="accent-emerald-400"
+                          checked={selectedUsers.has(u.id)}
+                          onChange={(e) => {
+                            const next = new Set(selectedUsers);
+                            e.target.checked ? next.add(u.id) : next.delete(u.id);
+                            setSelectedUsers(next);
+                          }}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -859,16 +923,16 @@ export default function ManagerDashboard() {
                   </div>
                   <div className="mt-2 grid gap-1 text-xs text-slate-400 md:grid-cols-2">
                     <p>
-                      {isSw ? 'Mhusika' : 'Actor'}: <span className="text-slate-300">#{event.details?.actorId || '-'} {event.details?.actorRole || '-'}</span>
+                      {isSw ? 'Mhusika' : 'Actor'}: <span className="text-slate-300">{event.actorName || `#${event.actorId}` || '-'} ({event.actorRole || '-'})</span>
                     </p>
                     <p>
-                      {isSw ? 'Mlengo' : 'Target'}: <span className="text-slate-300">{event.details?.targetName || '-'} ({event.details?.targetRole || '-'})</span>
+                      {isSw ? 'Mlengo' : 'Target'}: <span className="text-slate-300">{event.targetName || '-'} ({event.targetRole || '-'})</span>
                     </p>
                     <p>
-                      Username: <span className="text-slate-300">{event.details?.targetUsername || '-'}</span>
+                      Username: <span className="text-slate-300">{event.targetUsername || '-'}</span>
                     </p>
                     <p>
-                      {isSw ? 'Namba' : 'Employee #'}: <span className="text-slate-300">{event.details?.targetEmployeeNumber || '-'}</span>
+                      {isSw ? 'Namba' : 'Employee #'}: <span className="text-slate-300">{event.targetEmployeeNumber || '-'}</span>
                     </p>
                   </div>
                 </div>
