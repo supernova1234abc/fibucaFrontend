@@ -3,6 +3,7 @@ import { FaKey, FaSignOutAlt } from 'react-icons/fa';
 
 export default function UserAvatarPopover({ user, onLogout, onChangePassword }) {
   const [open, setOpen] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   const ref = useRef(null);
 
   // Close dropdown on outside click or ESC
@@ -21,8 +22,13 @@ export default function UserAvatarPopover({ user, onLogout, onChangePassword }) 
     };
   }, []);
 
+  useEffect(() => {
+    setPhotoError(false);
+  }, [user?.profilePhotoUrl]);
+
   const avatarBg = user?.name ? getAvatarBg(user.name) : '#6366F1';
   const firstLetter = user?.name?.trim()?.[0]?.toUpperCase() || 'U';
+  const profilePhotoUrl = user?.profilePhotoUrl && !photoError ? user.profilePhotoUrl : null;
 
   return (
     <div className="relative" ref={ref}>
@@ -30,12 +36,21 @@ export default function UserAvatarPopover({ user, onLogout, onChangePassword }) 
         className="flex items-center gap-2 focus:outline-none"
         onClick={() => setOpen(prev => !prev)}
       >
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold"
-          style={{ backgroundColor: avatarBg }}
-        >
-          {firstLetter}
-        </div>
+        {profilePhotoUrl ? (
+          <img
+            src={profilePhotoUrl}
+            alt={user?.name || 'User'}
+            className="w-8 h-8 rounded-full object-cover"
+            onError={() => setPhotoError(true)}
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold"
+            style={{ backgroundColor: avatarBg }}
+          >
+            {firstLetter}
+          </div>
+        )}
         <span className="hidden md:inline">{user?.name?.split(' ')[0] || 'User'}</span>
       </button>
 

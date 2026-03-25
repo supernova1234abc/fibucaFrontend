@@ -57,7 +57,12 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [profilePhone2, setProfilePhone2] = useState("");
   const [sectionMenus, setSectionMenus] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [avatarPhotoError, setAvatarPhotoError] = useState(false);
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    setAvatarPhotoError(false);
+  }, [user?.profilePhotoUrl]);
 
   useEffect(() => {
     if (!showProfileModal) return;
@@ -355,12 +360,21 @@ export default function DashboardLayout({ children, menus = [], user }) {
                   className={`flex items-center gap-3 focus:outline-none no-force-dark rounded-xl px-2 py-1.5 transition ${isSuperadmin ? "hover:bg-slate-900" : "hover:bg-slate-100"}`}
                   onClick={() => setDropdownOpen((prev) => !prev)}
                 >
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
-                    style={{ backgroundColor: getAvatarBg(user?.name) }}
-                  >
-                    {user?.name?.trim()?.[0]?.toUpperCase() || "U"}
-                  </div>
+                  {user?.profilePhotoUrl && !avatarPhotoError ? (
+                    <img
+                      src={user.profilePhotoUrl}
+                      alt={user?.name || 'User'}
+                      className="w-9 h-9 rounded-full object-cover shadow-sm"
+                      onError={() => setAvatarPhotoError(true)}
+                    />
+                  ) : (
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
+                      style={{ backgroundColor: getAvatarBg(user?.name) }}
+                    >
+                      {user?.name?.trim()?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  )}
                   <div className="hidden md:block text-left">
                     <div className={`text-sm font-semibold ${isSuperadmin ? "text-white" : "text-slate-800"}`}>
                       {getFirstName(user?.name)}
