@@ -43,7 +43,7 @@ const getFirstName = (fullName = "") => fullName.trim().split(/\s+/)[0] || "User
 export default function DashboardLayout({ children, menus = [], user }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshUser } = useAuth();
+  const { user: authUser, setUser, refreshUser } = useAuth();
   const { isSw } = useLanguage();
   const isSuperadmin = user?.role === "SUPERADMIN";
 
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
   useEffect(() => {
     setAvatarPhotoError(false);
-  }, [user?.profilePhotoUrl]);
+  }, [authUser?.profilePhotoUrl]);
 
   useEffect(() => {
     if (!showProfileModal) return;
@@ -121,10 +121,19 @@ export default function DashboardLayout({ children, menus = [], user }) {
       setUploadingProfilePhoto(true);
       const formData = new FormData();
       formData.append("photo", profilePhotoFile);
-      await api.put("/api/profile/photo", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      await refreshUser();
+      const res = await api.put("/api/profile/photo", formData);
+      const updatedUser = res.data?.user;
+      if (updatedUser) {
+        setUser({ ...updatedUser, passwordChanged: !updatedUser.firstLogin });
+        const storage = localStorage.getItem("fibuca_token")
+          ? localStorage
+          : sessionStorage.getItem("fibuca_token")
+          ? sessionStorage
+          : null;
+        if (storage) storage.setItem("fibuca_user", JSON.stringify(updatedUser));
+      } else {
+        await refreshUser();
+      }
       setProfilePhotoFile(null);
       if (profilePhotoPreview) {
         URL.revokeObjectURL(profilePhotoPreview);
@@ -408,9 +417,9 @@ export default function DashboardLayout({ children, menus = [], user }) {
                   className={`flex items-center gap-3 focus:outline-none no-force-dark rounded-xl px-2 py-1.5 transition ${isSuperadmin ? "hover:bg-slate-900" : "hover:bg-slate-100"}`}
                   onClick={() => setDropdownOpen((prev) => !prev)}
                 >
-                  {user?.profilePhotoUrl && !avatarPhotoError ? (
+                  {authUser?.profilePhotoUrl && !avatarPhotoError ? (
                     <img
-                      src={user.profilePhotoUrl}
+                      src={authUser.profilePhotoUrl}
                       alt={user?.name || 'User'}
                       className="w-9 h-9 rounded-full object-cover shadow-sm"
                       onError={() => setAvatarPhotoError(true)}
@@ -533,9 +542,9 @@ export default function DashboardLayout({ children, menus = [], user }) {
                   <div className="px-5 py-4 space-y-3 text-sm">
                     <div className="flex items-center gap-4 pb-1">
                       <label className="relative cursor-pointer">
-                        {(profilePhotoPreview || user?.profilePhotoUrl) ? (
+                        {(profilePhotoPreview || authUser?.profilePhotoUrl) ? (
                           <img
-                            src={profilePhotoPreview || user?.profilePhotoUrl}
+                            src={profilePhotoPreview || authUser?.profilePhotoUrl}
                             alt={user?.name || "User"}
                             className="h-20 w-20 rounded-full object-cover border-2 border-slate-200"
                           />
