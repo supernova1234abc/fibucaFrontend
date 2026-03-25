@@ -24,6 +24,7 @@ import {
   FaEdit,
   FaTrash,
   FaCamera,
+  FaUser,
   FaSave,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
@@ -902,13 +903,22 @@ export default function StaffDashboard() {
 
         {activeTab === "links" && (
           <>
-            <button
-              onClick={handleGenerateLink}
-              disabled={generating}
-              className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
-            >
-              {generating ? (isSw ? "Inatengeneza..." : "Generating...") : (isSw ? "Tengeneza Kiungo" : "Generate Link")}
-            </button>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={handleGenerateLink}
+                disabled={generating}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                {generating ? (isSw ? "Inatengeneza..." : "Generating...") : (isSw ? "Tengeneza Kiungo" : "Generate Link")}
+              </button>
+
+              <button
+                onClick={() => navigate('/staff/profile')}
+                className="inline-flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded hover:bg-slate-50"
+              >
+                <FaUser /> {isSw ? "Wasifu & Picha" : "Profile & Photo"}
+              </button>
+            </div>
 
             <div className="bg-white rounded shadow mt-4">
               <DataTable
