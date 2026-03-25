@@ -37,6 +37,22 @@ export function AuthProvider({ children }) {
       const parsedUser = JSON.parse(cachedUser);
       setUser(parsedUser);
       setLoading(false);
+
+      // Refresh in background so fields like profilePhotoUrl stay in sync with server.
+      api.get('/api/me')
+        .then(res => {
+          const u = res.data.user;
+          setUser({ ...u, passwordChanged: !u.firstLogin });
+          const activeStorage = getActiveStorage();
+          if (activeStorage) {
+            activeStorage.setItem('fibuca_user', JSON.stringify(u));
+          } else {
+            localStorage.setItem('fibuca_user', JSON.stringify(u));
+          }
+        })
+        .catch(err => {
+          console.warn('⚠️ Background auth refresh failed:', err.message);
+        });
       return;
     }
 

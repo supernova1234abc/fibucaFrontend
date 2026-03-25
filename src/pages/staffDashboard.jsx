@@ -1,6 +1,6 @@
 // src/pages/StaffDashboard.jsx
 import { useEffect, useState, useCallback, useMemo, useContext } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import DataTable from "react-data-table-component";
@@ -23,9 +23,6 @@ import {
   FaPaperclip,
   FaEdit,
   FaTrash,
-  FaCamera,
-  FaUser,
-  FaSave,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -131,14 +128,11 @@ function getUploadErrorMessage(err, fallbackEn, fallbackSw, isSw) {
 export default function StaffDashboard() {
   const { user, refreshUser } = useAuth();
   const { isSw } = useLanguage();
-  const navigate = useNavigate();
   const location = useLocation();
   const setSectionMenus = useContext(DashboardSectionMenuContext);
 
   const activeTab = location.pathname.endsWith("/clients")
     ? "clients"
-    : location.pathname.endsWith("/profile")
-    ? "profile"
     : location.pathname.endsWith("/notices")
     ? "notices"
     : location.pathname.endsWith("/complaints")
@@ -179,12 +173,6 @@ export default function StaffDashboard() {
   const [updateForm, setUpdateForm] = useState({ title: "", category: "", message: "" });
   const [publishingDoc, setPublishingDoc] = useState(false);
   const [publishingUpdate, setPublishingUpdate] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", phone2: "" });
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
-  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
-
   const VITE_FRONTEND_URL =
     import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
@@ -199,22 +187,6 @@ export default function StaffDashboard() {
     const timer = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    setProfileForm({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      phone2: user.phone2 || "",
-    });
-  }, [user]);
-
-  useEffect(() => {
-    return () => {
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    };
-  }, [photoPreviewUrl]);
 
   const fetchSubmissions = useCallback(() => {
     setLoading(true);
@@ -266,48 +238,6 @@ export default function StaffDashboard() {
     } catch (err) {
       console.error(err);
       toast.error(isSw ? "Imeshindikana kupakia nyaraka/taarifa" : "Failed to fetch official documents/updates");
-    }
-  };
-
-  const saveProfile = async () => {
-    try {
-      setSavingProfile(true);
-      await api.put('/api/profile', {
-        name: profileForm.name,
-        email: profileForm.email,
-        phone: profileForm.phone,
-        phone2: profileForm.phone2,
-      });
-      await refreshUser();
-      toast.success(isSw ? 'Wasifu umehifadhiwa' : 'Profile updated');
-    } catch (err) {
-      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kuhifadhi wasifu' : 'Failed to update profile'));
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const uploadProfilePhoto = async () => {
-    if (!profilePhotoFile) {
-      toast.error(isSw ? 'Chagua picha kwanza' : 'Choose a photo first');
-      return;
-    }
-    try {
-      setUploadingProfilePhoto(true);
-      const formData = new FormData();
-      formData.append('photo', profilePhotoFile);
-      await api.put('/api/profile/photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      await refreshUser();
-      setProfilePhotoFile(null);
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-      setPhotoPreviewUrl('');
-      toast.success(isSw ? 'Picha ya wasifu imewekwa' : 'Profile photo updated');
-    } catch (err) {
-      toast.error(err?.response?.data?.error || (isSw ? 'Imeshindikana kupakia picha' : 'Failed to upload photo'));
-    } finally {
-      setUploadingProfilePhoto(false);
     }
   };
 
@@ -903,22 +833,13 @@ export default function StaffDashboard() {
 
         {activeTab === "links" && (
           <>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                onClick={handleGenerateLink}
-                disabled={generating}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                {generating ? (isSw ? "Inatengeneza..." : "Generating...") : (isSw ? "Tengeneza Kiungo" : "Generate Link")}
-              </button>
-
-              <button
-                onClick={() => navigate('/staff/profile')}
-                className="inline-flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded hover:bg-slate-50"
-              >
-                <FaUser /> {isSw ? "Wasifu & Picha" : "Profile & Photo"}
-              </button>
-            </div>
+            <button
+              onClick={handleGenerateLink}
+              disabled={generating}
+              className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
+            >
+              {generating ? (isSw ? "Inatengeneza..." : "Generating...") : (isSw ? "Tengeneza Kiungo" : "Generate Link")}
+            </button>
 
             <div className="bg-white rounded shadow mt-4">
               <DataTable
@@ -1204,110 +1125,6 @@ export default function StaffDashboard() {
                 </div>
               ))
             )}
-          </div>
-        )}
-
-        {activeTab === "profile" && (
-          <div className="bg-white p-6 rounded shadow mt-4 space-y-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <label className="relative cursor-pointer">
-                  {(photoPreviewUrl || user?.profilePhotoUrl) ? (
-                    <img
-                      src={photoPreviewUrl || user?.profilePhotoUrl}
-                      alt="Profile"
-                      className="h-20 w-20 rounded-full object-cover border-2 border-slate-200"
-                    />
-                  ) : (
-                    <div className="h-20 w-20 rounded-full bg-slate-900 text-white flex items-center justify-center text-3xl font-bold">
-                      {(user?.name || '?').trim().charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-2 text-white shadow">
-                    <FaCamera className="text-xs" />
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setProfilePhotoFile(file);
-                      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-                      setPhotoPreviewUrl(file ? URL.createObjectURL(file) : '');
-                    }}
-                  />
-                </label>
-
-                <div>
-                  <p className="font-semibold text-slate-900">{user?.name}</p>
-                  <p className="text-sm text-slate-500">{user?.role}</p>
-                  <p className="text-xs text-slate-400">{user?.employeeNumber}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={uploadProfilePhoto}
-                disabled={!profilePhotoFile || uploadingProfilePhoto}
-                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50"
-              >
-                <FaCamera />
-                {uploadingProfilePhoto
-                  ? (isSw ? 'Inapakia picha...' : 'Uploading photo...')
-                  : (isSw ? 'Sasisha Picha' : 'Update Photo')}
-              </button>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{isSw ? 'Jina' : 'Name'}</label>
-                <input
-                  value={profileForm.name}
-                  onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{isSw ? 'Barua Pepe' : 'Email'}</label>
-                <input
-                  value={profileForm.email}
-                  onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{isSw ? 'Simu 1' : 'Phone 1'}</label>
-                <input
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm((p) => ({ ...p, phone: e.target.value }))}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{isSw ? 'Simu 2' : 'Phone 2'}</label>
-                <input
-                  value={profileForm.phone2}
-                  onChange={(e) => setProfileForm((p) => ({ ...p, phone2: e.target.value }))}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                onClick={saveProfile}
-                disabled={savingProfile}
-                className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                <FaSave /> {savingProfile ? (isSw ? 'Inahifadhi...' : 'Saving...') : (isSw ? 'Hifadhi Wasifu' : 'Save Profile')}
-              </button>
-            </div>
-
-            <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-              <p><strong>{isSw ? "Wateja Uliowahudumia" : "Clients Served"}:</strong> {stats.totalClients}</p>
-              <p><strong>{isSw ? "Viungo Ulivyotengeneza" : "Links Generated"}:</strong> {stats.totalLinks}</p>
-              <p><strong>{isSw ? "Malalamiko" : "Complaints"}:</strong> {stats.totalComplaints}</p>
-            </div>
           </div>
         )}
 

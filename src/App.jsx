@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { FaHome, FaFilePdf, FaIdCard, FaShieldAlt, FaUsers, FaHistory, FaVoteYea, FaUser } from 'react-icons/fa';
+import { FaHome, FaFilePdf, FaIdCard, FaShieldAlt, FaUsers, FaHistory, FaVoteYea } from 'react-icons/fa';
 
 import Landing from './pages/Landing';
 import ClientForm from './pages/ClientForm';
@@ -62,7 +62,6 @@ export default function App() {
 
   const staffMenus = [
     { href: '/staff/links', label: isSw ? 'Dashibodi' : 'Dashboard', exact: true },
-    { href: '/staff/profile', label: isSw ? 'Wasifu' : 'Profile', icon: FaUser },
     { href: '/staff/notices', label: isSw ? 'Matangazo' : 'Notices' },
     { href: '/staff/scan-paper', label: isSw ? 'Fomu ya skani' : 'Scan paper form' },
     { href: '/staff/voting', label: isSw ? 'Piga Kura' : 'Vote', icon: FaVoteYea },
@@ -142,7 +141,6 @@ export default function App() {
               <Route path="/staff" element={<Navigate to="/staff/links" replace />} />
               <Route path="/staff/links" element={<StaffDashboard />} />
               <Route path="/staff/clients" element={<StaffDashboard />} />
-              <Route path="/staff/profile" element={<StaffDashboard />} />
               <Route path="/staff/notices" element={<StaffDashboard />} />
               <Route path="/staff/scan-paper" element={<ScanPaperForm />} />
               <Route path="/staff/complaints" element={<StaffDashboard />} />
