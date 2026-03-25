@@ -8,6 +8,7 @@ import {
   FaSignOutAlt,
   FaChevronDown,
   FaUser,
+  FaCamera,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ChangePasswordPage from "../pages/ChangePassword";
@@ -55,6 +56,9 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [profileEmail, setProfileEmail] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profilePhone2, setProfilePhone2] = useState("");
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState("");
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
   const [sectionMenus, setSectionMenus] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [avatarPhotoError, setAvatarPhotoError] = useState(false);
@@ -69,8 +73,19 @@ export default function DashboardLayout({ children, menus = [], user }) {
     setProfileEmail(user?.email || "");
     setProfilePhone(user?.phone || "");
     setProfilePhone2(user?.phone2 || "");
+    setProfilePhotoFile(null);
+    if (profilePhotoPreview) {
+      URL.revokeObjectURL(profilePhotoPreview);
+      setProfilePhotoPreview("");
+    }
     setProfileEditMode(false);
   }, [showProfileModal, user]);
+
+  useEffect(() => {
+    return () => {
+      if (profilePhotoPreview) URL.revokeObjectURL(profilePhotoPreview);
+    };
+  }, [profilePhotoPreview]);
 
   const handleSaveProfile = async () => {
     try {
@@ -97,6 +112,39 @@ export default function DashboardLayout({ children, menus = [], user }) {
       });
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleUploadProfilePhoto = async () => {
+    if (!profilePhotoFile) return;
+    try {
+      setUploadingProfilePhoto(true);
+      const formData = new FormData();
+      formData.append("photo", profilePhotoFile);
+      await api.put("/api/profile/photo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await refreshUser();
+      setProfilePhotoFile(null);
+      if (profilePhotoPreview) {
+        URL.revokeObjectURL(profilePhotoPreview);
+        setProfilePhotoPreview("");
+      }
+      Swal.fire({
+        icon: "success",
+        title: isSw ? "Picha Imesasishwa" : "Photo Updated",
+        text: isSw ? "Picha ya wasifu imehifadhiwa." : "Your profile photo was updated.",
+        timer: 1300,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: isSw ? "Imeshindikana" : "Upload Failed",
+        text: err?.response?.data?.error || (isSw ? "Imeshindikana kupakia picha" : "Failed to upload photo"),
+      });
+    } finally {
+      setUploadingProfilePhoto(false);
     }
   };
 
@@ -483,6 +531,53 @@ export default function DashboardLayout({ children, menus = [], user }) {
                   </div>
 
                   <div className="px-5 py-4 space-y-3 text-sm">
+                    <div className="flex items-center gap-4 pb-1">
+                      <label className="relative cursor-pointer">
+                        {(profilePhotoPreview || user?.profilePhotoUrl) ? (
+                          <img
+                            src={profilePhotoPreview || user?.profilePhotoUrl}
+                            alt={user?.name || "User"}
+                            className="h-20 w-20 rounded-full object-cover border-2 border-slate-200"
+                          />
+                        ) : (
+                          <div
+                            className="h-20 w-20 rounded-full flex items-center justify-center text-white text-3xl font-bold"
+                            style={{ backgroundColor: getAvatarBg(user?.name) }}
+                          >
+                            {user?.name?.trim()?.[0]?.toUpperCase() || "U"}
+                          </div>
+                        )}
+                        <span className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-2 text-white shadow">
+                          <FaCamera className="text-xs" />
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setProfilePhotoFile(file);
+                            if (profilePhotoPreview) URL.revokeObjectURL(profilePhotoPreview);
+                            setProfilePhotoPreview(file ? URL.createObjectURL(file) : "");
+                          }}
+                        />
+                      </label>
+
+                      <div className="space-y-2">
+                        <p className="text-xs text-slate-500">{isSw ? "Picha ya wasifu" : "Profile photo"}</p>
+                        <button
+                          onClick={handleUploadProfilePhoto}
+                          disabled={!profilePhotoFile || uploadingProfilePhoto}
+                          className="inline-flex items-center gap-2 rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50"
+                        >
+                          <FaCamera />
+                          {uploadingProfilePhoto
+                            ? (isSw ? "Inapakia picha..." : "Uploading photo...")
+                            : (isSw ? "Sasisha Picha" : "Update Photo")}
+                        </button>
+                      </div>
+                    </div>
+
                     <p><span className="font-semibold text-slate-700">{isSw ? "Jina:" : "Name:"}</span> {user?.name || "-"}</p>
                     <p><span className="font-semibold text-slate-700">{isSw ? "Wajibu:" : "Role:"}</span> {user?.role || "-"}</p>
                     <p><span className="font-semibold text-slate-700">{isSw ? "Jina la Mtumiaji:" : "Username:"}</span> {user?.username || "-"}</p>
