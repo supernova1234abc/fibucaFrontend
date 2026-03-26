@@ -40,7 +40,6 @@ export default function App() {
     { id: 'overview', href: '/client', label: isSw ? 'Muhtasari' : 'Overview', exact: true, bottomNav: true, icon: FaHome },
     { id: 'pdf', href: '/client/pdf', label: 'PDF', bottomNav: true, icon: FaFilePdf },
     { id: 'idcards', href: '/client/idcards', label: isSw ? 'Kitambulisho' : 'ID Card', bottomNav: true, icon: FaIdCard },
-    { id: 'generate', href: '/client/generate', label: isSw ? 'Tengeneza ID' : 'Generate ID' },
     { id: 'documents', href: '/client/documents', label: isSw ? 'Nyaraka' : 'Documents' },
     { id: 'updates', href: '/client/updates', label: isSw ? 'Habari na Taarifa' : 'News & Updates' },
     {

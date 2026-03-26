@@ -389,7 +389,31 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
 
             {/* photo */}
             <div className="absolute top-[48px] left-[9px] z-30">
-              <div className="relative w-[116px] h-[116px] overflow-hidden" style={{ borderBottomLeftRadius: "58px", borderBottomRightRadius: "58px" }}>
+              {/* Outer glow wrapper — must NOT have overflow-hidden so shadow can emit outward */}
+              <div
+                style={{
+                  width: "116px",
+                  height: "116px",
+                  borderBottomLeftRadius: "58px",
+                  borderBottomRightRadius: "58px",
+                  borderTopLeftRadius: "6px",
+                  borderTopRightRadius: "6px",
+                  boxShadow: photoSrc
+                    ? "0 10px 28px 6px rgba(37,99,235,0.55), 0 4px 16px 2px rgba(14,165,233,0.45), 0 0 0 2px rgba(96,165,250,0.3)"
+                    : "none",
+                  position: "relative",
+                }}
+              >
+                {/* Inner clip — overflow-hidden here so photo is clipped to shape */}
+                <div
+                  className="absolute inset-0 overflow-hidden"
+                  style={{
+                    borderBottomLeftRadius: "58px",
+                    borderBottomRightRadius: "58px",
+                    borderTopLeftRadius: "6px",
+                    borderTopRightRadius: "6px",
+                  }}
+                >
                 {photoSrc ? (
                   <>
                     <img
@@ -399,22 +423,14 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
                       className="absolute inset-0 w-full h-full object-contain object-center"
                       style={{
                         imageRendering: "high-quality",
-                        filter: "saturate(1.1) contrast(1.08)",
+                        filter: "saturate(1.08) contrast(1.06)",
                         transform: "translateZ(0)",
                         backfaceVisibility: "hidden",
-                        mixBlendMode: "normal",
                       }}
                       onLoad={() => setPhotoLoaded(true)}
                       onError={(e) => {
                         e.currentTarget.src = "/fallback-avatar.png";
                         setPhotoLoaded(true);
-                      }}
-                    />
-                    <div
-                      className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[98px] h-[56px] pointer-events-none"
-                      style={{
-                        background:
-                          "radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.56) 0%, rgba(15,23,42,0.30) 44%, rgba(15,23,42,0) 80%), radial-gradient(circle at 8% 100%, rgba(15,23,42,0.48) 0%, rgba(15,23,42,0) 36%), radial-gradient(circle at 92% 100%, rgba(15,23,42,0.48) 0%, rgba(15,23,42,0) 36%)"
                       }}
                     />
                     {!photoLoaded && <div className="absolute inset-0 bg-transparent" />}
@@ -424,6 +440,7 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
                     No Photo
                   </div>
                 )}
+                </div>
               </div>
 
               <div className="mt-2 pl-1 w-[150px]">
@@ -446,19 +463,30 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
 
             {/* qr */}
             <div
-              className="absolute top-[78px] right-[14px] z-30 bg-white p-[4px] rounded-[10px]"
+              className="absolute top-[74px] right-[12px] z-30 bg-white p-[5px] rounded-[10px]"
               style={{
                 boxShadow: "0 4px 14px rgba(0,0,0,0.14)",
-                border: "1px solid rgba(59,130,246,0.18)",
+                border: "1px solid rgba(59,130,246,0.22)",
               }}
             >
+              {/* QR type: Model 2 (standard), Error Correction Level H (30% recovery)
+                  Best for physical ID cards — survives surface wear, lamination scratches.
+                  Center logo occupies ≤30% so data modules remain readable. */}
               <QRCode
                 value={cardView.qrPayload}
-                size={72}
+                size={78}
                 bgColor="#ffffff"
                 fgColor="#0f172a"
                 level="H"
                 includeMargin={false}
+                imageSettings={{
+                  src: "/images/logo-watermark.png",
+                  x: undefined,
+                  y: undefined,
+                  height: 18,
+                  width: 18,
+                  excavate: true,
+                }}
               />
             </div>
 
@@ -571,9 +599,6 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
               <div className="w-[150px] mx-auto border-b border-dashed border-slate-500 mb-1" />
               <p className="italic text-slate-600 text-[10px] leading-none">
                 General Secretary Signature
-              </p>
-              <p className="mt-[3px] text-[8px] text-slate-500 tracking-[0.5px]">
-                TEMPLATE {TEMPLATE_VERSION}
               </p>
             </div>
           </div>

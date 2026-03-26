@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChangePwModalContext } from "../components/DashboardLayout";
-import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaBullhorn, FaFileAlt, FaPaperclip } from "react-icons/fa";
+import { FaFilePdf, FaRedo, FaLock, FaRegCommentDots, FaExchangeAlt, FaBullhorn, FaFileAlt, FaPaperclip, FaCamera } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -67,7 +67,7 @@ export default function ClientDashboard() {
   const openChangePwModal = useContext(ChangePwModalContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { isSw } = useLanguage();
 
   const [submission, setSubmission] = useState(() => {
@@ -245,6 +245,11 @@ export default function ClientDashboard() {
     const card = idCards[0];
     if (!card) return toast.error(isSw ? "Hakuna kadi ya mwanzo iliyopatikana." : "No placeholder ID card found.");
 
+    // Client one-time restriction check (server enforces too, but give instant feedback)
+    if (user?.role === "CLIENT" && card.rawPhotoUrl) {
+      return toast.error(isSw ? "Umeshaseti picha. Wasiliana na staff kufanya mabadiliko." : "You already uploaded your photo. Contact staff to update it.");
+    }
+
     setUploadingPhoto(true);
     setCleanProgress(0);
     try {
@@ -261,8 +266,13 @@ export default function ClientDashboard() {
           setCleanProgress(58);
           toast.success(isSw ? "Mandharinyuma yameondolewa kwenye kivinjari." : "Background removed in browser.");
         } catch (cleanErr) {
-          console.warn("Browser background removal failed, falling back to server mode:", cleanErr);
-          toast(isSw ? "Usafishaji wa kivinjari umeshindikana, tunatumia seva." : "Browser clean failed, using server fallback.", { icon: "⚠️" });
+          const isMemoryError = cleanErr?.message?.toLowerCase().includes("memory") || cleanErr?.message?.toLowerCase().includes("wasm");
+          const fallbackMsg = isMemoryError
+            ? (isSw ? "Kivinjari hana uwezo wa kutosha, tunaendelea bila usafishaji." : "Browser lacks memory for cleaning, uploading without it.")
+            : (isSw ? "Usafishaji wa kivinjari umeshindikana, tunatumia seva." : "Browser clean failed, using server fallback.");
+          console.warn("Browser background removal failed:", cleanErr);
+          toast(fallbackMsg, { icon: "⚠️" });
+          // uploadFile stays as original — server will handle
         } finally {
           setBrowserCleaning(false);
           setIsCleaning(false);
@@ -286,14 +296,17 @@ export default function ClientDashboard() {
         },
       });
 
-      const updated = uploadResp.data.card;
-      setIdCards([updated]);
+      const updated = uploadResp.data?.card || uploadResp.data;
+      setIdCards(updated ? [updated] : idCards);
+      // Refresh auth user so avatar immediately shows the new ID card photo
+      await refreshUser().catch(() => {});
       toast.success(clientCleaned
         ? (isSw ? "Picha imesafishwa kwenye kivinjari na kupakiwa." : "Photo cleaned in browser and uploaded.")
         : (isSw ? "Picha imepakiwa na kuchakatwa kwenye seva." : "Photo uploaded and processed on server."));
     } catch (err) {
       console.error("Error uploading photo:", err);
-      toast.error(isSw ? "Kupakia au kusafisha picha kumeshindikana." : "Photo upload/clean failed.");
+      const serverMsg = err?.response?.data?.error;
+      toast.error(serverMsg || (isSw ? "Kupakia au kusafisha picha kumeshindikana." : "Photo upload/clean failed."));
     } finally {
       setUploadingPhoto(false);
       setBrowserCleaning(false);
@@ -546,132 +559,162 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* ID Cards */}
-      {section === "idcards" && (
+      {/* ID Cards — photo upload inline */}
+      {(section === "idcards" || section === "generate") && (
         <div>
-          <h2 className="text-xl font-bold text-blue-700 mb-4">{isSw ? "Vitambulisho Vyako" : "Your ID Cards"}</h2>
+          <h2 className="text-xl font-bold text-blue-700 mb-4">{isSw ? "Kitambulisho Chako" : "Your ID Card"}</h2>
           {loadingCards ? (
             <p className="text-gray-500">{isSw ? "Inapakia..." : "Loading..."}</p>
           ) : idCards.length === 0 ? (
-            <p className="text-gray-500">{isSw ? "Hakuna vitambulisho vilivyopatikana." : "No ID cards found."}</p>
+            <p className="text-gray-500">{isSw ? "Hakuna kitambulisho kilichopatikana." : "No ID card found."}</p>
           ) : (
-            <div className="space-y-8">
-              {idCards.map((card) => (
-                <div key={card.id}>
-              <div className="overflow-x-auto">
-                <IDCard card={card} previewOnly={true} />
-              </div>
-                  {card.rawPhotoUrl && !photoRuntime.preferClientBgRemoval && (
-                    <button
-                      onClick={() => handleReClean(card.id)}
-                      disabled={isCleaning}
-                      className={`mt-2 px-3 py-1 rounded text-white ${isCleaning ? "bg-gray-400" : "bg-yellow-600 hover:bg-yellow-700"
+            <div className="space-y-6">
+              {idCards.map((card) => {
+                const hasPhoto = !!card.rawPhotoUrl;
+                const isClientOnceUsed = user?.role === "CLIENT" && hasPhoto;
+                const canUpload = !isClientOnceUsed || ["STAFF", "ADMIN", "SUPERADMIN"].includes(user?.role);
+                const photoLabel = hasPhoto
+                  ? (isSw ? "Sasisha Picha" : "Update Photo")
+                  : (isSw ? "Hakuna Picha — Bonyeza Kupakia" : "No Photo — Tap to Upload");
+
+                return (
+                  <div key={card.id} className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <IDCard card={card} previewOnly={true} />
+                    </div>
+
+                    {/* Photo upload area — clickable for staff/admin or first-time client */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                      <p className="text-sm font-semibold text-slate-700 mb-3">
+                        {isSw ? "Picha ya Kitambulisho" : "ID Card Photo"}
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row items-start gap-4">
+                        {/* Clickable photo area */}
+                        <label
+                          className={`relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border-2 ${
+                            canUpload
+                              ? "border-blue-400 cursor-pointer hover:opacity-90 transition"
+                              : "border-slate-200 cursor-not-allowed opacity-70"
+                          } bg-slate-100`}
+                        >
+                          {(card.cleanPhotoUrl || card.rawPhotoUrl) ? (
+                            <img
+                              src={card.cleanPhotoUrl || card.rawPhotoUrl}
+                              alt="ID photo"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-slate-400">
+                              <FaCamera size={22} />
+                              <span className="text-[10px] text-center leading-tight px-1">
+                                {isSw ? "Hakuna Picha" : "No Photo"}
+                              </span>
+                            </div>
+                          )}
+                          {canUpload && (
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                              <FaCamera className="text-white" size={20} />
+                            </div>
+                          )}
+                          {canUpload && (
+                            <>
+                              {/* Gallery pick */}
+                              <input
+                                id={`photo-input-${card.id}`}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                                disabled={uploadingPhoto || isCleaning}
+                                className="hidden"
+                              />
+                            </>
+                          )}
+                        </label>
+
+                        <div className="flex-1 space-y-2">
+                          <p className="text-sm text-slate-600">{photoLabel}</p>
+
+                          {isClientOnceUsed ? (
+                            <p className="text-xs text-amber-600 flex items-center gap-1">
+                              <FaLock size={10} />
+                              {isSw
+                                ? "Umeshaseti picha mara moja. Wasiliana na staff kufanya mabadiliko."
+                                : "You already uploaded once. Contact staff to update."}
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              <label
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 text-sm font-medium cursor-pointer hover:bg-slate-100 transition ${
+                                  uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""
+                                }`}
+                              >
+                                <FaCamera size={12} />
+                                {isSw ? "Chagua Picha" : "Choose Photo"}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                                  disabled={uploadingPhoto || isCleaning}
+                                  className="hidden"
+                                />
+                              </label>
+                              <label
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-400 bg-blue-50 text-sm font-medium cursor-pointer hover:bg-blue-100 transition ${
+                                  uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""
+                                }`}
+                              >
+                                <FaCamera size={12} />
+                                {isSw ? "Piga Picha" : "Take Photo"}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                                  disabled={uploadingPhoto || isCleaning}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
+                          )}
+
+                          {(uploadingPhoto || isCleaning) && (
+                            <div className="mt-2">
+                              <p className="text-sm text-blue-600 font-medium">
+                                {browserCleaning
+                                  ? (isSw ? "Inasafisha kwenye kivinjari..." : "Removing background in browser...")
+                                  : (isSw ? `Inapakia... ${cleanProgress}%` : `Uploading... ${cleanProgress}%`)}
+                              </p>
+                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                <div
+                                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${cleanProgress}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Re-clean button for staff/admin in server mode */}
+                    {card.rawPhotoUrl && !photoRuntime.preferClientBgRemoval &&
+                      ["STAFF", "ADMIN", "SUPERADMIN"].includes(user?.role) && (
+                      <button
+                        onClick={() => handleReClean(card.id)}
+                        disabled={isCleaning}
+                        className={`px-3 py-1.5 rounded-lg text-white text-sm ${
+                          isCleaning ? "bg-gray-400" : "bg-yellow-600 hover:bg-yellow-700"
                         }`}
-                    >
-                      <FaRedo className="inline mr-1" /> {isSw ? "Safisha Tena Picha" : "Re-clean Photo"}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {isCleaning && (
-            <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
-              <div
-                className="bg-green-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${cleanProgress}%` }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Generate / Upload photo */}
-      {section === "generate" && (
-        <div className="bg-white rounded shadow p-6">
-          <h2 className="text-xl font-bold mb-4">{isSw ? "Ongeza Picha Yako" : "Add Your Photo"}</h2>
-
-          {loadingCards ? (
-            <p className="text-gray-500">{isSw ? "Inapakia kadi ya mwanzo..." : "Loading placeholder card..."}</p>
-          ) : idCards.length === 0 ? (
-            <p className="text-red-500">{isSw ? "Unahitaji kwanza kadi ya mwanzo." : "You need a placeholder card first."}</p>
-          ) : (
-            <>
-              <div className="mb-4 space-y-1">
-                <p>
-                  <strong>{isSw ? "Jina" : "Name"}:</strong> {user.name}
-                </p>
-                <p>
-                  <strong>{isSw ? "Kampuni" : "Company"}:</strong> {latestCard?.company || submission?.employerName || "N/A"}
-                </p>
-                <p>
-                  <strong>{isSw ? "Nafasi / Cheo" : "Role / Title"}:</strong> {getCardRole()}
-                </p>
-                <p>
-                  <strong>{isSw ? "Namba ya Kadi" : "Card #"}:</strong> {latestCard?.cardNumber}
-                </p>
-              </div>
-
-              <div className="mb-3 space-y-2">
-                <p className="text-sm font-medium text-gray-700">{isSw ? "Chagua picha:" : "Choose a photo:"}</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 cursor-pointer text-sm font-medium hover:bg-gray-100 transition ${uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""}`}>
-                    <span>{isSw ? "Chagua Kutoka Kwenye Gallery" : "Choose from Gallery"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                      disabled={uploadingPhoto || isCleaning}
-                      className="hidden"
-                    />
-                  </label>
-                  <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-blue-400 bg-blue-50 cursor-pointer text-sm font-medium hover:bg-blue-100 transition ${uploadingPhoto || isCleaning ? "opacity-50 pointer-events-none" : ""}`}>
-                    <span>{isSw ? "Piga Picha" : "Take Photo"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                      disabled={uploadingPhoto || isCleaning}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {uploadingPhoto && (
-                <p className="text-blue-600 mt-2 font-semibold">
-                  {browserCleaning ? (isSw ? "Inasafisha kwenye kivinjari..." : "Cleaning in browser...") : (isSw ? "Inapakia / inachakata..." : "Uploading / processing...")}
-                </p>
-              )}
-
-              {isCleaning && (
-                <div className="mt-2">
-                  <p className="text-yellow-600 font-semibold">{isSw ? `Inasafisha picha... ${cleanProgress}%` : `Cleaning photo... ${cleanProgress}%`}</p>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
-                    <div
-                      className="bg-green-500 h-3 rounded-full transition-all duration-300"
-                      style={{ width: `${cleanProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {latestCard?.cleanPhotoUrl && (
-                <div className="mt-4">
-                  <p className="font-semibold">{isSw ? "Picha ya Mwisho:" : "Latest Photo:"}</p>
-                  <img
-                    src={latestCard.cleanPhotoUrl.replace(
-                      /\/upload\/(?!v\d).*?(v\d+\/)/,
-                      "/upload/$1"
+                      >
+                        <FaRedo className="inline mr-1" />
+                        {isSw ? "Safisha Tena Picha" : "Re-clean Photo"}
+                      </button>
                     )}
-                    alt="photo-preview"
-                    className="w-48 h-48 object-cover rounded shadow"
-                  />
-                </div>
-              )}
-            </>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
