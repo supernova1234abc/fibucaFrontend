@@ -36,6 +36,10 @@ function toCloudinaryRawUrl(url) {
 const CARD_W = 340;
 const CARD_H = 214;
 const TEMPLATE_VERSION = "FIBUCA-CR80-V1";
+const FRONTEND_BASE_URL = (
+  import.meta.env.VITE_FRONTEND_URL ||
+  (typeof window !== "undefined" ? window.location.origin : "")
+).replace(/\/$/, "");
 
 const SLOT_LIMITS = {
   fullName: 22,
@@ -122,9 +126,12 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
       SLOT_LIMITS.cardNumber
     );
 
-    const qrPayload = [card?.userId || card?.user?.id || "user", cardNumber, TEMPLATE_VERSION]
-      .filter(Boolean)
-      .join("-");
+    const qrPayload =
+      card?.verificationToken && FRONTEND_BASE_URL
+        ? `${FRONTEND_BASE_URL}/verify/${card.verificationToken}`
+        : [card?.userId || card?.user?.id || "user", cardNumber, TEMPLATE_VERSION]
+            .filter(Boolean)
+            .join("-");
 
     const isMember = role.toLowerCase() === "member";
     const identityWord = isMember ? "MEMBER" : "STAFF";

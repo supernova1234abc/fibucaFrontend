@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
 import SubmissionValidator from './pages/SubmissionValidator';
+import PublicIdVerify from './pages/PublicIdVerify';
 
 import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -104,6 +105,7 @@ export default function App() {
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/submission/:token" element={<SubmissionValidator />} />
+          <Route path="/verify/:token" element={<PublicIdVerify />} />
           <Route path="/client-form/:token" element={<ClientForm />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
