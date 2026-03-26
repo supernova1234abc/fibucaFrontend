@@ -264,7 +264,6 @@ export default function ClientDashboard() {
           uploadFile = await removeBackgroundInBrowser(file);
           clientCleaned = true;
           setCleanProgress(58);
-          toast.success(isSw ? "Mandharinyuma yameondolewa kwenye kivinjari." : "Background removed in browser.");
         } catch (cleanErr) {
           const isMemoryError = cleanErr?.message?.toLowerCase().includes("memory") || cleanErr?.message?.toLowerCase().includes("wasm");
           const fallbackMsg = isMemoryError
@@ -279,19 +278,42 @@ export default function ClientDashboard() {
         }
       }
 
-      const fd = new FormData();
-      fd.append("photo", uploadFile, uploadFile.name);
+      const uploadOnce = async (fileToUpload, isClientCleaned) => {
+        const fd = new FormData();
+        fd.append("photo", fileToUpload, fileToUpload.name);
 
-      const uploadResp = await api.put(`/api/idcards/${card.id}/photo`, fd, {
-        headers: clientCleaned ? { "X-Photo-Cleaned": "1" } : {},
-        onUploadProgress: (ev) => {
-          if (ev.total) {
-            const base = clientCleaned ? 58 : 0;
-            const pct = Math.round((ev.loaded / ev.total) * (clientCleaned ? 42 : 100));
-            setCleanProgress(base + pct);
-          }
-        },
-      });
+        return api.put(`/api/idcards/${card.id}/photo`, fd, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            ...(isClientCleaned ? { "X-Photo-Cleaned": "1" } : {}),
+          },
+          onUploadProgress: (ev) => {
+            if (ev.total) {
+              const base = isClientCleaned ? 58 : 0;
+              const pct = Math.round((ev.loaded / ev.total) * (isClientCleaned ? 42 : 100));
+              setCleanProgress(base + pct);
+            }
+          },
+        });
+      };
+
+      let uploadResp;
+      try {
+        uploadResp = await uploadOnce(uploadFile, clientCleaned);
+      } catch (uploadErr) {
+        // Some browsers produce a client-cleaned PNG that fails server upload.
+        // Retry once with original file so users don't get stuck.
+        if (clientCleaned) {
+          console.warn("Client-cleaned upload failed; retrying with original file:", uploadErr);
+          toast(isSw ? "Kupakia picha iliyosafishwa kumeshindikana, tunajaribu asili..." : "Cleaned upload failed, retrying with original photo...", { icon: "warning" });
+          clientCleaned = false;
+          uploadFile = file;
+          setCleanProgress(0);
+          uploadResp = await uploadOnce(uploadFile, false);
+        } else {
+          throw uploadErr;
+        }
+      }
 
       const updated = uploadResp.data?.card || uploadResp.data;
       setIdCards(updated ? [updated] : idCards);
