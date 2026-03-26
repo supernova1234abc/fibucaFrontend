@@ -283,10 +283,7 @@ export default function ClientDashboard() {
       fd.append("photo", uploadFile, uploadFile.name);
 
       const uploadResp = await api.put(`/api/idcards/${card.id}/photo`, fd, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          ...(clientCleaned ? { "X-Photo-Cleaned": "1" } : {}),
-        },
+        headers: clientCleaned ? { "X-Photo-Cleaned": "1" } : {},
         onUploadProgress: (ev) => {
           if (ev.total) {
             const base = clientCleaned ? 58 : 0;
