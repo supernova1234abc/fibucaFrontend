@@ -17,8 +17,10 @@ import ManagerDashboard from './pages/ManagerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminReports from './pages/AdminReports';
 import AdminVoting from './pages/AdminVoting';
+import ContributionsAdmin from './pages/ContributionsAdmin';
 import ClientDashboard from './pages/ClientDashboard';
 import StaffDashboard from './pages/staffDashboard';
+import StaffContributions from './pages/StaffContributions';
 import VotingPage from './pages/VotingPage';
 import AdminIdCards from './pages/AdminIdCards';
 
@@ -56,6 +58,7 @@ export default function App() {
     { href: '/admin/submissions', label: isSw ? 'Dashibodi' : 'Dashboard' },
     { href: '/admin/scan-paper', label: isSw ? 'Skani Fomu' : 'Scan Paper' },
     { href: '/admin/idcards', label: isSw ? 'Vitambulisho' : 'ID Cards' },
+    { href: '/admin/contributions', label: isSw ? 'Michango' : 'Contributions' },
     { href: '/admin/reports', label: isSw ? 'Ripoti' : 'Reports' },
     { href: '/admin/voting', label: isSw ? 'Kura' : 'Voting', icon: FaVoteYea },
   ];
@@ -63,6 +66,7 @@ export default function App() {
   const staffMenus = [
     { href: '/staff/links', label: isSw ? 'Dashibodi' : 'Dashboard', exact: true },
     { href: '/staff/notices', label: isSw ? 'Matangazo' : 'Notices' },
+    { href: '/staff/contributions', label: isSw ? 'Michango' : 'Contributions' },
     { href: '/staff/scan-paper', label: isSw ? 'Fomu ya skani' : 'Scan paper form' },
     { href: '/staff/voting', label: isSw ? 'Piga Kura' : 'Vote', icon: FaVoteYea },
   ];
@@ -71,6 +75,7 @@ export default function App() {
     { href: '/superadmin', label: isSw ? 'Amri Kuu' : 'Control Center', exact: true, icon: FaShieldAlt },
     { href: '/superadmin/security', label: isSw ? 'Ulinzi Hai' : 'Live Security', icon: FaShieldAlt },
     { href: '/superadmin/users', label: isSw ? 'Watumiaji' : 'Users', icon: FaUsers },
+    { href: '/superadmin/contributions', label: isSw ? 'Michango' : 'Contributions', icon: FaFilePdf },
     { href: '/superadmin/audit', label: isSw ? 'Ukaguzi' : 'Audit', icon: FaHistory },
     { href: '/superadmin/voting', label: isSw ? 'Kura' : 'Voting', icon: FaVoteYea },
   ];
@@ -116,6 +121,7 @@ export default function App() {
               <Route path="/superadmin" element={<ManagerDashboard />} />
               <Route path="/superadmin/security" element={<ManagerDashboard />} />
               <Route path="/superadmin/users" element={<ManagerDashboard />} />
+              <Route path="/superadmin/contributions" element={<ContributionsAdmin />} />
               <Route path="/superadmin/audit" element={<ManagerDashboard />} />
               <Route path="/superadmin/reports" element={<ManagerDashboard />} />
               <Route path="/superadmin/voting" element={<AdminVoting />} />
@@ -130,6 +136,7 @@ export default function App() {
               <Route path="/admin/users" element={<AdminDashboard />} />
               <Route path="/admin/leaderboard" element={<AdminDashboard />} />
               <Route path="/admin/idcards" element={<AdminIdCards />} />
+              <Route path="/admin/contributions" element={<ContributionsAdmin />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/scan-paper" element={<ScanPaperForm />} />
               <Route path="/admin/voting" element={<AdminVoting />} />
@@ -143,6 +150,7 @@ export default function App() {
               <Route path="/staff/links" element={<StaffDashboard />} />
               <Route path="/staff/clients" element={<StaffDashboard />} />
               <Route path="/staff/notices" element={<StaffDashboard />} />
+              <Route path="/staff/contributions" element={<StaffContributions />} />
               <Route path="/staff/scan-paper" element={<ScanPaperForm />} />
               <Route path="/staff/complaints" element={<StaffDashboard />} />
               <Route path="/staff/voting" element={<VotingPage />} />
