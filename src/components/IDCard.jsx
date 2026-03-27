@@ -393,25 +393,25 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
               <div
                 style={{
                   width: "116px",
-                  height: "116px",
-                  borderBottomLeftRadius: "58px",
-                  borderBottomRightRadius: "58px",
-                  borderTopLeftRadius: "6px",
-                  borderTopRightRadius: "6px",
+                  height: "126px",
+                  borderTopLeftRadius: "58px",
+                  borderTopRightRadius: "58px",
+                  borderBottomLeftRadius: "14px",
+                  borderBottomRightRadius: "14px",
                   boxShadow: photoSrc
                     ? "0 10px 28px 6px rgba(37,99,235,0.55), 0 4px 16px 2px rgba(14,165,233,0.45), 0 0 0 2px rgba(96,165,250,0.3)"
                     : "none",
                   position: "relative",
                 }}
               >
-                {/* Inner clip — overflow-hidden here so photo is clipped to shape */}
+                {/* Inner clip — dome top + shoulder cut near bottom */}
                 <div
                   className="absolute inset-0 overflow-hidden"
                   style={{
-                    borderBottomLeftRadius: "58px",
-                    borderBottomRightRadius: "58px",
-                    borderTopLeftRadius: "6px",
-                    borderTopRightRadius: "6px",
+                    borderTopLeftRadius: "58px",
+                    borderTopRightRadius: "58px",
+                    borderBottomLeftRadius: "14px",
+                    borderBottomRightRadius: "14px",
                   }}
                 >
                 {photoSrc ? (
@@ -420,8 +420,9 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
                       src={photoSrc}
                       alt="ID"
                       crossOrigin="anonymous"
-                      className="absolute inset-0 w-full h-full object-contain object-center"
+                      className="absolute inset-0 w-full h-full object-cover"
                       style={{
+                        objectPosition: "50% 18%",
                         imageRendering: "high-quality",
                         filter: "saturate(1.08) contrast(1.06)",
                         transform: "translateZ(0)",

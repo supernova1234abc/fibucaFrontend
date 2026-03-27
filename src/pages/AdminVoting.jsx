@@ -462,6 +462,7 @@ export default function AdminVoting() {
                       </>
                     )}
                     {session.status === 'ACTIVE' && <button onClick={() => handleEnd(session)} className="flex items-center gap-1.5 rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs text-red-300 transition hover:bg-red-900/60"><FaStop /> {isSw ? 'Maliza Kikao' : 'End Voting'}</button>}
+                    {session.status === 'ENDED' && <button onClick={() => handleDelete(session)} className="flex items-center gap-1.5 rounded-lg border border-red-900/50 bg-black px-3 py-1.5 text-xs text-red-400 transition hover:bg-slate-900"><FaTrash /> {isSw ? 'Futa' : 'Delete'}</button>}
                     {session.status !== 'PENDING' && <button onClick={() => handleViewResults(session)} className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-slate-700"><FaShieldAlt /> {isSw ? 'Uthibitisho wa Blockchain' : 'Verify Blockchain'}</button>}
                   </div>
                 </div>

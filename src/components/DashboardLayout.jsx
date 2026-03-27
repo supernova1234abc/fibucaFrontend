@@ -45,7 +45,8 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const location = useLocation();
   const { user: authUser, setUser, refreshUser } = useAuth();
   const { isSw } = useLanguage();
-  const isSuperadmin = user?.role === "SUPERADMIN";
+  const activeUser = authUser || user;
+  const isSuperadmin = activeUser?.role === "SUPERADMIN";
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -62,24 +63,26 @@ export default function DashboardLayout({ children, menus = [], user }) {
   const [sectionMenus, setSectionMenus] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [avatarPhotoError, setAvatarPhotoError] = useState(false);
+  const [avatarCacheBuster, setAvatarCacheBuster] = useState(Date.now());
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     setAvatarPhotoError(false);
+    setAvatarCacheBuster(Date.now());
   }, [authUser?.profilePhotoUrl]);
 
   useEffect(() => {
     if (!showProfileModal) return;
-    setProfileEmail(user?.email || "");
-    setProfilePhone(user?.phone || "");
-    setProfilePhone2(user?.phone2 || "");
+    setProfileEmail(activeUser?.email || "");
+    setProfilePhone(activeUser?.phone || "");
+    setProfilePhone2(activeUser?.phone2 || "");
     setProfilePhotoFile(null);
     if (profilePhotoPreview) {
       URL.revokeObjectURL(profilePhotoPreview);
       setProfilePhotoPreview("");
     }
     setProfileEditMode(false);
-  }, [showProfileModal, user]);
+  }, [showProfileModal, activeUser]);
 
   useEffect(() => {
     return () => {
@@ -131,9 +134,10 @@ export default function DashboardLayout({ children, menus = [], user }) {
           ? sessionStorage
           : null;
         if (storage) storage.setItem("fibuca_user", JSON.stringify(updatedUser));
-      } else {
-        await refreshUser();
       }
+      await refreshUser().catch(() => {});
+      setAvatarPhotoError(false);
+      setAvatarCacheBuster(Date.now());
       setProfilePhotoFile(null);
       if (profilePhotoPreview) {
         URL.revokeObjectURL(profilePhotoPreview);
@@ -406,7 +410,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
                 <div>
                   <h1 className={`text-lg md:text-xl font-bold ${isSuperadmin ? "text-white" : "text-slate-800"}`}>{isSw ? "Dashibodi ya FIBUCA" : "FIBUCA Dashboard"}</h1>
                   <p className={`hidden md:block text-xs ${isSuperadmin ? "text-emerald-400/80" : "text-slate-500"}`}>
-                    {isSw ? "Karibu tena," : "Welcome back,"} {getFirstName(user?.name)}
+                    {isSw ? "Karibu tena," : "Welcome back,"} {getFirstName(activeUser?.name)}
                   </p>
                 </div>
               </div>
@@ -419,25 +423,25 @@ export default function DashboardLayout({ children, menus = [], user }) {
                 >
                   {authUser?.profilePhotoUrl && !avatarPhotoError ? (
                     <img
-                      src={authUser.profilePhotoUrl}
-                      alt={user?.name || 'User'}
+                      src={`${authUser.profilePhotoUrl}${authUser.profilePhotoUrl.includes("?") ? "&" : "?"}v=${avatarCacheBuster}`}
+                      alt={activeUser?.name || 'User'}
                       className="w-9 h-9 rounded-full object-cover shadow-sm"
                       onError={() => setAvatarPhotoError(true)}
                     />
                   ) : (
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
-                      style={{ backgroundColor: getAvatarBg(user?.name) }}
+                      style={{ backgroundColor: getAvatarBg(activeUser?.name) }}
                     >
-                      {user?.name?.trim()?.[0]?.toUpperCase() || "U"}
+                      {activeUser?.name?.trim()?.[0]?.toUpperCase() || "U"}
                     </div>
                   )}
                   <div className="hidden md:block text-left">
                     <div className={`text-sm font-semibold ${isSuperadmin ? "text-white" : "text-slate-800"}`}>
-                      {getFirstName(user?.name)}
+                      {getFirstName(activeUser?.name)}
                     </div>
                     <div className={`text-[11px] uppercase tracking-wide ${isSuperadmin ? "text-emerald-400/80" : "text-slate-500"}`}>
-                      {user?.role || "USER"}
+                      {activeUser?.role || "USER"}
                     </div>
                   </div>
                 </button>
@@ -445,9 +449,9 @@ export default function DashboardLayout({ children, menus = [], user }) {
                 {dropdownOpen && (
                   <div className={`absolute right-0 mt-2 w-60 rounded-2xl shadow-xl z-[80] overflow-hidden ${isSuperadmin ? "bg-slate-900 text-white border border-slate-700" : "bg-white text-slate-900 border border-slate-200"}`}>
                     <div className={`px-4 py-4 ${isSuperadmin ? "border-b border-slate-700" : "border-b border-slate-100"}`}>
-                      <div className="text-sm font-semibold">{user?.name || "User"}</div>
+                      <div className="text-sm font-semibold">{activeUser?.name || "User"}</div>
                       <div className={`mt-1 text-xs uppercase tracking-wide ${isSuperadmin ? "text-emerald-400/80" : "text-slate-500"}`}>
-                        {user?.role || "USER"}
+                        {activeUser?.role || "USER"}
                       </div>
                     </div>
 
@@ -544,16 +548,16 @@ export default function DashboardLayout({ children, menus = [], user }) {
                       <label className="relative cursor-pointer">
                         {(profilePhotoPreview || authUser?.profilePhotoUrl) ? (
                           <img
-                            src={profilePhotoPreview || authUser?.profilePhotoUrl}
-                            alt={user?.name || "User"}
+                            src={profilePhotoPreview || `${authUser?.profilePhotoUrl}${authUser?.profilePhotoUrl?.includes("?") ? "&" : "?"}v=${avatarCacheBuster}`}
+                            alt={activeUser?.name || "User"}
                             className="h-20 w-20 rounded-full object-cover border-2 border-slate-200"
                           />
                         ) : (
                           <div
                             className="h-20 w-20 rounded-full flex items-center justify-center text-white text-3xl font-bold"
-                            style={{ backgroundColor: getAvatarBg(user?.name) }}
+                            style={{ backgroundColor: getAvatarBg(activeUser?.name) }}
                           >
-                            {user?.name?.trim()?.[0]?.toUpperCase() || "U"}
+                            {activeUser?.name?.trim()?.[0]?.toUpperCase() || "U"}
                           </div>
                         )}
                         <span className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-2 text-white shadow">
@@ -587,10 +591,10 @@ export default function DashboardLayout({ children, menus = [], user }) {
                       </div>
                     </div>
 
-                    <p><span className="font-semibold text-slate-700">{isSw ? "Jina:" : "Name:"}</span> {user?.name || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">{isSw ? "Wajibu:" : "Role:"}</span> {user?.role || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">{isSw ? "Jina la Mtumiaji:" : "Username:"}</span> {user?.username || "-"}</p>
-                    <p><span className="font-semibold text-slate-700">{isSw ? "Namba ya Mtumishi:" : "Employee #:"}</span> {user?.employeeNumber || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Jina:" : "Name:"}</span> {activeUser?.name || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Wajibu:" : "Role:"}</span> {activeUser?.role || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Jina la Mtumiaji:" : "Username:"}</span> {activeUser?.username || "-"}</p>
+                    <p><span className="font-semibold text-slate-700">{isSw ? "Namba ya Mtumishi:" : "Employee #:"}</span> {activeUser?.employeeNumber || "-"}</p>
                     {profileEditMode ? (
                       <>
                         <div>
