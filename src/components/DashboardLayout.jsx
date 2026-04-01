@@ -355,19 +355,20 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
           <aside
             className={`no-force-dark fixed md:relative z-40 md:z-20 top-0 left-0 h-screen md:h-auto w-72
-              ${isSuperadmin ? "bg-slate-800 border-r border-slate-700" : "bg-white border-r border-slate-200"} shadow-xl md:shadow-none transition-transform transform
+              ${isSuperadmin ? "bg-slate-800 border-r border-slate-700" : "bg-gradient-to-b from-slate-600 to-slate-700 border-r border-slate-500"} shadow-xl md:shadow-none transition-transform transform
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
           >
-            <div className={`flex items-center justify-between px-5 py-5 ${isSuperadmin ? "border-b border-slate-700" : "border-b border-slate-200"}`}>
+            <div className={`flex items-center justify-between px-5 py-5 ${isSuperadmin ? "border-b border-slate-700" : "border-b border-slate-500"}`}>
               <div>
-                <h2 className={`text-xl font-extrabold tracking-tight ${isSuperadmin ? "text-white" : "text-blue-700"}`}>FIBUCA</h2>
-                <p className={`mt-1 text-xs ${isSuperadmin ? "text-emerald-400" : "text-slate-500"}`}>Portal Dashboard</p>
+                <h2 className={`text-xl font-extrabold tracking-tight ${isSuperadmin ? "text-white" : "text-white"}`}>FIBUCA</h2>
+                <p className={`mt-1 text-xs ${isSuperadmin ? "text-emerald-400" : "text-slate-200"}`}>Portal Dashboard</p>
               </div>
 
               <button
-                className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-black border-slate-700 text-emerald-300" : "bg-slate-50 border-slate-200 text-slate-700"}`}
+                className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-black border-slate-700 text-emerald-300 hover:bg-slate-900" : "bg-red-600 border-red-500 text-white hover:bg-red-700"} transition-colors`}
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Close sidebar"
+                title="Close menu"
               >
                 <FaTimes size={18} />
               </button>

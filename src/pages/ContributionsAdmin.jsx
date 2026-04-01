@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaCheckCircle, FaDownload, FaFilePdf, FaPlus, FaPrint, FaTimesCircle, FaUsers } from "react-icons/fa";
+import { FaCheckCircle, FaDownload, FaFilePdf, FaPlus, FaPrint, FaTimesCircle, FaUsers, FaStar, FaCheck, FaTimes } from \"react-icons/fa\";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
@@ -18,7 +18,7 @@ export default function ContributionsAdmin() {
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState(null);
   const [contributors, setContributors] = useState([]);
-  const [loadingContributors, setLoadingContributors] = useState(false);
+  const [loadingContributors, setLoadingContributors] = useState(false);\n  const [allStaff, setAllStaff] = useState([]);\n  const [selectedStaffIds, setSelectedStaffIds] = useState([]);\n  const [showPublishModal, setShowPublishModal] = useState(false);\n  const [publishForm, setPublishForm] = useState({\n    startDate: \"\",\n    endDate: \"\",\n  });\n  const [publishing, setPublishing] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
