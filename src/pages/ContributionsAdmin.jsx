@@ -18,7 +18,15 @@ export default function ContributionsAdmin() {
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState(null);
   const [contributors, setContributors] = useState([]);
-  const [loadingContributors, setLoadingContributors] = useState(false);\n  const [allStaff, setAllStaff] = useState([]);\n  const [selectedStaffIds, setSelectedStaffIds] = useState([]);\n  const [showPublishModal, setShowPublishModal] = useState(false);\n  const [publishForm, setPublishForm] = useState({\n    startDate: \"\",\n    endDate: \"\",\n  });\n  const [publishing, setPublishing] = useState(false);
+  const [loadingContributors, setLoadingContributors] = useState(false);
+  const [allStaff, setAllStaff] = useState([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState([]);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishForm, setPublishForm] = useState({
+    startDate: "",
+    endDate: "",
+  });
+  const [publishing, setPublishing] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
