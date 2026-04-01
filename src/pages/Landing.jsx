@@ -93,7 +93,7 @@ export default function Landing() {
       ],
       contactTitle: "Contact Us",
       contactItems: [
-        { title: "Email", value: "info@fibucatradeunion.or.tz" },
+        { title: "Email", value: "fibucatradeunion@gmail.com" },
         { title: "Phone", value: "+255 784 475 333" },
         { title: "Address", value: "Mahiwa/Lumumba Street, Plot No. 17 Block 73" },
       ],
