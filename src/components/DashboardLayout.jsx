@@ -398,7 +398,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
           </aside>
 
           <div className="flex-1 flex flex-col min-h-screen">
-            <header className={`no-force-dark flex items-center justify-between px-4 py-4 md:px-6 sticky top-0 z-50 ${isSuperadmin ? "bg-black border-b border-slate-800" : "bg-white border-b border-slate-200"}`}>
+            <header className={`no-force-dark flex items-center justify-between px-4 py-4 md:px-6 sticky top-0 z-30 ${isSuperadmin ? "bg-black border-b border-slate-800" : "bg-white border-b border-slate-200"}`}>
               <div className="flex items-center gap-3">
                 <button
                   className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-slate-900 border-slate-700 text-emerald-300" : "bg-blue-500 border-blue-500 text-white hover:bg-blue-600"}`}
