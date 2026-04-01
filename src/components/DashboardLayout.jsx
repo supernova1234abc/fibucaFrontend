@@ -238,7 +238,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
       const parentIdleClass = isSuperadmin
         ? "text-slate-100 hover:bg-slate-700/70"
-        : "text-slate-700 hover:bg-slate-200";
+        : "text-blue-900 hover:bg-blue-200/60";
 
       const childActiveClass = isSuperadmin
         ? "bg-black text-emerald-300 font-semibold border border-slate-700"
@@ -246,7 +246,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
       const childIdleClass = isSuperadmin
         ? "text-slate-300 hover:bg-slate-700/60"
-        : "text-slate-700 hover:bg-slate-200";
+        : "text-blue-800 hover:bg-blue-200/50";
 
       return (
         <div key={key} className="space-y-1">
@@ -302,11 +302,11 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
     const idleClass = isSuperadmin
       ? "text-slate-100 hover:bg-slate-700/70"
-      : "text-slate-700 hover:bg-slate-200";
+      : "text-blue-900 hover:bg-blue-200/60";
 
     const idleIconClass = isSuperadmin
       ? "text-emerald-400 group-hover:text-emerald-300"
-      : "text-slate-600 group-hover:text-slate-800";
+      : "text-blue-600 group-hover:text-blue-800";
 
     const btn = (
       <button
@@ -355,18 +355,17 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
           <aside
             className={`no-force-dark fixed md:relative z-40 md:z-20 top-0 left-0 h-screen md:h-auto w-72
-              ${isSuperadmin ? "bg-slate-800 border-r border-slate-700" : "border-r border-slate-300"} shadow-xl md:shadow-none transition-transform transform
+              ${isSuperadmin ? "bg-slate-800 border-r border-slate-700" : "bg-gradient-to-br from-blue-100 via-white to-blue-50 border-r border-blue-200"} shadow-xl md:shadow-none transition-transform transform
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
-            style={!isSuperadmin ? { backgroundColor: "#eeeee4" } : undefined}
           >
-            <div className={`flex items-center justify-between px-5 py-5 ${isSuperadmin ? "border-b border-slate-700" : "border-b border-slate-300"}`}>
+            <div className={`flex items-center justify-between px-5 py-5 ${isSuperadmin ? "border-b border-slate-700" : "border-b border-blue-200"}`}>
               <div>
-                <h2 className={`text-xl font-extrabold tracking-tight ${isSuperadmin ? "text-white" : "text-slate-800"}`}>FIBUCA</h2>
-                <p className={`mt-1 text-xs ${isSuperadmin ? "text-emerald-400" : "text-slate-600"}`}>Portal Dashboard</p>
+                <h2 className={`text-xl font-extrabold tracking-tight ${isSuperadmin ? "text-white" : "text-blue-900"}`}>FIBUCA</h2>
+                <p className={`mt-1 text-xs ${isSuperadmin ? "text-emerald-400" : "text-blue-700"}`}>Portal Dashboard</p>
               </div>
 
               <button
-                className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-black border-slate-700 text-emerald-300 hover:bg-slate-900" : "bg-slate-400 border-slate-400 text-white hover:bg-slate-500"} transition-colors`}
+                className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-black border-slate-700 text-emerald-300 hover:bg-slate-900" : "bg-blue-500 border-blue-500 text-white hover:bg-blue-600"} transition-colors`}
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Close sidebar"
                 title="Close menu"
@@ -377,7 +376,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
             <nav className="p-4 space-y-4">
               <div>
-                <div className={`px-2 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] ${isSuperadmin ? "text-emerald-400" : "text-slate-600"}`}>
+                <div className={`px-2 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] ${isSuperadmin ? "text-emerald-400" : "text-blue-800"}`}>
                   Main Menu
                 </div>
                 <div className="space-y-2">
@@ -387,7 +386,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
 
               {sectionMenus.length > 0 && (
                 <div className="hidden md:block">
-                  <div className={`px-2 pb-2 pt-2 text-[11px] font-bold uppercase tracking-[0.14em] ${isSuperadmin ? "text-emerald-400 border-t border-slate-700" : "text-slate-600 border-t border-slate-300"}`}>
+                  <div className={`px-2 pb-2 pt-2 text-[11px] font-bold uppercase tracking-[0.14em] ${isSuperadmin ? "text-emerald-400 border-t border-slate-700" : "text-blue-800 border-t border-blue-200"}`}>
                     Sections
                   </div>
                   <div className="space-y-2 mt-2">
@@ -402,7 +401,7 @@ export default function DashboardLayout({ children, menus = [], user }) {
             <header className={`no-force-dark flex items-center justify-between px-4 py-4 md:px-6 sticky top-0 z-50 ${isSuperadmin ? "bg-black border-b border-slate-800" : "bg-white border-b border-slate-200"}`}>
               <div className="flex items-center gap-3">
                 <button
-                  className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-slate-900 border-slate-700 text-emerald-300" : "bg-slate-100 border-slate-200 text-slate-700"}`}
+                  className={`md:hidden no-force-dark p-2 rounded-lg border ${isSuperadmin ? "bg-slate-900 border-slate-700 text-emerald-300" : "bg-blue-500 border-blue-500 text-white hover:bg-blue-600"}`}
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Open sidebar"
                 >
