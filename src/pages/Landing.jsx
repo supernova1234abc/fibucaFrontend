@@ -8,11 +8,18 @@ import { useLanguage } from "../context/LanguageContext";
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const menuRef = useRef(null);
   const menuButtonRef = useRef(null);
   const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu = () => setMenuOpen(false);
   const { lang } = useLanguage();
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto";
@@ -42,7 +49,7 @@ export default function Landing() {
       navLeadership: "Leadership",
       navContact: "Contact",
       btnForm: "Submit Union Form",
-      btnLogin: "Member Login",
+      btnLogin: "Login Portal",
       btnContact: "Contact Union Office",
       heroBadge: "Official Trade Union Portal",
       aboutTitle: "About FIBUCA",
@@ -154,7 +161,7 @@ export default function Landing() {
       navLeadership: "Uongozi",
       navContact: "Mawasiliano",
       btnForm: "Wasilisha Fomu ya Chama",
-      btnLogin: "Ingia kwa Mwanachama",
+      btnLogin: "Ingia Portal",
       btnContact: "Wasiliana na Ofisi ya Chama",
       heroBadge: "Tovuti Rasmi ya Chama",
       aboutTitle: "Kuhusu FIBUCA",
@@ -363,21 +370,32 @@ export default function Landing() {
             initial={{ y: -16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -16, opacity: 0 }}
-            className="fixed left-0 right-0 top-16 z-40 border-b border-blue-200 bg-white/95 px-6 py-6 shadow-lg backdrop-blur-xl lg:hidden"
+            className="fixed left-0 right-0 top-16 z-40 border-b border-blue-300/60 bg-gradient-to-br from-blue-50 via-white to-sky-50 px-6 py-6 shadow-[0_12px_40px_rgba(59,130,246,0.15)] backdrop-blur-2xl lg:hidden"
           >
-            <nav className="flex flex-col gap-4 text-slate-700">
-              <a href="#home" onClick={closeMenu}>{t.navHome}</a>
-              <a href="#about" onClick={closeMenu}>{t.navAbout}</a>
-              <a href="#services" onClick={closeMenu}>{t.navServices}</a>
-              <a href="#benefits" onClick={closeMenu}>{t.navBenefits}</a>
-              <a href="#gallery" onClick={closeMenu}>{t.navGallery}</a>
-              <a href="#leadership" onClick={closeMenu}>{t.navLeadership}</a>
-              <a href="#contact" onClick={closeMenu}>{t.navContact}</a>
+            <nav className="flex flex-col gap-1 text-slate-700">
+              {[
+                { href: "#home", label: t.navHome },
+                { href: "#about", label: t.navAbout },
+                { href: "#services", label: t.navServices },
+                { href: "#benefits", label: t.navBenefits },
+                { href: "#gallery", label: t.navGallery },
+                { href: "#leadership", label: t.navLeadership },
+                { href: "#contact", label: t.navContact },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMenu}
+                  className="rounded-xl px-4 py-2.5 text-[15px] font-medium transition-all duration-200 hover:bg-blue-100/70 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 focus:outline-none active:scale-[0.98]"
+                >
+                  {item.label}
+                </a>
+              ))}
 
               <Link
                 to="/login"
                 onClick={closeMenu}
-                className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 font-bold text-white"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-bold text-white shadow-md shadow-blue-200/60 transition-all duration-200 hover:from-blue-500 hover:to-blue-400 active:scale-[0.98]"
               >
                 {t.btnLogin}
               </Link>
@@ -706,9 +724,57 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="mt-10 border-t border-blue-950 bg-blue-950 px-4 py-6 text-center text-xs text-white">
+      {/* Developer Credit */}
+      <section className="border-t border-blue-100 bg-gradient-to-br from-slate-50 to-blue-50/50 px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-md">
+          <div className="rounded-2xl border border-blue-100 bg-white/90 p-6 text-center shadow-[0_10px_30px_rgba(59,130,246,0.08)]">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-sky-400 text-xl font-black text-white shadow-md">
+              {"</>"}
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              {lang === "en" ? "System Developer" : "Mtengenezaji wa Mfumo"}
+            </p>
+            <p className="mt-2 text-lg font-bold text-slate-900">Yehoshaphati</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {lang === "en" ? "Developed & maintained for FIBUCA Organization" : "Imetengenezwa na kudumishwa kwa Shirika la FIBUCA"}
+            </p>
+            <a
+              href="https://wa.me/255672725612?text=Hello%20Yehoshaphati%2C%20I%20am%20reaching%20out%20regarding%20the%20FIBUCA%20system."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-green-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-green-200/60 transition-all duration-200 hover:bg-green-400 active:scale-[0.97]"
+            >
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.56 4.14 1.54 5.88L0 24l6.305-1.654A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.91 0-3.72-.53-5.29-1.484l-.38-.225-3.938 1.033 1.052-3.84-.247-.393A9.778 9.778 0 012.182 12c0-5.415 4.403-9.818 9.818-9.818S21.818 6.585 21.818 12 17.415 21.818 12 21.818z" />
+              </svg>
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-blue-950 bg-blue-950 px-4 py-6 text-center text-xs text-white">
         © {new Date().getFullYear()} {t.footer}
       </footer>
+
+      {/* Scroll to Top */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.7 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-300/40 transition-colors hover:bg-blue-500 active:scale-95"
+            aria-label="Scroll to top"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+            </svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
