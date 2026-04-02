@@ -389,31 +389,20 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
 
             {/* photo */}
             <div className="absolute top-[48px] left-[9px] z-30">
-              {/* Outer glow wrapper — must NOT have overflow-hidden so shadow can emit outward */}
+              {/* Circular photo wrapper */}
               <div
                 style={{
-                  width: "116px",
-                  height: "126px",
-                  borderTopLeftRadius: "58px",
-                  borderTopRightRadius: "58px",
-                  borderBottomLeftRadius: "14px",
-                  borderBottomRightRadius: "14px",
+                  width: "108px",
+                  height: "108px",
+                  borderRadius: "50%",
+                  border: "2.5px solid rgba(255,255,255,0.92)",
                   boxShadow: photoSrc
-                    ? "0 10px 28px 6px rgba(37,99,235,0.55), 0 4px 16px 2px rgba(14,165,233,0.45), 0 0 0 2px rgba(96,165,250,0.3)"
+                    ? "0 4px 18px rgba(37,99,235,0.38), 0 2px 8px rgba(14,165,233,0.28), 0 0 0 1.5px rgba(96,165,250,0.25)"
                     : "none",
                   position: "relative",
+                  overflow: "hidden",
                 }}
               >
-                {/* Inner clip — dome top + shoulder cut near bottom */}
-                <div
-                  className="absolute inset-0 overflow-hidden"
-                  style={{
-                    borderTopLeftRadius: "58px",
-                    borderTopRightRadius: "58px",
-                    borderBottomLeftRadius: "14px",
-                    borderBottomRightRadius: "14px",
-                  }}
-                >
                 {photoSrc ? (
                   <>
                     <img
@@ -422,7 +411,7 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
                       crossOrigin="anonymous"
                       className="absolute inset-0 w-full h-full object-cover"
                       style={{
-                        objectPosition: "50% 18%",
+                        objectPosition: "50% 20%",
                         imageRendering: "high-quality",
                         filter: "saturate(1.08) contrast(1.06)",
                         transform: "translateZ(0)",
@@ -441,7 +430,6 @@ const IDCard = forwardRef(({ card, previewOnly = false }, ref) => {
                     No Photo
                   </div>
                 )}
-                </div>
               </div>
 
               <div className="mt-2 pl-1 w-[150px]">
