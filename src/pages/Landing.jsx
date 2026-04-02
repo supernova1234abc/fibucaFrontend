@@ -724,7 +724,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Developer Credit */}
+      {/* Developer Credit - temporarily commented out
       <section className="border-t border-blue-100 bg-gradient-to-br from-slate-50 to-blue-50/50 px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-md">
           <div className="rounded-2xl border border-blue-100 bg-white/90 p-6 text-center shadow-[0_10px_30px_rgba(59,130,246,0.08)]">
@@ -753,6 +753,7 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      */}
 
       <footer className="border-t border-blue-950 bg-blue-950 px-4 py-6 text-center text-xs text-white">
         © {new Date().getFullYear()} {t.footer}
