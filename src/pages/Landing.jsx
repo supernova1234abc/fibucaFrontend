@@ -416,7 +416,7 @@ export default function Landing() {
               initial={{ scale: 1.04, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 2, ease: "easeInOut" }}
+              transition={{ duration: 4, ease: "easeInOut" }}
               className="absolute inset-0 h-full w-full object-cover object-center lg:object-contain"
             />
           </AnimatePresence>
@@ -432,7 +432,7 @@ export default function Landing() {
                   initial={{ opacity: 0, y: 26 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 12 }}
-                  transition={{ duration: 3, ease: "easeOut" }}
+                  transition={{ duration: 4, ease: "easeOut" }}
                 >
                   <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100 backdrop-blur-md">
                     {t.heroBadge} • {heroSlides[activeSlide].eyebrow}
